@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        /* CinePass Color Palette - HSL format for Shadcn */
+        --primary: 333 54% 32%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 347 100% 68%;
+        --secondary-foreground: 0 0% 100%;
+
+        /* Shadcn defaults - Light mode */
+        --background: 30 30% 88%;
+        --foreground: 200 30% 15%;
+        --card: 30 30% 88%;
+        --card-foreground: 200 30% 15%;
+        --popover: 30 30% 88%;
+        --popover-foreground: 200 30% 15%;
+        --muted: 30 20% 75%;
+        --muted-foreground: 200 20% 40%;
+        --accent: 30 20% 75%;
+        --accent-foreground: 200 30% 15%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 200 20% 70%;
+        --input: 200 20% 70%;
+        --ring: 333 54% 32%;
+    }
+
+    .dark {
+        /* CinePass Dark Mode */
+        --background: 200 40% 18%;
+        --foreground: 30 30% 88%;
+        --card: 200 40% 18%;
+        --card-foreground: 30 30% 88%;
+        --popover: 200 40% 18%;
+        --popover-foreground: 30 30% 88%;
+        --muted: 200 30% 25%;
+        --muted-foreground: 30 20% 70%;
+        --accent: 200 30% 25%;
+        --accent-foreground: 30 30% 88%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 200 20% 30%;
+        --input: 200 20% 30%;
+        --ring: 333 54% 32%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'Inter', sans-serif;
+    }
+}
+
+/* ===== THEME 1: FENCE GREEN (Current/Default) ===== */
+.theme-fence-green,
+:root {
+    --color-bg: #09332C;
+    --color-text: #F7E0DA;
+    --color-primary: #F0531C;
+    --color-secondary: #412A7A;
+    --color-tertiary: #2E483C;
+    --color-accent: #FF874F;
+}
+
+/* ===== THEME 2: COOL DECEMBER ===== */
+.theme-cool-december {
+    --color-bg: #01343A;
+    --color-text: #FDFBF8;
+    --color-primary: #7366BD;
+    --color-secondary: #FEA993;
+    --color-tertiary: #1C6B69;
+    --color-accent: #FEDE8F;
+}
+
+/* ===== THEME 3: BABY BLOSSOM ===== */
+.theme-baby-blossom {
+    --color-bg: #4A2C3F;
+    --color-text: #FAEFE9;
+    --color-primary: #F4A384;
+    --color-secondary: #486D83;
+    --color-tertiary: #7A5063;
+    --color-accent: #E2D5C2;
+}
+
+/* ===== THEME 4: GRADIENT PURPLE ===== */
+.theme-gradient-purple {
+    --color-bg: #1A161D;
+    --color-text: #FAF7F0;
+    --color-primary: #412A7A;
+    --color-secondary: #A2BFFE;
+    --color-tertiary: #C6E3F7;
+    --color-accent: #F1E740;
+}
+
+/* ===== THEME 5: AQUAMARINE FUSHIA ===== */
+.theme-aquamarine-fushia {
+    --color-bg: #16161D;
+    --color-text: #98E0E1;
+    --color-primary: #F037A5;
+    --color-secondary: #98E0E1;
+    --color-tertiary: #43B9B9;
+    --color-accent: #FF6BD6;
+}
+
+/* ===== THEME 6: DR WHITE ===== */
+.theme-dr-white {
+    --color-bg: #16161D;
+    --color-text: #FAFAFA;
+    --color-primary: #D30F3F;
+    --color-secondary: #550011;
+    --color-tertiary: #F5EDE0;
+    --color-accent: #F05C85;
+}
+
+/* ===== THEME 7: SIESTA TAN ===== */
+.theme-siesta-tan {
+    --color-bg: #1E3442;
+    --color-text: #E9D8C8;
+    --color-primary: #7E2553;
+    --color-secondary: #FF5C80;
+    --color-tertiary: #85A3B2;
+    --color-accent: #142838;
+}
+
+/* ===== THEME 8: SPACE OPERA ===== */
+.theme-space-opera {
+    --color-bg: #171310;
+    --color-text: #F9F8EF;
+    --color-primary: #6511DD;
+    --color-secondary: #C9C3D2;
+    --color-tertiary: #8A2538;
+    --color-accent: #EEB888;
+}
+
+/* ===== THEME 9: SNOWFLAKE ===== */
+.theme-snowflake {
+    --color-bg: #000741;
+    --color-text: #EFF0F0;
+    --color-primary: #E9AD17;
+    --color-secondary: #095BAF;
+    --color-tertiary: #062A78;
+    --color-accent: #EEDD55;
+}
+
+/* Apply theme colors to surface variables */
+.theme-fence-green,
+.theme-cool-december,
+.theme-baby-blossom,
+.theme-gradient-purple,
+.theme-aquamarine-fushia,
+.theme-dr-white,
+.theme-siesta-tan,
+.theme-space-opera,
+.theme-snowflake,
+:root {
+    --color-surface-dark-950: var(--color-bg);
+    --color-surface-dark-900: var(--color-bg);
+    --color-surface-dark: var(--color-bg);
+    --color-surface-light-100: var(--color-text);
+    --color-surface-light-50: var(--color-text);
+    --color-surface-light: var(--color-text);
+
+    --color-primary-400: var(--color-primary);
+    --color-primary-500: var(--color-primary);
+    --color-primary-600: var(--color-primary);
+
+    --color-secondary-400: var(--color-secondary);
+    --color-secondary-500: var(--color-secondary);
+    --color-secondary-700: var(--color-secondary);
+
+    --color-tertiary-400: var(--color-tertiary);
+    --color-tertiary-500: var(--color-tertiary);
+    --color-tertiary-700: var(--color-tertiary);
+}

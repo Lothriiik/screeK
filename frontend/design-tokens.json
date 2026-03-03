@@ -1,0 +1,287 @@
+{
+    "global": {
+        "color": {
+            "primary": {
+                "value": "#7E2553",
+                "type": "color",
+                "description": "Primary brand color - Pink Eggplant (Siesta Tan)"
+            },
+            "secondary": {
+                "value": "#FF5C80",
+                "type": "color",
+                "description": "Secondary brand color - Stellar Strawberry (Siesta Tan)"
+            },
+            "tertiary": {
+                "value": "#85A3B2",
+                "type": "color",
+                "description": "Tertiary brand color - Grauzone (Siesta Tan)"
+            },
+            "background": {
+                "value": "#1E3442",
+                "type": "color",
+                "description": "Background color - Blue Whale (Siesta Tan)"
+            },
+            "text": {
+                "value": "#E9D8C8",
+                "type": "color",
+                "description": "Text color - Siesta Tan"
+            },
+            "accent": {
+                "value": "#142838",
+                "type": "color",
+                "description": "Accent color - Hel Set Black (Siesta Tan)"
+            },
+            "success": {
+                "value": "#22c55e",
+                "type": "color"
+            },
+            "warning": {
+                "value": "#f59e0b",
+                "type": "color"
+            },
+            "danger": {
+                "value": "#ef4444",
+                "type": "color"
+            },
+            "info": {
+                "value": "#3b82f6",
+                "type": "color"
+            }
+        },
+        "fontFamilies": {
+            "sans": {
+                "value": "Inter",
+                "type": "fontFamilies"
+            }
+        },
+        "fontWeights": {
+            "regular": {
+                "value": "400",
+                "type": "fontWeights"
+            },
+            "medium": {
+                "value": "500",
+                "type": "fontWeights"
+            },
+            "bold": {
+                "value": "700",
+                "type": "fontWeights"
+            },
+            "black": {
+                "value": "900",
+                "type": "fontWeights"
+            }
+        },
+        "fontSize": {
+            "xs": {
+                "value": "12",
+                "type": "fontSizes"
+            },
+            "sm": {
+                "value": "14",
+                "type": "fontSizes"
+            },
+            "base": {
+                "value": "16",
+                "type": "fontSizes"
+            },
+            "lg": {
+                "value": "18",
+                "type": "fontSizes"
+            },
+            "xl": {
+                "value": "20",
+                "type": "fontSizes"
+            },
+            "2xl": {
+                "value": "24",
+                "type": "fontSizes"
+            },
+            "3xl": {
+                "value": "30",
+                "type": "fontSizes"
+            },
+            "4xl": {
+                "value": "36",
+                "type": "fontSizes"
+            },
+            "5xl": {
+                "value": "48",
+                "type": "fontSizes"
+            },
+            "6xl": {
+                "value": "60",
+                "type": "fontSizes"
+            }
+        },
+        "lineHeights": {
+            "none": {
+                "value": "1",
+                "type": "lineHeights"
+            },
+            "tight": {
+                "value": "1.25",
+                "type": "lineHeights"
+            },
+            "normal": {
+                "value": "1.5",
+                "type": "lineHeights"
+            },
+            "relaxed": {
+                "value": "1.75",
+                "type": "lineHeights"
+            }
+        },
+        "letterSpacing": {
+            "tighter": {
+                "value": "-0.05em",
+                "type": "letterSpacing"
+            },
+            "tight": {
+                "value": "-0.025em",
+                "type": "letterSpacing"
+            },
+            "normal": {
+                "value": "0",
+                "type": "letterSpacing"
+            },
+            "wide": {
+                "value": "0.025em",
+                "type": "letterSpacing"
+            },
+            "wider": {
+                "value": "0.05em",
+                "type": "letterSpacing"
+            },
+            "widest": {
+                "value": "0.1em",
+                "type": "letterSpacing"
+            }
+        },
+        "spacing": {
+            "0": {
+                "value": "0",
+                "type": "spacing"
+            },
+            "8": {
+                "value": "8",
+                "type": "spacing"
+            },
+            "16": {
+                "value": "16",
+                "type": "spacing"
+            },
+            "24": {
+                "value": "24",
+                "type": "spacing"
+            },
+            "32": {
+                "value": "32",
+                "type": "spacing"
+            },
+            "40": {
+                "value": "40",
+                "type": "spacing"
+            },
+            "48": {
+                "value": "48",
+                "type": "spacing"
+            },
+            "56": {
+                "value": "56",
+                "type": "spacing"
+            },
+            "64": {
+                "value": "64",
+                "type": "spacing"
+            },
+            "72": {
+                "value": "72",
+                "type": "spacing"
+            },
+            "80": {
+                "value": "80",
+                "type": "spacing"
+            },
+            "96": {
+                "value": "96",
+                "type": "spacing"
+            },
+            "128": {
+                "value": "128",
+                "type": "spacing"
+            }
+        },
+        "borderRadius": {
+            "none": {
+                "value": "0",
+                "type": "borderRadius",
+                "description": "V3 Brutalist - No rounded corners"
+            }
+        },
+        "borderWidth": {
+            "2": {
+                "value": "2",
+                "type": "borderWidth"
+            },
+            "4": {
+                "value": "4",
+                "type": "borderWidth",
+                "description": "V3 Brutalist - Primary"
+            },
+            "8": {
+                "value": "8",
+                "type": "borderWidth",
+                "description": "V3 Brutalist - Accent"
+            }
+        },
+        "opacity": {
+            "40": {
+                "value": "0.4",
+                "type": "opacity"
+            }
+        }
+    },
+    "semantic": {
+        "button": {
+            "primary": {
+                "background": {
+                    "value": "{color.primary}",
+                    "type": "color"
+                },
+                "text": {
+                    "value": "{color.text}",
+                    "type": "color"
+                },
+                "borderWidth": {
+                    "value": "{borderWidth.4}",
+                    "type": "borderWidth"
+                },
+                "paddingX": {
+                    "value": "{spacing.24}",
+                    "type": "spacing"
+                },
+                "paddingY": {
+                    "value": "{spacing.16}",
+                    "type": "spacing"
+                }
+            }
+        },
+        "card": {
+            "borderWidth": {
+                "value": "{borderWidth.4}",
+                "type": "borderWidth"
+            },
+            "padding": {
+                "value": "{spacing.24}",
+                "type": "spacing"
+            }
+        }
+    },
+    "$metadata": {
+        "tokenSetOrder": [
+            "global",
+            "semantic"
+        ]
+    }
+}
