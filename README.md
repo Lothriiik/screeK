@@ -45,15 +45,18 @@ O **Cine Pass** é o software centralizado que resolve o problema da fragmentaç
 ---
 
 ## 🏗 Arquitetura & Tecnologias
-- **Backend Core:** Adoção de **Arquitetura Híbrida**. O domínio crítico transacional (Booking/Auth) opera em **REST** estrito para facilidade de cache e rigidez de contrato. O domínio exploratório (Filmes, Reviews, Social) opera através de um **Servidor GraphQL** robusto, evitando *Over-fetching* e permitindo ao client renderizações dinâmicas na mesma requisição. Linguagem base: Go Lang (Echo Framework) + PostgreSQL.
-- **ORM e Transações:** GORM com Locking Pessimista para compras.
-- **Segurança:** Bcrypt e JWT.
-- **Cache/Mensageria:** Redis (Opcional - para Session Locks/Sockets).
+- **Backend Core:** **Monólito Modular** (Feature-First) em **Go** (Echo Framework). Cada domínio (Users, Movies, Bookings, Social) vive em seu próprio pacote com handlers, models e stores isolados. Toda a API é **REST**.
+- **Banco de Dados:** PostgreSQL com **GORM**. Transações com Locking Pessimista para compras de ingressos. Índices compostos nas queries mais frequentes.
+- **Cache & Lock de Assentos:** **Redis** para lock temporário de poltronas (TTL) durante o fluxo de compra, evitando double-booking.
+- **Resiliência:** **Circuit Breaker** (`sony/gobreaker`) na integração com a API TMDB — se a API externa cair, o app serve dados do cache local.
+- **Segurança:** Bcrypt (hashing de senhas) + JWT (autenticação stateless) + Rate Limiting.
+- **Observabilidade:** Logging estruturado com `slog` (stdlib Go 1.21+).
+- **DevOps:** Docker + Docker Compose (Postgres + Redis + API) + CI/CD com GitHub Actions + Swagger/OpenAPI.
 
 ## 🎨 UI & Frontend
 O ecossistema é suportado por uma Interface User-Centric baseada na estética **Brutalist Design**. O Design System independente define a tipografia, colorimetria e componentes isolados.
 - **Design System & Mockups:** [Acesse o projeto oficial no Figma](https://www.figma.com/design/YU8WBTTEUgTk70VLmZAtBo/Design-Project---CINEPASS?node-id=0-1&t=Ok9SFoy1isIhGm2T-1)
-- O frontend consome dinamicamente o gateway híbrido (REST + GraphQL) de acordo com o escopo da tela.
+- O frontend consome a API REST do backend.
 
 > Para detalhes das APIs e da Modelagem do Banco de Dados, consulte o [README Técnico na pasta /backend](backend/README.md).
 

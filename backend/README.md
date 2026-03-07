@@ -1,62 +1,105 @@
 # 🛠 Cine Pass: Backend Architecture
 
-Este diretório contém o coração transacional e API do Cine Pass. Focado estritamente na alta performance provida por concorrência da linguagem Go (Goroutines) e isolamento atômico das compras (Go Context/DB Txn).
-
-## 📊 Modelagem do Banco de Dados (PostgreSQL)
-
-O banco de dados do projeto suporta carga relacional massiva, garantida por fortes integridades (Foreign Keys e Unique Indices). As tabelas se conectam para refletir 5 Domain Flows independentes:
-
-### 1. Filmes / Catálogo (Sync com TMDB)
-- **`Movie`**: Entidade principal que estoca as infos estáticas dos filmes da TMDB. 
-- **`Genre`**: Muitos-para-muitos link com `Movie`.
-- **`Person`**: Abstrai os técnicos da indústria de cinema.
-- **`MovieCredit`**: O link que liga Atores e Equipe à `Movie`, contendo detalhes de `Character` e `Role`.
-
-### 2. Social & Usuário
-- **`User`**: Core de contas e Auth (Senhas Hasheadas). 
-- **`Follow`**: Tabela pivot com controle simétrico de Seguinte e Seguido para as TLs.
-- **`Review`, `WatchedMovie`**: Ligações Polimórficas engatando o Movie ao User, suportando `ReviewLike` e `ReviewComment`.
-- **`MovieList`, `WatchlistItem`**: Para agregações e filas de filme.
-
-### 3. Venda & Booking
-- Entidades de Ambiente: **`Cinema`** -> **`Room`** -> **`Seat`**.
-- Motor de Concorrência: **`Session`** vinculando Sala, Horário e Filme.
-- Entidades de Carrinho (A Prova de Erro): **`Transaction`** gerando childs de **`Ticket`** amarrados à Poltrona final.
-
----
-
-## 🔌 API Externa & Cache-Aside
-A estratégia **Cache-Aside** blinda a aplicação de bloqueios do *The Movie Database* (TMDB).
-Toda requisição pública funciona da seguinte maneira (No `GetDetails` Handler):
-1. Vai de encontro ao PG Local: `db.GetMovie(123)`.
-2. Em caso de *Miss*, consome a API REST externa do TMDB, injeta/mapeia dentro do nosso formato Go Struct.
-3. Roda internamente um bulk save do filme (e todos seus créditos) no PostgreSQL.
-4. Responde o Client (E todas as próximas calls responderão do banco PG super rápido por latência interna).
-
----
-
-## 🔥 Estratégia de Reserva de Poltronas
-A reserva de poltronas do `/tickets/reserve` foi desenhada utilizando **Select For Update (Pessimistic DB Lock)** e Controle Transacional nativo do GORM.
-- Se o Usuário A e Usuário B clicam na mesma cadeira (mesmo Seat ID na mesma Sessão) no exato milissegundo: As Request-goroutines bloqueiam o banco na verificação para impedir Double-Booking ou Phantom Reads de forma implacável.
-- Caso o usuário vença o lock, a Poltrona entra em status `PENDING` por um Timer.
+Este diretório contém o coração transacional e API do Cine Pass. Construído com **Arquitetura de Monólito Modular** (Feature-First) em Go, onde cada domínio do sistema vive isolado em seu próprio pacote.
 
 ---
 
 ## 🚀 Estrutura de Pastas
 
 ```bash
-/cmd/api      -> Entrypoint e Inicialização (Main, Env Vars, DB Start)
-/internal
-  /handlers   -> Recebem Echo Context, limpam Payload e roteiam (MVC Controllers)
-  /models     -> Definições GORM Structs (Domínios de Tabela puro)
-  /services   -> Integrações "World Wide" (API do TMDB HTTP Client, Emails, Scripts)
-  /store      -> Conexão pesada no Banco. Todas queries raw e transações Gorm
+backend/
+├── cmd/api/             → Entrypoint (main.go, env vars, boot)
+├── internal/
+│   ├── users/           → Gestão de Usuários (model, handler, store)
+│   ├── movies/          → Catálogo de Filmes + TMDB Client (model, handler, store, tmdb_service)
+│   ├── bookings/        → Cinemas, Sessões, Ingressos e Pagamento (model, store)
+│   ├── social/          → Reviews, Listas, Follow, Feed (model)
+│   ├── auth/            → JWT, Login, Middleware (TODO)
+│   └── platform/
+│       ├── database/    → Conexão central PostgreSQL (compartilhada)
+│       └── redis/       → Conexão Redis para locks de assentos (TODO)
+├── fluxo_*.md           → Documentação dos fluxos de negócio
+└── ROADMAP.md           → Roadmap completo do projeto
 ```
 
-## Setup do Workspace (Dev)
-1. Preencha seu `.env` contendo `DATABASE_URL` (DSN de Postgres) + `TMDB_TOKEN`.
-2. Garanta as dependências: `go get github.com/joho/godotenv github.com/labstack/echo/v4 gorm.io/driver/postgres x/crypto/bcrypt`.
-3. Inicie a compilação: `go run cmd/api/main.go`.
+> **Princípio:** Cada pacote em `internal/` encapsula seu domínio. O `handler`, `store` e `model` ficam lado a lado. Structs e funções privadas (minúsculas) ficam invisíveis para outros pacotes — só o que é público (Maiúsculo) cruza as fronteiras do módulo.
 
 ---
-*Backend arquitetado do zero para consolidação de conhecimentos avançados em Go, Bancos Relacionais e APIs de alta vazão.*
+
+## 📊 Modelagem do Banco de Dados (PostgreSQL)
+
+O banco suporta carga relacional massiva com Foreign Keys e Unique Indices. As tabelas refletem 4 domínios independentes:
+
+### 1. Filmes / Catálogo (`internal/movies/`)
+- **`Movie`** → Entidade principal (sync com TMDB)
+- **`Genre`** → Muitos-para-muitos com Movie
+- **`Person`** → Atores, Diretores e Equipe técnica
+- **`MovieCredit`** → Liga Person a Movie (Role + Character)
+
+### 2. Usuários & Social (`internal/users/` + `internal/social/`)
+- **`User`** → Core de contas e autenticação
+- **`Follow`** → Tabela pivot Seguidor ↔ Seguido
+- **`Review`**, **`WatchedMovie`** → Ligações User ↔ Movie com suporte a `ReviewLike` e `ReviewComment`
+- **`MovieList`**, **`WatchlistItem`** → Listas e filas de filmes
+
+### 3. Booking & Venda (`internal/bookings/`)
+- Ambiente: **`Cinema`** → **`Room`** → **`Seat`**
+- Motor: **`Session`** (vincula Sala + Horário + Filme + `SessionType`)
+- Tipos de Sessão: `PREMIERE` | `RESCREENING` | `FESTIVAL`
+- Carrinho: **`Transaction`** → **`Ticket`** (amarrado à poltrona final com QR Code)
+
+---
+
+## 🔌 API Externa & Cache-Aside
+
+Estratégia **Cache-Aside** com **Circuit Breaker** na comunicação com a TMDB:
+
+1. Busca no PostgreSQL local: `store.GetMovieByTMDBID(123)`
+2. Em caso de *Miss*, consome a API TMDB e mapeia para as structs Go
+3. Salva em bulk no PostgreSQL (filme + créditos + gêneros)
+4. Próximas chamadas respondem direto do banco local
+
+Se a TMDB cair, o Circuit Breaker (`sony/gobreaker`) abre o circuito e serve dados do cache sem travar a aplicação.
+
+---
+
+## 🔥 Estratégia de Reserva de Poltronas
+
+O fluxo `POST /tickets/reserve` usa **Redis Lock (SETNX + TTL)** para segurar assentos temporariamente:
+
+1. Usuário seleciona cadeiras → Redis trava cada `seat:session` com TTL de 5 minutos
+2. Se outro usuário tentar o mesmo assento → Redis rejeita (já está travado)
+3. No pagamento → Lock é convertido em registro permanente no PostgreSQL
+4. Se expirar sem pagar → Redis libera automaticamente
+
+Backup de segurança: Locking Pessimista no PostgreSQL (`SELECT FOR UPDATE`) para prevenir race conditions na gravação final.
+
+---
+
+## ⚙️ Tech Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Linguagem | Go 1.21+ |
+| Framework HTTP | Echo v4 |
+| ORM | GORM |
+| Banco de Dados | PostgreSQL |
+| Cache / Locks | Redis |
+| Autenticação | Bcrypt + JWT |
+| API Externa | TMDB (The Movie Database) |
+| Resiliência | Circuit Breaker (sony/gobreaker) |
+| Docs | Swagger / OpenAPI (swaggo/swag) |
+| DevOps | Docker + Docker Compose + GitHub Actions CI/CD |
+| Observabilidade | slog (logging estruturado JSON) |
+
+---
+
+## 🖥 Setup do Workspace (Dev)
+
+1. Preencha o `.env` com `DATABASE_URL` (DSN Postgres) + `TMDB_TOKEN`
+2. Suba a infraestrutura: `docker-compose up -d`
+3. Inicie a API: `go run cmd/api/main.go`
+
+---
+
+*Backend arquitetado do zero para consolidação de conhecimentos avançados em Go, Bancos Relacionais, Redis e APIs de alta vazão.*

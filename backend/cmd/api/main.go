@@ -5,9 +5,12 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/StartLivin/cine-pass/backend/internal/handlers"
-	"github.com/StartLivin/cine-pass/backend/internal/services"
-	"github.com/StartLivin/cine-pass/backend/internal/store"
+	"github.com/StartLivin/cine-pass/backend/internal/bookings"
+	"github.com/StartLivin/cine-pass/backend/internal/movies"
+	"github.com/StartLivin/cine-pass/backend/internal/platform/database"
+	"github.com/StartLivin/cine-pass/backend/internal/social"
+	"github.com/StartLivin/cine-pass/backend/internal/users"
+
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -23,17 +26,29 @@ func main() {
 		log.Fatal("DATABASE_URL não está configurada no .env")
 	}
 
-	db, err := store.InitDB(dsn)
+	// 1. Inicializar Conexão Principal com o Banco
+	db, err := database.InitDB(dsn)
 	if err != nil {
 		log.Fatal("Erro ao conectar no banco:", err)
 	}
 
-	storage := store.NewGormStore(db)
-	userHandler := handlers.NewUserHandler(storage)
+	// 2. Rodar Migrations por Módulo
+	log.Println("Rodando migrações do banco de dados (Modular)...")
+	movies.AutoMigrate(db)
+	users.AutoMigrate(db)
+	bookings.AutoMigrate(db)
+	social.AutoMigrate(db)
 
-	tmdbClient := services.NewTMDBClient()
-	movieHandler := handlers.NewMovieHandler(tmdbClient, storage)
+	// 3. Inicializar Módulo de Usuários
+	userStore := users.NewStore(db)
+	userHandler := users.NewHandler(userStore)
 
+	// 4. Inicializar Módulo de Filmes
+	tmdbClient := movies.NewTMDBClient()
+	movieStore := movies.NewStore(db)
+	movieHandler := movies.NewHandler(tmdbClient, movieStore)
+
+	// 5. Configurar o Web Server
 	e := echo.New()
 
 	e.Use(middleware.Logger())
@@ -41,17 +56,13 @@ func main() {
 
 	e.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
-			"message": "Bem-vindo à API do Cine Pass! 🎬",
+			"message": "Bem-vindo à API do Cine Pass! 🎬 (Modular Monolith Edition)",
 		})
 	})
 
-	e.POST("/users", userHandler.CreateUser)
-	e.GET("/users/:id", userHandler.GetByID)
-	e.PUT("/users/:id", userHandler.UpdateUser)
-	e.DELETE("/users/:id", userHandler.DeleteUser)
-
-	e.GET("/movies/search", movieHandler.Search)
-	e.GET("/movies/:id", movieHandler.GetDetails)
+	// 6. Registrar Rotas
+	userHandler.RegisterRoutes(e)
+	movieHandler.RegisterRoutes(e)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

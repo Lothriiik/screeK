@@ -75,12 +75,12 @@ Este documento mapeia o ciclo de vida do usuário no aplicativo, desde a criaç�
 **Ação do Usuário:** Exibe a prateleira de Filmes que o usuário adicionou para não esquecer de assistir.
 - *Onde fica:* Geralmente no Perfil do usuário.
 - *Layout Visual:* A lista é uma só para não bagunçar a tela. No entanto, Filmes que estão passando no cinema atualmente recebem um **símbolo/destaque**. (Para o frontend desenhar isso, a API retorna um campo _booleano_ extra no JSON, ex: `"is_playing_in_cinemas": true`).
-> **👉 Rota do Backend:**
+> ** Rota do Backend:**
 > `GET /users/me/watchlist`
 > *(O botão de Adicionar e Remover da lista fica no `fluxo_filmes`)*
 
 ## 12. Pesquisa de Usuários (A Busca Social)
 **Ação do Usuário:** Na aba de Busca Geral, o usuário clica na aba "Pessoas" para procurar um amigo pelo Nome Real ou pelo `@arroba`.
 - *Informações Exibidas:* A foto em miniatura e o nome de usuário (Ex: @ana_cine).
-> **👉 Rota do Backend:**
+> ** Rota do Backend:**
 > `GET /users/search?q=Ana`

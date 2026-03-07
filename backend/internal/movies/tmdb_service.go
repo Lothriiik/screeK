@@ -1,4 +1,4 @@
-package services
+package movies
 
 import (
 	"encoding/json"

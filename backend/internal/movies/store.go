@@ -1,15 +1,21 @@
-package store
+package movies
 
 import (
 	"errors"
 
-	"github.com/StartLivin/cine-pass/backend/internal/models"
-	"github.com/StartLivin/cine-pass/backend/internal/services"
 	"gorm.io/gorm"
 )
 
-func (s *GormStore) SaveMovie(movie *models.Movie) error {
-	result := s.db.Where(models.Movie{TMDBID: movie.TMDBID}).Assign(models.Movie{
+type Store struct {
+	db *gorm.DB
+}
+
+func NewStore(db *gorm.DB) *Store {
+	return &Store{db: db}
+}
+
+func (s *Store) SaveMovie(movie *Movie) error {
+	result := s.db.Where(Movie{TMDBID: movie.TMDBID}).Assign(Movie{
 		Title:       movie.Title,
 		Overview:    movie.Overview,
 		PosterURL:   movie.PosterURL,
@@ -19,8 +25,8 @@ func (s *GormStore) SaveMovie(movie *models.Movie) error {
 	return result.Error
 }
 
-func (s *GormStore) GetMovieByTMDBID(tmdbID int) (*models.Movie, error) {
-	var movie models.Movie
+func (s *Store) GetMovieByTMDBID(tmdbID int) (*Movie, error) {
+	var movie Movie
 	result := s.db.Where("tmdb_id = ?", tmdbID).First(&movie)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, errors.New("movie not found")
@@ -28,13 +34,13 @@ func (s *GormStore) GetMovieByTMDBID(tmdbID int) (*models.Movie, error) {
 	return &movie, result.Error
 }
 
-func (s *GormStore) SaveMovieDetails(tmdbData *services.TMDBMovieDetails) (*models.Movie, error) {
-	var generosDoBanco []models.Genre
-	var creditosDoBanco []models.MovieCredit
+func (s *Store) SaveMovieDetails(tmdbData *TMDBMovieDetails) (*Movie, error) {
+	var generosDoBanco []Genre
+	var creditosDoBanco []MovieCredit
 
 	for _, g := range tmdbData.Genres {
-		var dbGenre models.Genre
-		s.db.Where(models.Genre{TMDBID: g.ID}).Assign(models.Genre{Name: g.Name}).FirstOrCreate(&dbGenre)
+		var dbGenre Genre
+		s.db.Where(Genre{TMDBID: g.ID}).Assign(Genre{Name: g.Name}).FirstOrCreate(&dbGenre)
 		generosDoBanco = append(generosDoBanco, dbGenre)
 	}
 
@@ -46,13 +52,13 @@ func (s *GormStore) SaveMovieDetails(tmdbData *services.TMDBMovieDetails) (*mode
 	for i := 0; i < castLimit; i++ {
 		actor := tmdbData.Credits.Cast[i]
 
-		var dbPerson models.Person
-		s.db.Where(models.Person{TMDBID: actor.ID}).Assign(models.Person{
+		var dbPerson Person
+		s.db.Where(Person{TMDBID: actor.ID}).Assign(Person{
 			Name:       actor.Name,
 			ProfileURL: actor.ProfilePath,
 		}).FirstOrCreate(&dbPerson)
 
-		creditosDoBanco = append(creditosDoBanco, models.MovieCredit{
+		creditosDoBanco = append(creditosDoBanco, MovieCredit{
 			Role:      "Actor",
 			Character: actor.Character,
 			PersonID:  dbPerson.ID,
@@ -84,13 +90,13 @@ func (s *GormStore) SaveMovieDetails(tmdbData *services.TMDBMovieDetails) (*mode
 
 	for _, crew := range tmdbData.Credits.Crew {
 		if cargosDesejados[crew.Job] {
-			var dbPerson models.Person
-			s.db.Where(models.Person{TMDBID: crew.ID}).Assign(models.Person{
+			var dbPerson Person
+			s.db.Where(Person{TMDBID: crew.ID}).Assign(Person{
 				Name:       crew.Name,
 				ProfileURL: crew.ProfilePath,
 			}).FirstOrCreate(&dbPerson)
 
-			creditosDoBanco = append(creditosDoBanco, models.MovieCredit{
+			creditosDoBanco = append(creditosDoBanco, MovieCredit{
 				Role:     crew.Job,
 				PersonID: dbPerson.ID,
 				Person:   dbPerson,
@@ -98,7 +104,7 @@ func (s *GormStore) SaveMovieDetails(tmdbData *services.TMDBMovieDetails) (*mode
 		}
 	}
 
-	movie := models.Movie{
+	movie := Movie{
 		TMDBID:    tmdbData.ID,
 		Title:     tmdbData.Title,
 		Overview:  tmdbData.Overview,
@@ -108,11 +114,11 @@ func (s *GormStore) SaveMovieDetails(tmdbData *services.TMDBMovieDetails) (*mode
 		Credits:   creditosDoBanco,
 	}
 
-	var existingMovie models.Movie
+	var existingMovie Movie
 	result := s.db.Where("tmdb_id = ?", movie.TMDBID).First(&existingMovie)
 	if result.Error == nil {
 		movie.ID = existingMovie.ID
-		s.db.Where("movie_id = ?", movie.ID).Delete(&models.MovieCredit{})
+		s.db.Where("movie_id = ?", movie.ID).Delete(&MovieCredit{})
 	}
 
 	err := s.db.Save(&movie).Error

@@ -1,6 +1,10 @@
-package models
+package movies
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Movie struct {
 	ID          int           `json:"id" gorm:"primaryKey;autoIncrement"`
@@ -37,4 +41,8 @@ type MovieCredit struct {
 	Character string `json:"character"`
 	Person    Person `json:"person" gorm:"foreignKey:PersonID"`
 	Movie     Movie  `json:"movie" gorm:"foreignKey:MovieID"`
+}
+
+func AutoMigrate(db *gorm.DB) error {
+	return db.AutoMigrate(&Movie{}, &Genre{}, &Person{}, &MovieCredit{})
 }

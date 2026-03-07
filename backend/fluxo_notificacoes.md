@@ -5,7 +5,7 @@ A central nervosa que engaja o usuário a não fechar o aplicativo e retornar se
 ## 1. Central (O Sininho)
 **Ação do Usuário:** Clica no ícone de "Sino" no canto da tela (O emblema terá uma bolinha vermelha se houverem mensagens não lidas).
 - *Na tela:* Uma lista mesclando os 3 tipos de Notificação (Social, Sistema e Lançamentos). O usuário clica na notificação e é levado direto para o Evento (ex: para o Perfil do Amigo, ou para a Página do Filme).
-> **👉 Rotas do Backend:**
+> ** Rotas do Backend:**
 > - `GET /users/me/notifications` (Trás em ordem cronológica de recência)
 > - `PUT /users/me/notifications/read-all` (Para zerar aquele contador da bolinha vermelha)
 
