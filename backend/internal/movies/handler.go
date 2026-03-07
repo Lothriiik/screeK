@@ -1,11 +1,12 @@
 package movies
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -20,22 +21,24 @@ func NewHandler(tmdb *TMDBClient, s *Store) *Handler {
 	}
 }
 
-func (h *Handler) RegisterRoutes(e *echo.Echo) {
-	e.GET("/movies/search", h.Search)
-	e.GET("/movies/:id", h.GetDetails)
+func (h *Handler) RegisterRoutes(r chi.Router) {
+	r.Get("/movies/search", h.Search)
+	r.Get("/movies/{id}", h.GetDetails)
 }
 
-func (h *Handler) Search(c echo.Context) error {
-	query := c.QueryParam("q")
+func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
 	if query == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "Forneça o parâmetro 'q'. Exemplo: /movies/search?q=Vingadores",
 		})
+		return
 	}
 
 	tmdbMovies, err := h.tmdbClient.SearchMovies(query)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
 	}
 
 	var localMovies []Movie
@@ -56,20 +59,27 @@ func (h *Handler) Search(c echo.Context) error {
 		localMovies = append(localMovies, movie)
 	}
 
-	return c.JSON(http.StatusOK, localMovies)
+	writeJSON(w, http.StatusOK, localMovies)
 }
 
-func (h *Handler) GetDetails(c echo.Context) error {
-	idParam := c.Param("id")
-	tmdbID, _ := strconv.Atoi(idParam)
+func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
+	tmdbID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	tmdbDetails, err := h.tmdbClient.GetMovieDetails(tmdbID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]string{"error": "Filme não encontrado no TMDB"})
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Filme não encontrado no TMDB"})
+		return
 	}
 
 	savedMovie, err := h.store.SaveMovieDetails(tmdbDetails)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao compilar cache do filme: " + err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao compilar cache do filme: " + err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, savedMovie)
+	writeJSON(w, http.StatusOK, savedMovie)
+}
+
+func writeJSON(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
 }

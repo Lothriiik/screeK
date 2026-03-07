@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// InitDB initializes the central database connection.
 func InitDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -11,9 +12,9 @@ import (
 	"github.com/StartLivin/cine-pass/backend/internal/social"
 	"github.com/StartLivin/cine-pass/backend/internal/users"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -26,43 +27,39 @@ func main() {
 		log.Fatal("DATABASE_URL não está configurada no .env")
 	}
 
-	// 1. Inicializar Conexão Principal com o Banco
 	db, err := database.InitDB(dsn)
 	if err != nil {
 		log.Fatal("Erro ao conectar no banco:", err)
 	}
 
-	// 2. Rodar Migrations por Módulo
-	log.Println("Rodando migrações do banco de dados (Modular)...")
+	log.Println("Rodando migrações do banco de dados...")
 	movies.AutoMigrate(db)
 	users.AutoMigrate(db)
 	bookings.AutoMigrate(db)
 	social.AutoMigrate(db)
 
-	// 3. Inicializar Módulo de Usuários
 	userStore := users.NewStore(db)
 	userHandler := users.NewHandler(userStore)
 
-	// 4. Inicializar Módulo de Filmes
 	tmdbClient := movies.NewTMDBClient()
 	movieStore := movies.NewStore(db)
 	movieHandler := movies.NewHandler(tmdbClient, movieStore)
 
-	// 5. Configurar o Web Server
-	e := echo.New()
+	r := chi.NewRouter()
 
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
-	e.GET("/", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"message": "Bem-vindo à API do Cine Pass! 🎬 (Modular Monolith Edition)",
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Bem-vindo à API do Cine Pass! 🎬",
 		})
 	})
 
-	// 6. Registrar Rotas
-	userHandler.RegisterRoutes(e)
-	movieHandler.RegisterRoutes(e)
+	userHandler.RegisterRoutes(r)
+	movieHandler.RegisterRoutes(r)
 
-	e.Logger.Fatal(e.Start(":8080"))
+	log.Println("Servidor rodando em http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }

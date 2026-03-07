@@ -81,7 +81,7 @@ Backup de segurança: Locking Pessimista no PostgreSQL (`SELECT FOR UPDATE`) par
 | Camada | Tecnologia |
 |---|---|
 | Linguagem | Go 1.21+ |
-| Framework HTTP | Echo v4 |
+| Router HTTP | Chi v5 (100% net/http) |
 | ORM | GORM |
 | Banco de Dados | PostgreSQL |
 | Cache / Locks | Redis |

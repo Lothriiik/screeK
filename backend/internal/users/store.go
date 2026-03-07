@@ -2,7 +2,6 @@ package users
 
 import (
 	"errors"
-
 	"gorm.io/gorm"
 )
 

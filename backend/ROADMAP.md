@@ -9,10 +9,13 @@ Blindar a API antes de expor qualquer funcionalidade.
 
 - Hashing de senhas com **Bcrypt**
 - Geração e validação de **JWT** (Access Token)
-- Middleware de autenticação no Echo
+- Middleware de autenticação no Chi
 - Rotas de Auth: Register, Login, Logout, Forgot/Reset Password, Change Password
-- Rotas protegidas de Perfil: `GET/PUT/DELETE /users/me`, `GET /users/:username`
+- Rotas protegidas de Perfil: `GET/PUT/DELETE /users/me`, `GET /users/{username}`
 - Busca de usuários, Followers/Following, Watchlist
+- **Interfaces nos stores** (Repository Pattern com Dependency Inversion)
+- **DTOs** (separar request/response dos models internos)
+- **Config struct** centralizada + separação `main.go`/`app.go`
 
 ---
 
@@ -40,16 +43,26 @@ Reviews, Listas, Feed e Follow.
 
 ---
 
-## Fase 4 · Notificações & Jobs
+## Fase 4 · Integrações Externas (Pagamento & Email)
+Conectar com serviços reais para fluxos críticos.
+
+- **Strategy Pattern** no pagamento: interface `PaymentStrategy` com implementações pra Cartão (Stripe) e PIX
+- **Stripe (Sandbox)**: Substituir mock por PaymentIntent + Webhooks
+- **Resend (Email)**: Emails transacionais (confirmação de compra, redefinição de senha, alertas)
+
+---
+
+## Fase 5 · Notificações & Jobs
 Engajamento e automação.
 
+- **Observer Pattern (EventBus)**: Eventos como `PURCHASE_COMPLETED` ou `NEW_FOLLOW` disparam listeners (email, notificação, histórico)
 - CRUD de Notificações
 - CRON Job: Watchlist × Sessões → alertas de estreia e exibições alternativas
 - *(Opcional)* WebSockets para push em tempo real
 
 ---
 
-## Fase 5 · Infraestrutura & DevOps
+## Fase 6 · Infraestrutura & DevOps
 Profissionalizar o ambiente de desenvolvimento e deploy.
 
 - **Docker**: Dockerfile multi-stage pro backend Go + `docker-compose.yml` subindo Postgres + Redis + API
@@ -58,7 +71,7 @@ Profissionalizar o ambiente de desenvolvimento e deploy.
 
 ---
 
-## Fase 6 · Hardening & Observabilidade
+## Fase 7 · Hardening & Observabilidade
 Blindar a API e ter visibilidade do que acontece em produção.
 
 - **Rate Limiting**: Middleware de limite de requisições por IP (proteção contra abuso/DDoS)
@@ -68,7 +81,7 @@ Blindar a API e ter visibilidade do que acontece em produção.
 
 ---
 
-## Fase 7 · Testes & Documentação Final (Portfólio)
+## Fase 8 · Testes & Documentação Final (Portfólio)
 Polir o projeto para o GitHub.
 
 - Testes unitários (Bcrypt, JWT, Lock de assentos)

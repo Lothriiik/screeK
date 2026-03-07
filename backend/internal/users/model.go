@@ -2,7 +2,6 @@ package users
 
 import (
 	"time"
-
 	"github.com/StartLivin/cine-pass/backend/internal/movies"
 	"gorm.io/gorm"
 )

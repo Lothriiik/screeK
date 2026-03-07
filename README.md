@@ -45,7 +45,7 @@ O **Cine Pass** é o software centralizado que resolve o problema da fragmentaç
 ---
 
 ## 🏗 Arquitetura & Tecnologias
-- **Backend Core:** **Monólito Modular** (Feature-First) em **Go** (Echo Framework). Cada domínio (Users, Movies, Bookings, Social) vive em seu próprio pacote com handlers, models e stores isolados. Toda a API é **REST**.
+- **Backend Core:** **Monólito Modular** (Feature-First) em **Go** (Chi Router + net/http). Cada domínio (Users, Movies, Bookings, Social) vive em seu próprio pacote com handlers, models e stores isolados. Toda a API é **REST**.
 - **Banco de Dados:** PostgreSQL com **GORM**. Transações com Locking Pessimista para compras de ingressos. Índices compostos nas queries mais frequentes.
 - **Cache & Lock de Assentos:** **Redis** para lock temporário de poltronas (TTL) durante o fluxo de compra, evitando double-booking.
 - **Resiliência:** **Circuit Breaker** (`sony/gobreaker`) na integração com a API TMDB — se a API externa cair, o app serve dados do cache local.

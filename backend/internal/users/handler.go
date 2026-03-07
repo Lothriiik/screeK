@@ -1,10 +1,11 @@
 package users
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -15,62 +16,73 @@ func NewHandler(store *Store) *Handler {
 	return &Handler{store: store}
 }
 
-// RegisterRoutes registra as rotas deste módulo
-func (h *Handler) RegisterRoutes(e *echo.Echo) {
-	e.POST("/users", h.CreateUser)
-	e.GET("/users/:id", h.GetByID)
-	e.PUT("/users/:id", h.UpdateUser)
-	e.DELETE("/users/:id", h.DeleteUser)
+func (h *Handler) RegisterRoutes(r chi.Router) {
+	r.Post("/users", h.CreateUser)
+	r.Get("/users/{id}", h.GetByID)
+	r.Put("/users/{id}", h.UpdateUser)
+	r.Delete("/users/{id}", h.DeleteUser)
 }
 
-func (h *Handler) CreateUser(c echo.Context) error {
-	user := User{}
-	if err := c.Bind(&user); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	var user User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		return
 	}
 	if err := h.store.CreateUser(&user); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao criar usuário"})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao criar usuário"})
+		return
 	}
-	return c.JSON(http.StatusCreated, user)
+	writeJSON(w, http.StatusCreated, user)
 }
 
-func (h *Handler) GetByID(c echo.Context) error {
-	idParam := c.Param("id")
-	id, err := strconv.Atoi(idParam)
+func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
+		return
 	}
 	user, err := h.store.GetUserByID(id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]string{"error": "Usuário não encontrado"})
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Usuário não encontrado"})
+		return
 	}
-	return c.JSON(http.StatusOK, user)
+	writeJSON(w, http.StatusOK, user)
 }
 
-func (h *Handler) UpdateUser(c echo.Context) error {
-	idParam := c.Param("id")
-	id, err := strconv.Atoi(idParam)
+func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
+		return
 	}
 	user := User{ID: id}
-	if err := c.Bind(&user); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		return
 	}
 	if err := h.store.UpdateUser(&user); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao atualizar usuário"})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao atualizar usuário"})
+		return
 	}
-	return c.JSON(http.StatusOK, map[string]string{"message": "Usuário atualizado com sucesso"})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Usuário atualizado com sucesso"})
 }
 
-func (h *Handler) DeleteUser(c echo.Context) error {
-	idParam := c.Param("id")
-	id, err := strconv.Atoi(idParam)
+func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
+		return
 	}
 	if err := h.store.DeleteUser(id); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao deletar usuário"})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao deletar usuário"})
+		return
 	}
-	return c.JSON(http.StatusOK, map[string]string{"message": "Usuário deletado com sucesso"})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Usuário deletado com sucesso"})
+}
+
+func writeJSON(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
 }
