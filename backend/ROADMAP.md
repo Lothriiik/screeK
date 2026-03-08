@@ -47,6 +47,7 @@ Reviews, Listas, Feed e Follow.
 Conectar com serviços reais para fluxos críticos.
 
 - **Strategy Pattern** no pagamento: interface `PaymentStrategy` com implementações pra Cartão (Stripe) e PIX
+- **Idempotency-Key**: Garantir processamento único de pagamentos evitando cobranças duplicadas
 - **Stripe (Sandbox)**: Substituir mock por PaymentIntent + Webhooks
 - **Resend (Email)**: Emails transacionais (confirmação de compra, redefinição de senha, alertas)
 
@@ -66,6 +67,7 @@ Engajamento e automação.
 Profissionalizar o ambiente de desenvolvimento e deploy.
 
 - **Docker**: Dockerfile multi-stage pro backend Go + `docker-compose.yml` subindo Postgres + Redis + API
+- **Migrations SQL**: Configurar ferramenta externa (`golang-migrate`) no lugar do AutoMigrate para versionamento profissional do schema
 - **CI/CD com GitHub Actions**: Pipeline automático de `go vet` + `go test` + `go build` a cada push
 - **Swagger / OpenAPI**: Documentação interativa auto-gerada das rotas REST com `swaggo/swag`
 
@@ -74,6 +76,7 @@ Profissionalizar o ambiente de desenvolvimento e deploy.
 ## Fase 7 · Hardening & Observabilidade
 Blindar a API e ter visibilidade do que acontece em produção.
 
+- **Graceful Shutdown**: Capturar sinais do sistema (`SIGTERM`) e fechar conexões DB/Redis de forma limpa, processando requests em andamento
 - **Rate Limiting**: Middleware de limite de requisições por IP (proteção contra abuso/DDoS)
 - **Logging Estruturado**: Trocar `log.Println` por `slog` (stdlib Go 1.21+) com logs em JSON e levels (INFO/WARN/ERROR)
 - **Circuit Breaker**: Padrão de resiliência na comunicação com a TMDB (`sony/gobreaker`). Se a API externa cair, o app serve dados do cache local em vez de travar.

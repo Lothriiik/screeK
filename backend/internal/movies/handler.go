@@ -10,11 +10,11 @@ import (
 )
 
 type Handler struct {
-	tmdbClient *TMDBClient
-	store      *Store
+	tmdbClient TMDBService
+	store      MoviesRepository
 }
 
-func NewHandler(tmdb *TMDBClient, s *Store) *Handler {
+func NewHandler(tmdb TMDBService, s MoviesRepository) *Handler {
 	return &Handler{
 		tmdbClient: tmdb,
 		store:      s,

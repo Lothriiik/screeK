@@ -27,6 +27,13 @@ func (s *Store) GetUserByID(id int) (*User, error) {
 	return &user, result.Error
 }
 
+func (s *Store) SearchUsers(query string) ([]User, error) {
+	var users []User
+	pattern := "%" + query + "%"
+	result := s.db.Where("username ILIKE ? OR name ILIKE ?", pattern, pattern).Find(&users)
+	return users, result.Error
+}
+
 func (s *Store) UpdateUser(user *User) error {
 	result := s.db.Save(user)
 	return result.Error
