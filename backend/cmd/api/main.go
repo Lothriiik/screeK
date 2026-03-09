@@ -2,30 +2,12 @@ package main
 
 import (
 	"log"
-	"os"
 
-	"github.com/joho/godotenv"
+	"github.com/StartLivin/cine-pass/backend/internal/platform/config"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Arquivo .env não encontrado, usando variáveis de ambiente do sistema.")
-	}
-
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		dsn = "host=localhost user=postgres password=postgres dbname=cinepass port=5432 sslmode=disable"
-	}
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	cfg := Config{
-		DSN:  dsn,
-		Port: port,
-	}
+	cfg := config.LoadConfig()
 
 	app := NewApplication(cfg)
 

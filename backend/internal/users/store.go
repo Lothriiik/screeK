@@ -3,6 +3,7 @@ package users
 import (
 	"errors"
 	"gorm.io/gorm"
+	"github.com/StartLivin/cine-pass/backend/internal/movies"
 )
 
 type Store struct {
@@ -20,7 +21,7 @@ func (s *Store) CreateUser(user *User) error {
 
 func (s *Store) GetUserByID(id int) (*User, error) {
 	var user User
-	result := s.db.First(&user, id)
+	result := s.db.Preload("FavoriteMovies").First(&user, id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, errors.New("user not found")
 	}
@@ -43,3 +44,29 @@ func (s *Store) DeleteUser(id int) error {
 	result := s.db.Delete(&User{}, id)
 	return result.Error
 }
+
+func (s *Store) AddFavorite(userID int, tmdb_id int) error {
+	var movie movies.Movie
+	if err := s.db.Where("tmdb_id = ?", tmdb_id).First(&movie).Error; err != nil {
+		return errors.New("filme não encontrado na base local")
+	}
+	result := s.db.Model(&User{ID: userID}).
+	Association("FavoriteMovies").
+	Append(&movie)
+
+	return result
+}
+
+func (s *Store) RemoveFavorite(userID int, tmdb_id int) error {
+	var movie movies.Movie
+	if err := s.db.Where("tmdb_id = ?", tmdb_id).First(&movie).Error; err != nil {
+		return errors.New("filme não encontrado na base local")
+	}
+
+	result := s.db.Model(&User{ID: userID}).
+		Association("FavoriteMovies").
+		Delete(&movie)
+
+	return result
+}
+

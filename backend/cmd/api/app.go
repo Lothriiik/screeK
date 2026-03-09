@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"github.com/StartLivin/cine-pass/backend/internal/bookings"
 	"github.com/StartLivin/cine-pass/backend/internal/movies"
+	"github.com/StartLivin/cine-pass/backend/internal/platform/config"
 	"github.com/StartLivin/cine-pass/backend/internal/platform/database"
 	"github.com/StartLivin/cine-pass/backend/internal/social"
 	"github.com/StartLivin/cine-pass/backend/internal/users"
@@ -14,18 +15,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type Config struct {
-	DSN  string
-	Port string
-}
-
 type Application struct {
-	config Config
+	config config.Config
 	db     *gorm.DB
 	router *chi.Mux
 }
 
-func NewApplication(cfg Config) *Application {
+func NewApplication(cfg config.Config) *Application {
 	return &Application{
 		config: cfg,
 		router: chi.NewRouter(),
@@ -47,14 +43,14 @@ func (app *Application) mount() {
 	userHandler := users.NewHandler(userStore)
 	userHandler.RegisterRoutes(app.router)
 
-	tmdbClient := movies.NewTMDBClient()
+	tmdbClient := movies.NewTMDBClient(app.config.TMDBToken)
 	movieStore := movies.NewStore(app.db)
 	movieHandler := movies.NewHandler(tmdbClient, movieStore)
 	movieHandler.RegisterRoutes(app.router)
 }
 
 func (app *Application) Run() error {
-	db, err := database.InitDB(app.config.DSN)
+	db, err := database.InitDB(app.config.DatabaseURL)
 	if err != nil {
 		return err
 	}

@@ -6,4 +6,7 @@ type UserRepository interface {
 	SearchUsers(query string) ([]User, error)
 	UpdateUser(user *User) error
 	DeleteUser(id int) error
+	AddFavorite(userID int, movieID int) error
+	RemoveFavorite(userID int, tmdb_id int) error
+
 }

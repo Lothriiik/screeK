@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 )
 
 type TMDBClient struct {
@@ -13,9 +12,9 @@ type TMDBClient struct {
 	httpClient *http.Client
 }
 
-func NewTMDBClient() *TMDBClient {
+func NewTMDBClient(token string) *TMDBClient {
 	return &TMDBClient{
-		token:      os.Getenv("TMDB_TOKEN"),
+		token:      token,
 		httpClient: &http.Client{},
 	}
 }
