@@ -70,3 +70,18 @@ func (s *Store) RemoveFavorite(userID int, tmdb_id int) error {
 	return result
 }
 
+func (s *Store) Login(user *User) error {
+	result := s.db.Where("username = ?", user.Username).First(&user)
+	return result.Error
+}
+
+func (s *Store) GetUserByUsername(username string) (*User, error) {
+	var user User
+	result := s.db.Where("username = ?", username).First(&user)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, errors.New("user not found")
+	}
+	return &user, result.Error
+}
+
+

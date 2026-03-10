@@ -10,7 +10,7 @@ type Config struct {
 	DatabaseURL string
 	Port string
 	TMDBToken string
-	//JWTSecret string
+	JWTSecret string
 }
 
 func LoadConfig() Config {
@@ -25,10 +25,10 @@ func LoadConfig() Config {
 	if TMDBToken == "" {
 		log.Fatal("TMDB_TOKEN não está configurada no .env")
 	}
-	//JWTSecret := os.Getenv("JWT_SECRET")
-	//if JWTSecret == "" {
-	//	log.Fatal("JWT_SECRET não está configurada no .env")
-	//}
+	JWTSecret := os.Getenv("JWT_SECRET")
+	if JWTSecret == "" {
+		log.Fatal("JWT_SECRET não está configurada no .env")
+	}
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

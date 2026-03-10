@@ -8,5 +8,5 @@ type UserRepository interface {
 	DeleteUser(id int) error
 	AddFavorite(userID int, movieID int) error
 	RemoveFavorite(userID int, tmdb_id int) error
-
+	GetUserByUsername(username string) (*User, error)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"github.com/StartLivin/cine-pass/backend/internal/auth"
 	"github.com/StartLivin/cine-pass/backend/internal/bookings"
 	"github.com/StartLivin/cine-pass/backend/internal/movies"
 	"github.com/StartLivin/cine-pass/backend/internal/platform/config"
@@ -42,6 +43,10 @@ func (app *Application) mount() {
 	userStore := users.NewStore(app.db)
 	userHandler := users.NewHandler(userStore)
 	userHandler.RegisterRoutes(app.router)
+
+	authService := auth.NewJWTService(&app.config)
+	authHandler := auth.NewHandler(userStore, authService)
+	authHandler.RegisterRoutes(app.router)
 
 	tmdbClient := movies.NewTMDBClient(app.config.TMDBToken)
 	movieStore := movies.NewStore(app.db)
