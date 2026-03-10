@@ -32,7 +32,7 @@ Este documento mapeia o ciclo de vida do usuário no aplicativo, desde a criaç�
 **Ação do Usuário:** Atualiza dados sensíveis ou informações do Perfil Público.
 > **👉 Rota do Backend:**
 > `PUT /users/me` (Rota Protegida)
-> Payload: `{ "bio": "Amo a Marvel", "pronouns": "ela/dela", "favorite_movies": [123, 456, 789], "default_city": "SP" }`
+> Payload: `{ "bio": "Amo a Marvel", "pronouns": "ela/dela", "top_3_movies": [123, 456, 789], "default_city": "SP" }`
 
 ## 6. Logout
 **Ação do Usuário:** Sai do App no celular atual.

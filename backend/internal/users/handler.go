@@ -28,16 +28,37 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 }
 
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	var user User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	var dto CreateUserDTO
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
 		return
 	}
-	if err := h.store.CreateUser(&user); err != nil {
+
+	hashedPassword, err := HashPassword(dto.Password)
+	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao criar usuário"})
 		return
 	}
-	writeJSON(w, http.StatusCreated, user)
+
+	userModel := &User{
+		Name: dto.Name,
+		Username: dto.Username,
+		Email: dto.Email,
+		Password: hashedPassword,
+	}
+
+	if err := h.store.CreateUser(userModel); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao criar usuário"})
+		return
+	}
+
+	responseDTO := UserDTO{
+		ID:       userModel.ID,
+		Name:     userModel.Name,
+		Username: userModel.Username,
+	}
+
+	writeJSON(w, http.StatusCreated, responseDTO)
 }
 
 func (h *Handler) SearchUsers(w http.ResponseWriter, r *http.Request) {
