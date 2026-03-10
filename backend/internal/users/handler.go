@@ -17,14 +17,20 @@ func NewHandler(store UserRepository) *Handler {
 	return &Handler{store: store}
 }
 
-func (h *Handler) RegisterRoutes(r chi.Router) {
-	r.Post("/users", h.CreateUser)
+func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler) http.Handler) {
+	r.Post("/users/register", h.CreateUser)
 	r.Get("/users/search", h.SearchUsers)
 	r.Get("/users/{id}", h.GetByID)
-	r.Put("/users/{id}", h.UpdateUser)
-	r.Delete("/users/{id}", h.DeleteUser)
-	r.Post("/users/{userID}/favorites/{tmdb_id}", h.AddFavorite)
-	r.Delete("/users/{userID}/favorites/{tmdb_id}", h.RemoveFavorite)
+
+	r.Group(func(r chi.Router) {
+		r.Use(authMiddleware)
+
+		r.Put("/users/me", h.UpdateUser)
+		r.Delete("/users/me", h.DeleteUser)
+		r.Get("/users/me", h.GetMe)
+		r.Post("/users/me/favorites/{tmdb_id}", h.AddFavorite)
+		r.Delete("/users/me/favorites/{tmdb_id}", h.RemoveFavorite)
+	})
 }
 
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -41,9 +47,9 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userModel := &User{
-		Name: dto.Name,
+		Name:     dto.Name,
 		Username: dto.Username,
-		Email: dto.Email,
+		Email:    dto.Email,
 		Password: hashedPassword,
 	}
 
@@ -109,14 +115,52 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userDTO := UserDetailsDTO{
-		ID:       user.ID,
-		Username: user.Username,
-		Name:     user.Name,
-		Email:    user.Email,
-		Bio:      user.Bio,
-		PhotoURL: user.PhotoURL,
-		Pronouns: user.Pronouns,
-		DefaultCity: user.DefaultCity,
+		ID:             user.ID,
+		Username:       user.Username,
+		Name:           user.Name,
+		Email:          user.Email,
+		Bio:            user.Bio,
+		PhotoURL:       user.PhotoURL,
+		Pronouns:       user.Pronouns,
+		DefaultCity:    user.DefaultCity,
+		FavoriteMovies: favoriteMovies,
+	}
+
+	writeJSON(w, http.StatusOK, userDTO)
+}
+
+func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
+	userIDAny := r.Context().Value("userID")
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := h.store.GetUserByID(userID)
+	if err != nil {
+		http.Error(w, "Erro ao buscar dados", http.StatusInternalServerError)
+		return
+	}
+
+	var favoriteMovies []movies.MovieDTO
+	for _, movie := range user.FavoriteMovies {
+		favoriteMovies = append(favoriteMovies, movies.MovieDTO{
+			ID:        movie.ID,
+			Title:     movie.Title,
+			PosterURL: movie.PosterURL,
+		})
+	}
+
+	userDTO := UserDetailsDTO{
+		ID:             user.ID,
+		Username:       user.Username,
+		Name:           user.Name,
+		Email:          user.Email,
+		Bio:            user.Bio,
+		PhotoURL:       user.PhotoURL,
+		Pronouns:       user.Pronouns,
+		DefaultCity:    user.DefaultCity,
 		FavoriteMovies: favoriteMovies,
 	}
 
@@ -124,12 +168,15 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
+	userIDAny := r.Context().Value("userID")
+
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
 		return
 	}
-	user := User{ID: id}
+
+	user := User{ID: userID}
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
 		return
@@ -142,12 +189,19 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
+	userIDAny := r.Context().Value("userID")
+	if userIDAny == nil {
+		http.Error(w, "Usuário não autenticado", http.StatusUnauthorized)
 		return
 	}
-	if err := h.store.DeleteUser(id); err != nil {
+
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
+		return
+	}
+
+	if err := h.store.DeleteUser(userID); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao deletar usuário"})
 		return
 	}
@@ -155,39 +209,45 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) AddFavorite(w http.ResponseWriter, r *http.Request) {
-	userIDStr := chi.URLParam(r, "userID")
-    tmdbIDStr := chi.URLParam(r, "tmdb_id")
-
-	userID, err1 := strconv.Atoi(userIDStr)
-	tmdbID, err2 := strconv.Atoi(tmdbIDStr)
-
-    if err1 != nil || err2 != nil {
-        http.Error(w, "IDs inválidos", http.StatusBadRequest)
-        return
-    }
-
-    err := h.store.AddFavorite(userID, tmdbID)
-    if err != nil {
-        http.Error(w, "Erro ao favoritar", http.StatusInternalServerError)
-        return
-    }
-
-    w.WriteHeader(http.StatusNoContent)
-}
-
-func (h *Handler) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
-	userIDStr := chi.URLParam(r, "userID")
-	tmdbIDStr := chi.URLParam(r, "tmdb_id")
-
-	userID, err1 := strconv.Atoi(userIDStr)
-	tmdbID, err2 := strconv.Atoi(tmdbIDStr)
-
-	if err1 != nil || err2 != nil {
-		http.Error(w, "IDs inválidos", http.StatusBadRequest)
+	userIDAny := r.Context().Value("userID")
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
 		return
 	}
 
-	err := h.store.RemoveFavorite(userID, tmdbID)
+	tmdbIDStr := chi.URLParam(r, "tmdb_id")
+	tmdbID, err := strconv.Atoi(tmdbIDStr)
+	if err != nil {
+		http.Error(w, "ID do filme inválido", http.StatusBadRequest)
+		return
+	}
+
+	err = h.store.AddFavorite(userID, tmdbID)
+	if err != nil {
+		http.Error(w, "Erro ao favoritar", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
+	userIDAny := r.Context().Value("userID")
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
+		return
+	}
+
+	tmdbIDStr := chi.URLParam(r, "tmdb_id")
+	tmdbID, err := strconv.Atoi(tmdbIDStr)
+	if err != nil {
+		http.Error(w, "ID do filme inválido", http.StatusBadRequest)
+		return
+	}
+
+	err = h.store.RemoveFavorite(userID, tmdbID)
 	if err != nil {
 		http.Error(w, "Erro ao remover favorito", http.StatusInternalServerError)
 		return
@@ -195,7 +255,6 @@ func (h *Handler) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
-
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")

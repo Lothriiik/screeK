@@ -41,15 +41,16 @@ func (app *Application) mount() {
 	})
 
 	userStore := users.NewStore(app.db)
-	userHandler := users.NewHandler(userStore)
-	userHandler.RegisterRoutes(app.router)
+	movieStore := movies.NewStore(app.db)
 
 	authService := auth.NewJWTService(&app.config)
+	authMiddleware := auth.AuthMiddleware(authService)
+	tmdbClient := movies.NewTMDBClient(app.config.TMDBToken)
+
 	authHandler := auth.NewHandler(userStore, authService)
 	authHandler.RegisterRoutes(app.router)
-
-	tmdbClient := movies.NewTMDBClient(app.config.TMDBToken)
-	movieStore := movies.NewStore(app.db)
+	userHandler := users.NewHandler(userStore)
+	userHandler.RegisterRoutes(app.router, authMiddleware)
 	movieHandler := movies.NewHandler(tmdbClient, movieStore)
 	movieHandler.RegisterRoutes(app.router)
 }
