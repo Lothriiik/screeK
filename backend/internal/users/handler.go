@@ -40,6 +40,11 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := dto.Validate(h.store); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
 	hashedPassword, err := HashPassword(dto.Password)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao criar usuário"})
@@ -189,6 +194,12 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	var password string
+	if err := json.NewDecoder(r.Body).Decode(&password); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		return
+	}
+
 	userIDAny := r.Context().Value("userID")
 	if userIDAny == nil {
 		http.Error(w, "Usuário não autenticado", http.StatusUnauthorized)
@@ -201,11 +212,44 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.store.DeleteUser(userID); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao deletar usuário"})
+	if err := h.store.DeleteUser(userID, password); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao deletar usuário: " + err.Error()})
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Usuário deletado com sucesso"})
+}
+
+func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	var userPassword ChangePasswordDTO
+
+	if err := json.NewDecoder(r.Body).Decode(&userPassword); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		return
+	}
+
+	userIDAny := r.Context().Value("userID")
+	if userIDAny == nil {
+		http.Error(w, "Usuário não autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
+		return
+	}
+
+	hashedPassword, err := HashPassword(userPassword.Password)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao alterar senha"})
+		return
+	}
+
+	if err := h.store.ChangePassword(userID, userPassword.OldPassword, hashedPassword); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao alterar senha"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Senha alterada com sucesso"})
 }
 
 func (h *Handler) AddFavorite(w http.ResponseWriter, r *http.Request) {

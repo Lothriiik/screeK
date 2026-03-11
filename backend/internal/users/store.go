@@ -40,7 +40,14 @@ func (s *Store) UpdateUser(user *User) error {
 	return result.Error
 }
 
-func (s *Store) DeleteUser(id int) error {
+func (s *Store) DeleteUser(id int, password string) error {
+	user, err := s.GetUserByID(id)
+	if err != nil {
+		return err
+	}
+	if VerifyPassword(password, user.Password) == false {
+		return errors.New("Senha incorreta")
+	}
 	result := s.db.Delete(&User{}, id)
 	return result.Error
 }
@@ -84,4 +91,27 @@ func (s *Store) GetUserByUsername(username string) (*User, error) {
 	return &user, result.Error
 }
 
+func (s *Store) EmailExists(email string) (bool, error) {
+	var count int64
+	err := s.db.Model(&User{}).Where("email = ?", email).Count(&count).Error
+	return count > 0, err
+}
+
+func (s *Store) UsernameExists(username string) (bool, error) {
+	var count int64
+	err := s.db.Model(&User{}).Where("username = ?", username).Count(&count).Error
+	return count > 0, err
+}
+
+func (s *Store) ChangePassword(id int, oldPassword string, newPassword string) error {
+	user, err := s.GetUserByID(id)
+	if err != nil {
+		return err
+	}
+	if VerifyPassword(oldPassword, user.Password) == false {
+		return errors.New("Senha antiga incorreta")
+	}
+	user.Password = newPassword
+	return s.UpdateUser(user)
+}
 
