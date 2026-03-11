@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
 	"github.com/StartLivin/cine-pass/backend/internal/auth"
 	"github.com/StartLivin/cine-pass/backend/internal/bookings"
 	"github.com/StartLivin/cine-pass/backend/internal/movies"
@@ -13,12 +14,14 @@ import (
 	"github.com/StartLivin/cine-pass/backend/internal/users"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type Application struct {
 	config config.Config
 	db     *gorm.DB
+	redis  *redis.Client
 	router *chi.Mux
 }
 
@@ -44,11 +47,11 @@ func (app *Application) mount() {
 	movieStore := movies.NewStore(app.db)
 
 	authService := auth.NewJWTService(&app.config)
-	authMiddleware := auth.AuthMiddleware(authService)
+	authMiddleware := auth.AuthMiddleware(authService, app.redis)
 	tmdbClient := movies.NewTMDBClient(app.config.TMDBToken)
 
-	authHandler := auth.NewHandler(userStore, authService)
-	authHandler.RegisterRoutes(app.router)
+	authHandler := auth.NewHandler(userStore, authService, app.redis)
+	authHandler.RegisterRoutes(app.router, authMiddleware)
 	userHandler := users.NewHandler(userStore)
 	userHandler.RegisterRoutes(app.router, authMiddleware)
 	movieHandler := movies.NewHandler(tmdbClient, movieStore)
@@ -61,6 +64,8 @@ func (app *Application) Run() error {
 		return err
 	}
 	app.db = db
+
+	app.redis = database.InitRedis(app.config.RedisURL)
 
 	log.Println("Rodando migrações do banco de dados (AutoMigrate)...")
 	movies.AutoMigrate(app.db)

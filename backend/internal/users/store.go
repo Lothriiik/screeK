@@ -91,6 +91,15 @@ func (s *Store) GetUserByUsername(username string) (*User, error) {
 	return &user, result.Error
 }
 
+func (s *Store) GetUserByEmail(email string) (*User, error) {
+	var user User
+	result := s.db.Where("email = ?", email).First(&user)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, errors.New("user not found")
+	}
+	return &user, result.Error
+}
+
 func (s *Store) EmailExists(email string) (bool, error) {
 	var count int64
 	err := s.db.Model(&User{}).Where("email = ?", email).Count(&count).Error

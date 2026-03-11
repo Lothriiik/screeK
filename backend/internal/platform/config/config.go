@@ -1,16 +1,18 @@
 package config
 
 import (
-	"os"
 	"log"
+	"os"
+
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
 	DatabaseURL string
-	Port string
-	TMDBToken string
-	JWTSecret string
+	Port        string
+	TMDBToken   string
+	JWTSecret   string
+	RedisURL    string
 }
 
 func LoadConfig() Config {
@@ -34,10 +36,16 @@ func LoadConfig() Config {
 		port = "8080"
 	}
 
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisURL = "localhost:6379"
+	}
+
 	return Config{
 		DatabaseURL: DatabaseURL,
-		Port: port,
-		TMDBToken: TMDBToken,
-		//JWTSecret: JWTSecret,
+		Port:        port,
+		TMDBToken:   TMDBToken,
+		JWTSecret:   JWTSecret,
+		RedisURL:    redisURL,
 	}
 }

@@ -12,4 +12,5 @@ type UserRepository interface {
 	EmailExists(email string) (bool, error)
 	UsernameExists(username string) (bool, error)
 	ChangePassword(id int, oldPassword string, newPassword string) error
+	GetUserByEmail(email string) (*User, error)
 }

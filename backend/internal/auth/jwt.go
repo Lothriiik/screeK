@@ -36,6 +36,22 @@ func (s *JWTService) GenerateToken(userID int, username string) (string, error) 
 	return token.SignedString([]byte(s.cfg.JWTSecret))
 }
 
+
+func (s *JWTService) GeneratePasswordResetToken(userID int) (string, error) {
+
+	claims := Claims{
+		UserID:   userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return token.SignedString([]byte(s.cfg.JWTSecret))
+}
+
 func (s *JWTService) ValidateToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.cfg.JWTSecret), nil

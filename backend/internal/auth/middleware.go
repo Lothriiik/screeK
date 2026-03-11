@@ -4,9 +4,11 @@ import (
 	"context"
 	"net/http"
 	"strings"
+
+	"github.com/redis/go-redis/v9"
 )
 
-func AuthMiddleware(jwtService *JWTService) func(next http.Handler) http.Handler {
+func AuthMiddleware(jwtService *JWTService, redisClient *redis.Client) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -22,6 +24,16 @@ func AuthMiddleware(jwtService *JWTService) func(next http.Handler) http.Handler
 			}
 			tokenString := tokenParts[1]
 
+			isBlacklisted, err := redisClient.Exists(r.Context(), "blacklist:"+tokenString).Result()
+			if err != nil {
+				http.Error(w, "Erro ao verificar segurança do token", http.StatusInternalServerError)
+				return
+			}
+			if isBlacklisted > 0 {
+				http.Error(w, "Token inválido ou expirado (Sessão Encerrada)", http.StatusUnauthorized)
+				return
+			}
+
 			claims, err := jwtService.ValidateToken(tokenString)
 			if err != nil {
 				http.Error(w, "Token inválido/expirado", http.StatusUnauthorized)
@@ -29,7 +41,7 @@ func AuthMiddleware(jwtService *JWTService) func(next http.Handler) http.Handler
 			}
 
 			ctx := context.WithValue(r.Context(), "userID", claims.UserID)
-			
+
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
