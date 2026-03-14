@@ -33,7 +33,7 @@ func LoadConfig() Config {
 	}
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8003"
 	}
 
 	redisURL := os.Getenv("REDIS_URL")

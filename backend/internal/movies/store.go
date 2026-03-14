@@ -2,6 +2,8 @@ package movies
 
 import (
 	"errors"
+	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -27,10 +29,18 @@ func (s *Store) SaveMovie(movie *Movie) error {
 
 func (s *Store) GetMovieByTMDBID(tmdbID int) (*Movie, error) {
 	var movie Movie
-	result := s.db.Where("tmdb_id = ?", tmdbID).First(&movie)
+	result := s.db.Preload("Genres").Preload("Credits").Preload("Credits.Person").Where("tmdb_id = ?", tmdbID).First(&movie)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, errors.New("movie not found")
 	}
+	if time.Since(movie.UpdatedAt) > 7*24*time.Hour {
+		return nil, errors.New("revalidar cache do filme")
+	}
+
+	if movie.Runtime == 0 {
+		return nil, errors.New("filme incompleto, forçando busca de detalhes")
+	}
+
 	return &movie, result.Error
 }
 
@@ -104,14 +114,25 @@ func (s *Store) SaveMovieDetails(tmdbData *TMDBMovieDetails) (*Movie, error) {
 		}
 	}
 
+	var spokenLangs []string
+	for _, lang := range tmdbData.SpokenLanguages {
+		spokenLangs = append(spokenLangs, lang.Name)
+	}
+	spokenLanguagesStr := strings.Join(spokenLangs, ", ")
+
+	parsedDate, _ := time.Parse("2006-01-02", tmdbData.ReleaseDate)
+
 	movie := Movie{
-		TMDBID:    tmdbData.ID,
-		Title:     tmdbData.Title,
-		Overview:  tmdbData.Overview,
-		PosterURL: tmdbData.PosterPath,
-		Runtime:   tmdbData.Runtime,
-		Genres:    generosDoBanco,
-		Credits:   creditosDoBanco,
+		TMDBID:           tmdbData.ID,
+		Title:            tmdbData.Title,
+		Overview:         tmdbData.Overview,
+		PosterURL:        tmdbData.PosterPath,
+		Runtime:          tmdbData.Runtime,
+		OriginalLanguage: tmdbData.OriginalLanguage,
+		SpokenLanguages:  spokenLanguagesStr,
+		ReleaseDate:      parsedDate,
+		Genres:           generosDoBanco,
+		Credits:          creditosDoBanco,
 	}
 
 	var existingMovie Movie
@@ -123,4 +144,22 @@ func (s *Store) SaveMovieDetails(tmdbData *TMDBMovieDetails) (*Movie, error) {
 
 	err := s.db.Save(&movie).Error
 	return &movie, err
+}
+
+func (s *Store) GetPersonByTMDBID(tmdbID int) (*Person, error) {
+	var person Person
+	result := s.db.Where("tmdb_id = ?", tmdbID).First(&person)
+	if result.Error == nil {
+		return &person, nil
+	}
+	return nil, result.Error
+}
+
+func (s *Store) SavePersonDetails(tmdbData *TMDBPersonDetails) (*Person, error) {
+	var person Person
+	result := s.db.Where(Person{TMDBID: tmdbData.ID}).Assign(Person{
+		Name:       tmdbData.Name,
+		ProfileURL: tmdbData.ProfilePath,
+	}).FirstOrCreate(&person)
+	return &person, result.Error
 }
