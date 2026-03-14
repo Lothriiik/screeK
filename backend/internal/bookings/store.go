@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/StartLivin/cine-pass/backend/internal/movies"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +23,31 @@ func (s *Store) GetCinemaByID(id int) (*Cinema, error) {
 		return nil, err
 	}
 	return &cinema, nil
+}
+
+func (s *Store) GetMoviesPlaying(city string, date string) ([]movies.Movie, error) {
+	var moviesList []movies.Movie
+
+	parsedDate, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return nil, err
+	}
+	endOfDay := parsedDate.Add(24 * time.Hour)
+
+	err = s.db.Table("movies").
+		Joins("JOIN sessions ON sessions.movie_id = movies.id").
+		Joins("JOIN rooms ON sessions.room_id = rooms.id").
+		Joins("JOIN cinemas ON rooms.cinema_id = cinemas.id").
+		Where("cinemas.city ILIKE ?", city).
+		Where("sessions.start_time >= ? AND sessions.start_time < ?", parsedDate, endOfDay).
+		Preload("Genres").
+		Distinct("movies.*").
+		Find(&moviesList).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return moviesList, nil
 }
 
 func (s *Store) GetSessionsByMovie(movieID int, city string, date string) ([]Session, error) {
@@ -97,7 +123,7 @@ func (s *Store) ReserveSeats(userID, sessionID int, seatIDs []int) (*Transaction
 		transaction = Transaction{
 			UserID:        userID,
 			TotalAmount:   totalAmount,
-			Status:        "PENDING",
+			Status:        TicketStatusPending,
 			PaymentMethod: "NONE",
 		}
 		if err := tx.Create(&transaction).Error; err != nil {
@@ -105,11 +131,12 @@ func (s *Store) ReserveSeats(userID, sessionID int, seatIDs []int) (*Transaction
 		}
 
 		for _, seatID := range seatIDs {
+			sID := seatID
 			ticket := Ticket{
 				TransactionID: transaction.ID,
 				SessionID:     sessionID,
-				SeatID:        seatID,
-				Status:        "PENDING",
+				SeatID:        &sID,
+				Status:        TicketStatusPending,
 				QRCode:        "",
 			}
 			if err := tx.Create(&ticket).Error; err != nil {
@@ -131,11 +158,11 @@ func (s *Store) ReserveSeats(userID, sessionID int, seatIDs []int) (*Transaction
 func (s *Store) PayTransaction(transactionID int, method string) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		var transaction Transaction
-		if err := tx.Where("id = ? AND status = 'PENDING'", transactionID).First(&transaction).Error; err != nil {
+		if err := tx.Where("id = ? AND status = ?", transactionID, TicketStatusPending).First(&transaction).Error; err != nil {
 			return errors.New("transação pendente não encontrada")
 		}
 
-		transaction.Status = "PAID"
+		transaction.Status = TicketStatusPaid
 		transaction.PaymentMethod = method
 		if err := tx.Save(&transaction).Error; err != nil {
 			return err
@@ -149,7 +176,7 @@ func (s *Store) PayTransaction(transactionID int, method string) error {
 		for _, ticket := range tickets {
 			qrCode := fmt.Sprintf("CINEPASS-TX%d-TK%d-%d", transactionID, ticket.ID, time.Now().UnixNano())
 
-			ticket.Status = "PAID"
+			ticket.Status = TicketStatusPaid
 			ticket.QRCode = qrCode
 
 			if err := tx.Save(&ticket).Error; err != nil {
@@ -164,11 +191,12 @@ func (s *Store) PayTransaction(transactionID int, method string) error {
 func (s *Store) CancelTicket(ticketID int) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		var ticket Ticket
-		if err := tx.Where("id = ? AND status != 'CANCELLED'", ticketID).First(&ticket).Error; err != nil {
+		if err := tx.Where("id = ? AND status != ?", ticketID, TicketStatusCancelled).First(&ticket).Error; err != nil {
 			return errors.New("transação pendente não encontrada")
 		}
 
-		ticket.Status = "CANCELLED"
+		ticket.Status = TicketStatusCancelled
 		return tx.Save(&ticket).Error
 	})
 }
+

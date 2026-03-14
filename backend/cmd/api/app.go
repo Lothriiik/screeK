@@ -56,6 +56,10 @@ func (app *Application) mount() {
 	userHandler.RegisterRoutes(app.router, authMiddleware)
 	movieHandler := movies.NewHandler(tmdbClient, movieStore)
 	movieHandler.RegisterRoutes(app.router)
+
+	bookingStore := bookings.NewStore(app.db)
+	bookingHandler := bookings.NewHandler(bookingStore)
+	bookingHandler.RegisterRoutes(app.router)
 }
 
 func (app *Application) Run() error {

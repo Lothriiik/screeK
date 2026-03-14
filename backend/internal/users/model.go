@@ -6,6 +6,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type Role string
+
+const (
+	RoleUser    Role = "USER"
+	RoleManager Role = "MANAGER"
+	RoleAdmin   Role = "ADMIN"
+)
+
 type User struct {
 	ID             int            `json:"id" gorm:"primaryKey;autoIncrement"`
 	Username       string         `json:"username" gorm:"not null;uniqueIndex"`
@@ -15,6 +23,7 @@ type User struct {
 	Bio            string         `json:"bio"`
 	PhotoURL       string         `json:"photo_url"`
 	Pronouns       string         `json:"pronouns"`
+	Role           Role           `json:"role" gorm:"type:varchar(20);default:'USER'"`
 	DefaultCity    string         `json:"default_city"`
 	FavoriteMovies []movies.Movie `json:"favorite_movies" gorm:"many2many:user_favorite_movies;"`
 	IsActive       bool           `json:"is_active" gorm:"not null;default:true"`
