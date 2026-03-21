@@ -46,19 +46,23 @@ func (app *Application) mount() {
 	userStore := users.NewStore(app.db)
 	movieStore := movies.NewStore(app.db)
 
-	authService := auth.NewJWTService(&app.config)
-	authMiddleware := auth.AuthMiddleware(authService, app.redis)
+	jwtService := auth.NewJWTService(&app.config)
+	authMiddleware := auth.AuthMiddleware(jwtService, app.redis)
 	tmdbClient := movies.NewTMDBClient(app.config.TMDBToken)
 
-	authHandler := auth.NewHandler(userStore, authService, app.redis)
+	authSvc := auth.NewAuthService(userStore, jwtService, app.redis)
+	authHandler := auth.NewHandler(authSvc)
 	authHandler.RegisterRoutes(app.router, authMiddleware)
-	userHandler := users.NewHandler(userStore)
+	userService := users.NewService(userStore, movieStore)
+	userHandler := users.NewHandler(userService)
 	userHandler.RegisterRoutes(app.router, authMiddleware)
-	movieHandler := movies.NewHandler(tmdbClient, movieStore)
+	movieService := movies.NewService(tmdbClient, movieStore)
+	movieHandler := movies.NewHandler(movieService)
 	movieHandler.RegisterRoutes(app.router)
 
 	bookingStore := bookings.NewStore(app.db)
-	bookingHandler := bookings.NewHandler(bookingStore)
+	bookingService := bookings.NewService(bookingStore)
+	bookingHandler := bookings.NewHandler(bookingService)
 	bookingHandler.RegisterRoutes(app.router)
 }
 

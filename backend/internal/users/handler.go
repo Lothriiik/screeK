@@ -10,11 +10,11 @@ import (
 )
 
 type Handler struct {
-	store UserRepository
+	svc *UserService
 }
 
-func NewHandler(store UserRepository) *Handler {
-	return &Handler{store: store}
+func NewHandler(svc *UserService) *Handler {
+	return &Handler{svc: svc}
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler) http.Handler) {
@@ -40,14 +40,8 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := dto.Validate(h.store); err != nil {
+	if err := dto.Validate(h.svc); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
-		return
-	}
-
-	hashedPassword, err := HashPassword(dto.Password)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao criar usuário"})
 		return
 	}
 
@@ -55,10 +49,10 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		Name:     dto.Name,
 		Username: dto.Username,
 		Email:    dto.Email,
-		Password: hashedPassword,
+		Password: dto.Password,
 	}
 
-	if err := h.store.CreateUser(userModel); err != nil {
+	if err := h.svc.CreateUser(userModel); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao criar usuário"})
 		return
 	}
@@ -79,7 +73,7 @@ func (h *Handler) SearchUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := h.store.SearchUsers(q)
+	users, err := h.svc.SearchUsers(q)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar usuários"})
 		return
@@ -104,7 +98,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
 		return
 	}
-	user, err := h.store.GetUserByID(id)
+	user, err := h.svc.GetUserByID(id)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Usuário não encontrado"})
 		return
@@ -142,7 +136,7 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.store.GetUserByID(userID)
+	user, err := h.svc.GetUserByID(userID)
 	if err != nil {
 		http.Error(w, "Erro ao buscar dados", http.StatusInternalServerError)
 		return
@@ -186,7 +180,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
 		return
 	}
-	if err := h.store.UpdateUser(&user); err != nil {
+	if err := h.svc.UpdateUser(&user); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao atualizar usuário"})
 		return
 	}
@@ -212,7 +206,7 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.store.DeleteUser(userID, password); err != nil {
+	if err := h.svc.DeleteUser(userID, password); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao deletar usuário: " + err.Error()})
 		return
 	}
@@ -239,13 +233,7 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPassword, err := HashPassword(userPassword.Password)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao alterar senha"})
-		return
-	}
-
-	if err := h.store.ChangePassword(userID, userPassword.OldPassword, hashedPassword); err != nil {
+	if err := h.svc.ChangePassword(userID, userPassword.OldPassword, userPassword.Password); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao alterar senha"})
 		return
 	}
@@ -267,7 +255,7 @@ func (h *Handler) AddFavorite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.store.AddFavorite(userID, tmdbID)
+	err = h.svc.AddFavorite(userID, tmdbID)
 	if err != nil {
 		http.Error(w, "Erro ao favoritar", http.StatusInternalServerError)
 		return
@@ -291,7 +279,7 @@ func (h *Handler) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.store.RemoveFavorite(userID, tmdbID)
+	err = h.svc.RemoveFavorite(userID, tmdbID)
 	if err != nil {
 		http.Error(w, "Erro ao remover favorito", http.StatusInternalServerError)
 		return

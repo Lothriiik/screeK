@@ -3,8 +3,9 @@ package users
 import (
 	"errors"
 	"gorm.io/gorm"
-	"github.com/StartLivin/cine-pass/backend/internal/movies"
 )
+
+var _ UserRepository = (*Store)(nil)
 
 type Store struct {
 	db *gorm.DB
@@ -23,7 +24,7 @@ func (s *Store) GetUserByID(id int) (*User, error) {
 	var user User
 	result := s.db.Preload("FavoriteMovies").First(&user, id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, errors.New("user not found")
+		return nil, ErrUserNotFound
 	}
 	return &user, result.Error
 }
@@ -40,41 +41,19 @@ func (s *Store) UpdateUser(user *User) error {
 	return result.Error
 }
 
-func (s *Store) DeleteUser(id int, password string) error {
-	user, err := s.GetUserByID(id)
-	if err != nil {
-		return err
-	}
-	if VerifyPassword(password, user.Password) == false {
-		return errors.New("Senha incorreta")
-	}
+func (s *Store) DeleteUser(id int) error {
 	result := s.db.Delete(&User{}, id)
 	return result.Error
 }
 
-func (s *Store) AddFavorite(userID int, tmdb_id int) error {
-	var movie movies.Movie
-	if err := s.db.Where("tmdb_id = ?", tmdb_id).First(&movie).Error; err != nil {
-		return errors.New("filme não encontrado na base local")
-	}
-	result := s.db.Model(&User{ID: userID}).
-	Association("FavoriteMovies").
-	Append(&movie)
-
-	return result
+func (s *Store) AddFavorite(userID int, movieID int) error {
+	result := s.db.Exec("INSERT INTO user_favorite_movies (user_id, movie_id) VALUES (?, ?) ON CONFLICT DO NOTHING", userID, movieID)
+	return result.Error
 }
 
-func (s *Store) RemoveFavorite(userID int, tmdb_id int) error {
-	var movie movies.Movie
-	if err := s.db.Where("tmdb_id = ?", tmdb_id).First(&movie).Error; err != nil {
-		return errors.New("filme não encontrado na base local")
-	}
-
-	result := s.db.Model(&User{ID: userID}).
-		Association("FavoriteMovies").
-		Delete(&movie)
-
-	return result
+func (s *Store) RemoveFavorite(userID int, movieID int) error {
+	result := s.db.Exec("DELETE FROM user_favorite_movies WHERE user_id = ? AND movie_id = ?", userID, movieID)
+	return result.Error
 }
 
 func (s *Store) Login(user *User) error {
@@ -86,7 +65,7 @@ func (s *Store) GetUserByUsername(username string) (*User, error) {
 	var user User
 	result := s.db.Where("username = ?", username).First(&user)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, errors.New("user not found")
+		return nil, ErrUserNotFound
 	}
 	return &user, result.Error
 }
@@ -95,7 +74,7 @@ func (s *Store) GetUserByEmail(email string) (*User, error) {
 	var user User
 	result := s.db.Where("email = ?", email).First(&user)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, errors.New("user not found")
+		return nil, ErrUserNotFound
 	}
 	return &user, result.Error
 }
@@ -112,15 +91,4 @@ func (s *Store) UsernameExists(username string) (bool, error) {
 	return count > 0, err
 }
 
-func (s *Store) ChangePassword(id int, oldPassword string, newPassword string) error {
-	user, err := s.GetUserByID(id)
-	if err != nil {
-		return err
-	}
-	if VerifyPassword(oldPassword, user.Password) == false {
-		return errors.New("Senha antiga incorreta")
-	}
-	user.Password = newPassword
-	return s.UpdateUser(user)
-}
 

@@ -41,17 +41,17 @@ type ChangePasswordDTO struct {
 	PasswordConfirmation string `json:"password_confirmation" validate:"eqfield=Password"`
 }
 
-func (dto *CreateUserDTO) Validate(store UserRepository) error {
+func (dto *CreateUserDTO) Validate(svc *UserService) error {
 	if err := validate.Struct(dto); err != nil {
 		return errors.New("Erro de validação: verifique os campos fornecidos")
 	}
 
-	emailExists, _ := store.EmailExists(dto.Email)
+	emailExists, _ := svc.EmailExists(dto.Email)
 	if emailExists {
 		return errors.New("Este e-mail já está em uso")
 	}
 
-	userExists, _ := store.UsernameExists(dto.Username)
+	userExists, _ := svc.UsernameExists(dto.Username)
 	if userExists {
 		return errors.New("Este nome de usuário já está em uso")
 	}

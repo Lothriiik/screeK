@@ -4,20 +4,17 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
-	tmdbClient TMDBService
-	store      MoviesRepository
+	svc *MovieService
 }
 
-func NewHandler(tmdb TMDBService, s MoviesRepository) *Handler {
+func NewHandler(svc *MovieService) *Handler {
 	return &Handler{
-		tmdbClient: tmdb,
-		store:      s,
+		svc: svc,
 	}
 }
 
@@ -38,28 +35,10 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmdbMovies, err := h.tmdbClient.SearchMovies(query)
+	localMovies, err := h.svc.SearchMovies(query)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
-	}
-
-	var localMovies []Movie
-
-	for _, tm := range tmdbMovies {
-		parsedDate, _ := time.Parse("2006-01-02", tm.ReleaseDate)
-
-		movie := Movie{
-			TMDBID:      tm.ID,
-			Title:       tm.Title,
-			Overview:    tm.Overview,
-			PosterURL:   "https://image.tmdb.org/t/p/w500" + tm.PosterPath,
-			ReleaseDate: parsedDate,
-		}
-
-		_ = h.store.SaveMovie(&movie)
-
-		localMovies = append(localMovies, movie)
 	}
 
 	writeJSON(w, http.StatusOK, localMovies)
@@ -68,47 +47,23 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
 	tmdbID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 
-	localMovie, err := h.store.GetMovieByTMDBID(tmdbID)
-	if err == nil && localMovie != nil {
-		writeJSON(w, http.StatusOK, localMovie)
-		return
-	}
-
-	tmdbDetails, err := h.tmdbClient.GetMovieDetails(tmdbID)
-	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Filme não encontrado no TMDB"})
-		return
-	}
-
-	savedMovie, err := h.store.SaveMovieDetails(tmdbDetails)
+	movie, err := h.svc.GetMovieDetails(tmdbID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao compilar cache do filme: " + err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, savedMovie)
+	writeJSON(w, http.StatusOK, movie)
 }
 
 func (h *Handler) GetPersonDetails(w http.ResponseWriter, r *http.Request) {
 	tmdbID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 
-	localPerson, err := h.store.GetPersonByTMDBID(tmdbID)
-	if err == nil && localPerson != nil {
-		writeJSON(w, http.StatusOK, localPerson)
-		return
-	}
-
-	tmdbDetails, err := h.tmdbClient.GetPersonDetails(tmdbID)
-	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Pessoa não encontrada no TMDB"})
-		return
-	}
-
-	savedPerson, err := h.store.SavePersonDetails(tmdbDetails)
+	person, err := h.svc.GetPersonDetails(tmdbID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao compilar cache da pessoa: " + err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, savedPerson)
+	writeJSON(w, http.StatusOK, person)
 }
 
 func (h *Handler) GetPersonMoviesProxy(w http.ResponseWriter, r *http.Request) {
@@ -118,13 +73,13 @@ func (h *Handler) GetPersonMoviesProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	credits, err := h.tmdbClient.GetPersonCredits(tmdbID)
+	credits, err := h.svc.GetPersonCredits(tmdbID)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Créditos não encontrados no TMDB"})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, credits.Cast)
+	writeJSON(w, http.StatusOK, credits)
 }
 
 func (h *Handler) GetRecommendationsProxy(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +89,7 @@ func (h *Handler) GetRecommendationsProxy(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	recommendations, err := h.tmdbClient.GetMoviesRecommendations(movieID)
+	recommendations, err := h.svc.GetMovieRecommendations(movieID)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Filme não encontrado ou sem recomendações"})
 		return

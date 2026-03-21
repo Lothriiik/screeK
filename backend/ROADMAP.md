@@ -27,6 +27,8 @@ O coração transacional com lock de assentos via Redis.
 - Fluxo completo: Reservar → Pagar → Gerar QR Code
 - Cancelamento com liberação automática de assento
 - Campo `SessionType` (`PREMIERE`, `RESCREENING`, `FESTIVAL`)
+- **Lock Pessimista (PostgreSQL)**: Uso de `SELECT FOR UPDATE` (`clause.Locking`) no GORM para a gravação definitiva do assento.
+- **Context Propagation**: Passar o `r.Context()` do HTTP para o GORM impedir operações fantasmas no banco.
 - Testes de race condition na reserva simultânea
 
 ---
@@ -80,6 +82,8 @@ Blindar a API e ter visibilidade do que acontece em produção.
 - **Rate Limiting**: Middleware de limite de requisições por IP (proteção contra abuso/DDoS)
 - **Logging Estruturado**: Trocar `log.Println` por `slog` (stdlib Go 1.21+) com logs em JSON e levels (INFO/WARN/ERROR)
 - **Circuit Breaker**: Padrão de resiliência na comunicação com a TMDB (`sony/gobreaker`). Se a API externa cair, o app serve dados do cache local em vez de travar.
+- **Requisições Paralelas (Goroutines)**: Usar `golang.org/x/sync/errgroup` para buscar créditos e detalhes da TMDB simultaneamente sem bloquear.
+- **Timeouts**: Uso massivo de `context.WithTimeout` para abortar requisições externas lentas.
 - **Database Indexing**: Índices compostos nas queries mais frequentes (reviews por usuário+filme, tickets por sessão, cinemas por cidade). Documentar estratégia no README.
 
 ---

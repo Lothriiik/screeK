@@ -5,12 +5,11 @@ type UserRepository interface {
 	GetUserByID(id int) (*User, error)
 	SearchUsers(query string) ([]User, error)
 	UpdateUser(user *User) error
-	DeleteUser(id int, password string) error
+	DeleteUser(id int) error
 	AddFavorite(userID int, movieID int) error
-	RemoveFavorite(userID int, tmdb_id int) error
+	RemoveFavorite(userID int, movieID int) error
 	GetUserByUsername(username string) (*User, error)
 	EmailExists(email string) (bool, error)
 	UsernameExists(username string) (bool, error)
-	ChangePassword(id int, oldPassword string, newPassword string) error
 	GetUserByEmail(email string) (*User, error)
 }

@@ -14,7 +14,7 @@ type Movie struct {
 	PosterURL        string        `json:"poster_url" gorm:"not null"`
 	UpdatedAt        time.Time     `json:"-"`
 	ReleaseDate      time.Time     `json:"release_date" gorm:"not null"`
-	Status           string        `json:"status" gorm:"not null"`
+	Status           string        `json:"status" gorm:"not null;default:'Released'"`
 	Runtime          int           `json:"runtime" gorm:"not null"`
 	OriginalLanguage string        `json:"original_language"`
 	SpokenLanguages  string        `json:"spoken_languages"`

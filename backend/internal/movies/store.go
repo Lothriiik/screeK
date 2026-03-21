@@ -8,6 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	ErrMovieNotFound       = errors.New("movie not found")
+	ErrMovieCacheExpired   = errors.New("revalidar cache do filme")
+	ErrMovieIncompleteData = errors.New("filme incompleto, forçando busca de detalhes")
+)
+
 type Store struct {
 	db *gorm.DB
 }
@@ -31,14 +37,14 @@ func (s *Store) GetMovieByTMDBID(tmdbID int) (*Movie, error) {
 	var movie Movie
 	result := s.db.Preload("Genres").Preload("Credits").Preload("Credits.Person").Where("tmdb_id = ?", tmdbID).First(&movie)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, errors.New("movie not found")
+		return nil, ErrMovieNotFound
 	}
 	if time.Since(movie.UpdatedAt) > 7*24*time.Hour {
-		return nil, errors.New("revalidar cache do filme")
+		return nil, ErrMovieCacheExpired
 	}
 
 	if movie.Runtime == 0 {
-		return nil, errors.New("filme incompleto, forçando busca de detalhes")
+		return nil, ErrMovieIncompleteData
 	}
 
 	return &movie, result.Error

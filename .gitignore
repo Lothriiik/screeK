@@ -85,3 +85,14 @@ coverage/
 *.sqlite
 *.db
 *.db-journal
+
+
+ROADMAP_FULLSTACK_2026.md
+backend/mini_atividades/
+
+ARQUITETURA.md
+backend/ARQUITETURA.md
+frontend/ARQUITETURA.md
+backend/docs/
+TASK.md
+frontend/TASK.md
