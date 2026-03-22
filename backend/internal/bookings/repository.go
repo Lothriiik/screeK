@@ -15,4 +15,7 @@ type BookingsRepository interface {
 	PayTransaction(ctx context.Context, transactionID int, userID int, method string) error
 	CancelTicket(ctx context.Context, ticketID int, userID int) error
 	GetSessionByID(sessionID int) (*Session, error)
+	GetUserTickets(ctx context.Context, userID int, status string) ([]Ticket, error)
+	GetTicketDetail(ctx context.Context, ticketID int, userID int) (*Ticket, error)
+
 }

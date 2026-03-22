@@ -217,3 +217,26 @@ func (s *Store) CancelTicket(ctx context.Context, ticketID int, userID int) erro
 	})
 }
 
+func (s *Store) GetUserTickets(ctx context.Context, userID int, status string) ([]Ticket, error) {
+	var tickets []Ticket
+	query := s.db.Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").Where("trx.user_id = ?", userID)
+
+	if status != "" {
+		query = query.Where("tickets.status = ?", status)
+	}
+
+	err := query.Preload("Seat").Preload("Session.Movie").Preload("Session.Room.Cinema").Find(&tickets).Error
+
+	return tickets, err
+}
+
+func (s *Store) GetTicketDetail(ctx context.Context, ticketID int, userID int) (*Ticket, error) {
+	var ticket Ticket
+	query := s.db.Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").Where("tickets.id = ? AND trx.user_id = ?", ticketID, userID)
+
+	err:= query.Preload("Seat").Preload("Session.Movie").Preload("Session.Room.Cinema").First(&ticket).Error
+
+	return &ticket, err
+}
+
+

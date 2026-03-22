@@ -28,6 +28,8 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 		r.Post("/transactions/{id}/pay", h.PayReservation)
 		r.Post("/tickets/reserve", h.ReserveTickets)
 		r.Post("/tickets/{id}/cancel", h.CancelTicket)
+		r.Get("/users/me/tickets", h.GetUserTickets)
+		r.Get("/tickets/{id}", h.GetTicketDetail)
 	})
 }
 
@@ -168,6 +170,47 @@ func (h *Handler) CancelTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Estorno processado. Ingresso Cancelado!"})
+}
+
+func (h *Handler) GetUserTickets(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
+		return
+	}
+
+	status := r.URL.Query().Get("status")
+
+	tickets, err := h.service.GetUserTickets(r.Context(), userID, status)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, tickets)
+
+}
+
+func (h *Handler) GetTicketDetail(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
+		return
+	}
+
+	ticketID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID de ingresso inválido"})
+		return
+	}
+
+	ticket, err := h.service.GetTicketDetail(r.Context(), ticketID, userID)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, ticket)
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

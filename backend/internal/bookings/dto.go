@@ -25,3 +25,14 @@ type ReserveRequestDTO struct {
 type PayRequestDTO struct {
 	PaymentMethod string `json:"payment_method" validate:"required"`
 }
+
+type TicketResponseDTO struct {
+	ID        int    `json:"ticket_id"`
+	MovieName string `json:"movie_name"`
+	Cinema    string `json:"cinema"`
+	Date      string `json:"date"`
+	Room   string `json:"room"`
+	Seat   string `json:"seat"`
+	Status    string `json:"status"`
+    QRCode    string `json:"qr_code,omitempty"`
+}
