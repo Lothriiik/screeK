@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"context"
 
 	"github.com/StartLivin/cine-pass/backend/internal/movies"
 	"gorm.io/gorm"
@@ -163,11 +164,11 @@ func (s *Store) CreateReservation(userID, sessionID int, seatIDs []int, totalAmo
 	return &transaction, nil
 }
 
-func (s *Store) PayTransaction(transactionID int, method string) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
+func (s *Store) PayTransaction(ctx context.Context, transactionID int, userID int, method string) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var transaction Transaction
-		if err := tx.Where("id = ? AND status = ?", transactionID, TicketStatusPending).First(&transaction).Error; err != nil {
-			return errors.New("transação pendente não encontrada")
+		if err := tx.Where("id = ? AND user_id = ? AND status = ?", transactionID, userID, TicketStatusPending).First(&transaction).Error; err != nil {
+			return errors.New("transação pendente não encontrada ou você não tem permissão")
 		}
 
 		transaction.Status = TicketStatusPaid

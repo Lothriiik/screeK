@@ -21,3 +21,7 @@ type ReserveRequestDTO struct {
 	SessionID int   `json:"session_id"`
 	SeatIDs   []int `json:"seat_ids"`
 }
+
+type PayRequestDTO struct {
+	PaymentMethod string `json:"payment_method" validate:"required"`
+}

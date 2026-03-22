@@ -107,6 +107,16 @@ func (s *BookingsService) ReserveSeats(userID int, sessionID int, seatIDs []int)
 	totalAmount := int(session.Price) * len(seatIDs)
 
 	transaction, err := s.store.CreateReservation(userID, sessionID, seatIDs, totalAmount)
-	return transaction, err
+	if err != nil {
+		for _, lockedAsset := range lockedAssets {
+			s.redisClient.Del(ctx, lockedAsset)
+		}
+		return nil, err
+	}
+	return transaction, nil
+}
+
+func (s *BookingsService) PayReservation(ctx context.Context, transactionID int, userID int, method string) error {
+	return s.store.PayTransaction(ctx, transactionID, userID, method)
 }
 

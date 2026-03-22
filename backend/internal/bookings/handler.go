@@ -25,6 +25,7 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
 
+		r.Post("/transactions/{id}/pay", h.PayReservation)
 		r.Post("/tickets/reserve", h.ReserveTickets)
 	})
 }
@@ -99,7 +100,7 @@ func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
 
 	var dto ReserveRequestDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
@@ -116,6 +117,36 @@ func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, resposta)
 
 }
+
+func (h *Handler) PayReservation(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
+		return
+	}
+
+	transactionID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID de transação inválido"})
+		return
+	}
+
+	var dto PayRequestDTO
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		return
+	}
+	
+	err = h.service.PayReservation(r.Context(), transactionID, userID, dto.PaymentMethod)
+
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Pagamento aprovado com sucesso! Ingressos liberados."})
+}
+
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
