@@ -27,6 +27,7 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 
 		r.Post("/transactions/{id}/pay", h.PayReservation)
 		r.Post("/tickets/reserve", h.ReserveTickets)
+		r.Post("/tickets/{id}/cancel", h.CancelTicket)
 	})
 }
 
@@ -109,6 +110,7 @@ func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "A cadeira já foi reservada!"})
 		return
 	}
+
 	resposta := map[string]any{
 		"message": "Reserva garantida por 10 minutos!",
 		"transaction_id": transaction.ID,
@@ -138,7 +140,6 @@ func (h *Handler) PayReservation(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	err = h.service.PayReservation(r.Context(), transactionID, userID, dto.PaymentMethod)
-
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
@@ -147,6 +148,27 @@ func (h *Handler) PayReservation(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Pagamento aprovado com sucesso! Ingressos liberados."})
 }
 
+func (h *Handler) CancelTicket(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
+		return
+	}
+
+	ticketID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID do ticket inválido"})
+		return
+	}
+
+	err = h.service.CancelTicket(r.Context(), ticketID, userID)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Estorno processado. Ingresso Cancelado!"})
+}
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")

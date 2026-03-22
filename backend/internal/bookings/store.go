@@ -197,11 +197,19 @@ func (s *Store) PayTransaction(ctx context.Context, transactionID int, userID in
 	})
 }
 
-func (s *Store) CancelTicket(ticketID int) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
+func (s *Store) CancelTicket(ctx context.Context, ticketID int, userID int) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var ticket Ticket
 		if err := tx.Where("id = ? AND status != ?", ticketID, TicketStatusCancelled).First(&ticket).Error; err != nil {
-			return errors.New("transação pendente não encontrada")
+			return errors.New("ingresso não encontrado ou já cancelado")
+		}
+		var transaction Transaction
+		if err := tx.First(&transaction, ticket.TransactionID).Error; err != nil {
+            return errors.New("transação não encontrada")
+        }
+
+		if transaction.UserID != userID {
+			return errors.New("você não é o dono deste ingresso")
 		}
 
 		ticket.Status = TicketStatusCancelled

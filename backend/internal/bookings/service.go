@@ -120,3 +120,7 @@ func (s *BookingsService) PayReservation(ctx context.Context, transactionID int,
 	return s.store.PayTransaction(ctx, transactionID, userID, method)
 }
 
+
+func (s *BookingsService) CancelTicket(ctx context.Context, ticketID int, userID int) error {
+	return s.store.CancelTicket(ctx, ticketID, userID)
+}
