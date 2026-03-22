@@ -34,15 +34,17 @@ func (s *Store) GetMoviesPlaying(city string, date string) ([]movies.Movie, erro
 	}
 	endOfDay := parsedDate.Add(24 * time.Hour)
 
-	err = s.db.Table("movies").
-		Joins("JOIN sessions ON sessions.movie_id = movies.id").
-		Joins("JOIN rooms ON sessions.room_id = rooms.id").
-		Joins("JOIN cinemas ON rooms.cinema_id = cinemas.id").
-		Where("cinemas.city ILIKE ?", city).
-		Where("sessions.start_time >= ? AND sessions.start_time < ?", parsedDate, endOfDay).
-		Preload("Genres").
-		Distinct("movies.*").
-		Find(&moviesList).Error
+	query := `
+		SELECT DISTINCT m.* 
+		FROM movies m
+		JOIN sessions s ON s.movie_id = m.id
+		JOIN rooms r ON s.room_id = r.id
+		JOIN cinemas c ON r.cinema_id = c.id
+		WHERE c.city ILIKE ? 
+		  AND s.start_time >= ? 
+		  AND s.start_time < ?
+	`
+	err = s.db.Preload("Genres").Raw(query, city, parsedDate, endOfDay).Find(&moviesList).Error
 
 	if err != nil {
 		return nil, err
@@ -58,15 +60,18 @@ func (s *Store) GetSessionsByMovie(movieID int, city string, date string) ([]Ses
 		return nil, err
 	}
 	endOfDay := parsedDate.Add(24 * time.Hour)
-	err = s.db.
-		Preload("Room").
-		Preload("Room.Cinema").
-		Joins("JOIN rooms ON rooms.id = sessions.room_id").
-		Joins("JOIN cinemas ON cinemas.id = rooms.cinema_id").
-		Where("sessions.movie_id = ?", movieID).
-		Where("cinemas.city ILIKE ?", city).
-		Where("sessions.start_time >= ? AND sessions.start_time < ?", parsedDate, endOfDay).
-		Find(&sessions).Error
+	
+	query := `
+		SELECT s.* 
+		FROM sessions s
+		JOIN rooms r ON r.id = s.room_id
+		JOIN cinemas c ON c.id = r.cinema_id
+		WHERE s.movie_id = ? 
+		  AND c.city ILIKE ? 
+		  AND s.start_time >= ? 
+		  AND s.start_time < ?
+	`
+	err = s.db.Preload("Room").Preload("Room.Cinema").Raw(query, movieID, city, parsedDate, endOfDay).Find(&sessions).Error
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +86,18 @@ func (s *Store) GetSeatsBySession(sessionID int) ([]Seat, error) {
 		return nil, err
 	}
 
-	err := s.db.Model(&Seat{}).
-		Select("seats.*, CASE WHEN tickets.id IS NOT NULL THEN true ELSE false END as is_occupied").
-		Joins("LEFT JOIN tickets ON tickets.seat_id = seats.id AND tickets.session_id = ? AND tickets.status != 'CANCELLED'", sessionID).
-		Where("seats.room_id = ?", roomID).
-		Find(&seats).Error
+	query := `
+		SELECT 
+			s.*, 
+			CASE WHEN t.id IS NOT NULL THEN true ELSE false END as is_occupied
+		FROM seats s
+		LEFT JOIN tickets t ON t.seat_id = s.id 
+			AND t.session_id = ? 
+			AND t.status != 'CANCELLED'
+		WHERE s.room_id = ?
+		ORDER BY s.row, s.number
+	`
+	err := s.db.Raw(query, sessionID, roomID).Scan(&seats).Error
 
 	if err != nil {
 		return nil, err
@@ -94,22 +106,19 @@ func (s *Store) GetSeatsBySession(sessionID int) ([]Seat, error) {
 	return seats, nil
 }
 
-func (s *Store) ReserveSeats(userID, sessionID int, seatIDs []int) (*Transaction, error) {
+func (s *Store) GetSessionByID(sessionID int) (*Session, error) {
+    var session Session
+    if err := s.db.First(&session, sessionID).Error; err != nil {
+        return nil, err
+    }
+    return &session, nil
+}
+
+
+func (s *Store) CreateReservation(userID, sessionID int, seatIDs []int, totalAmount int) (*Transaction, error) {
 	var transaction Transaction
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		var session Session
-		if err := tx.First(&session, sessionID).Error; err != nil {
-			return errors.New("sessão não encontrada")
-		}
-
-		var validSeatsCount int64
-		if err := tx.Model(&Seat{}).Where("id IN ? AND room_id = ?", seatIDs, session.RoomID).Count(&validSeatsCount).Error; err != nil {
-			return err
-		}
-		if int(validSeatsCount) != len(seatIDs) {
-			return errors.New("cadeira(s) inválida(s) detectada(s) ou não pertencem à esta sala")
-		}
 
 		var occupiedCount int64
 		if err := tx.Model(&Ticket{}).Where("seat_id IN ? AND session_id = ? AND status != 'CANCELLED'", seatIDs, sessionID).Count(&occupiedCount).Error; err != nil {
@@ -119,7 +128,6 @@ func (s *Store) ReserveSeats(userID, sessionID int, seatIDs []int) (*Transaction
 			return errors.New("uma ou mais cadeiras já foram compradas ou estão no carrinho de outra pessoa")
 		}
 
-		totalAmount := float64(len(seatIDs)) * session.Price
 		transaction = Transaction{
 			UserID:        userID,
 			TotalAmount:   totalAmount,

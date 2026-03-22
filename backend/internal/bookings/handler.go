@@ -9,19 +9,24 @@ import (
 )
 
 type Handler struct {
-	service BookingsService
+	service *BookingsService
 }
 
-func NewHandler(s BookingsService) *Handler {
+func NewHandler(s *BookingsService) *Handler {
 	return &Handler{
 		service: s,
 	}
 }
 
-func (h *Handler) RegisterRoutes(r chi.Router) {
+func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler) http.Handler) {
 	r.Get("/playing", h.GetMoviesPlaying)
 	r.Get("/{id}/sessions", h.GetMovieSessions)
 	r.Get("/sessions/{id}/seats", h.GetSeatsBySession)
+	r.Group(func(r chi.Router) {
+		r.Use(authMiddleware)
+
+		r.Post("/tickets/reserve", h.ReserveTickets)
+	})
 }
 
 func (h *Handler) GetMoviesPlaying(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +87,34 @@ func (h *Handler) GetSeatsBySession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, seats)
+}
+
+func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
+	userIDAny := r.Context().Value("userID")
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	var dto ReserveRequestDTO
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		return
+	}
+
+	transaction, err := h.service.ReserveSeats(userID, dto.SessionID, dto.SeatIDs)
+	if err != nil {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "A cadeira já foi reservada!"})
+		return
+	}
+	resposta := map[string]any{
+		"message": "Reserva garantida por 10 minutos!",
+		"transaction_id": transaction.ID,
+		"valor_total_centavos": transaction.TotalAmount,
+	}
+	writeJSON(w, http.StatusCreated, resposta)
+
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

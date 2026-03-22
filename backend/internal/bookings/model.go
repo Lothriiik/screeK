@@ -74,7 +74,7 @@ type Session struct {
 	MovieID  	int          `json:"movie_id" gorm:"not null"`
 	RoomID    	int          `json:"room_id" gorm:"not null"`
 	StartTime   time.Time    `json:"start_time" gorm:"not null"`
-	Price       float64      `json:"price" gorm:"not null"`
+	Price       int			 `json:"price" gorm:"not null"`
 	SessionType SessionType  `json:"session_type" gorm:"type:varchar(20);not null;default:'REGULAR'"`
 	IsFree      bool         `json:"is_free" gorm:"default:false"`
 	Movie       movies.Movie `json:"movie" gorm:"foreignKey:MovieID"`
@@ -82,14 +82,14 @@ type Session struct {
 }
 
 type Transaction struct {
-	ID            int        `json:"id" gorm:"primaryKey;autoIncrement"`
-	UserID        int        `json:"user_id" gorm:"not null"`
-	TotalAmount   float64      `json:"total_amount" gorm:"not null"`
-	Status        TicketStatus `json:"status" gorm:"type:varchar(20);not null"`
-	PaymentMethod string     `json:"payment_method" gorm:"not null"`
-	User          users.User `json:"user" gorm:"foreignKey:UserID"`
-	Tickets       []Ticket   `json:"tickets" gorm:"foreignKey:TransactionID"`
-	CreatedAt     time.Time  `json:"created_at" gorm:"not null;default:now()"`
+	ID            int        	`json:"id" gorm:"primaryKey;autoIncrement"`
+	UserID        int        	`json:"user_id" gorm:"not null"`
+	TotalAmount   int      		`json:"total_amount" gorm:"not null"`
+	Status        TicketStatus 	`json:"status" gorm:"type:varchar(20);not null"`
+	PaymentMethod string     	`json:"payment_method" gorm:"not null"`
+	User          users.User 	`json:"user" gorm:"foreignKey:UserID"`
+	Tickets       []Ticket   	`json:"tickets" gorm:"foreignKey:TransactionID"`
+	CreatedAt     time.Time 	 `json:"created_at" gorm:"not null;default:now()"`
 }
 
 type Ticket struct {

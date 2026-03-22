@@ -10,18 +10,19 @@ import (
 	"github.com/StartLivin/cine-pass/backend/internal/movies"
 	"github.com/StartLivin/cine-pass/backend/internal/platform/config"
 	"github.com/StartLivin/cine-pass/backend/internal/platform/database"
+	"github.com/StartLivin/cine-pass/backend/internal/platform/redis"
+	redisclient "github.com/redis/go-redis/v9"
 	"github.com/StartLivin/cine-pass/backend/internal/social"
 	"github.com/StartLivin/cine-pass/backend/internal/users"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type Application struct {
 	config config.Config
 	db     *gorm.DB
-	redis  *redis.Client
+	redis  *redisclient.Client
 	router *chi.Mux
 }
 
@@ -61,9 +62,9 @@ func (app *Application) mount() {
 	movieHandler.RegisterRoutes(app.router)
 
 	bookingStore := bookings.NewStore(app.db)
-	bookingService := bookings.NewService(bookingStore)
+	bookingService := bookings.NewService(bookingStore, app.redis)
 	bookingHandler := bookings.NewHandler(bookingService)
-	bookingHandler.RegisterRoutes(app.router)
+	bookingHandler.RegisterRoutes(app.router, authMiddleware)
 }
 
 func (app *Application) Run() error {
@@ -73,7 +74,7 @@ func (app *Application) Run() error {
 	}
 	app.db = db
 
-	app.redis = database.InitRedis(app.config.RedisURL)
+	app.redis = redis.InitRedis(app.config.RedisURL)
 
 	log.Println("Rodando migrações do banco de dados (AutoMigrate)...")
 	movies.AutoMigrate(app.db)

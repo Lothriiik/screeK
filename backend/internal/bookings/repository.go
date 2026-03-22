@@ -7,7 +7,8 @@ type BookingsRepository interface {
 	GetSessionsByMovie(movieID int, city string, date string) ([]Session, error)
 	GetMoviesPlaying(city string, date string) ([]movies.Movie, error)
 	GetSeatsBySession(sessionID int) ([]Seat, error)
-	ReserveSeats(userID, sessionID int, seatIDs []int) (*Transaction, error)
+	CreateReservation(userID, sessionID int, seatIDs []int, totalAmount int) (*Transaction, error)
 	PayTransaction(transactionID int, method string) error
 	CancelTicket(ticketID int) error
+	GetSessionByID(sessionID int) (*Session, error)
 }
