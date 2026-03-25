@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -40,7 +41,7 @@ func AuthMiddleware(jwtService *JWTService, redisClient *redis.Client) func(next
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), "userID", claims.UserID)
+			ctx := context.WithValue(r.Context(), httputil.UserIDKey, claims.UserID)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

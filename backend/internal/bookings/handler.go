@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -38,24 +39,24 @@ func (h *Handler) GetMoviesPlaying(w http.ResponseWriter, r *http.Request) {
 	date := r.URL.Query().Get("date")
 
 	if city == "" || date == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Parâmetros 'city' e 'date' são obrigatórios (ex: ?city=Sorocaba&date=2024-10-25)"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Parâmetros 'city' e 'date' são obrigatórios (ex: ?city=Sorocaba&date=2024-10-25)"})
 		return
 	}
 
 	moviesPlaying, err := h.service.GetMoviesPlaying(city, date)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar filmes em cartaz: " + err.Error()})
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar filmes em cartaz: " + err.Error()})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, moviesPlaying)
+	httputil.WriteJSON(w, http.StatusOK, moviesPlaying)
 }
 
 func (h *Handler) GetMovieSessions(w http.ResponseWriter, r *http.Request) {
 	movieIDStr := chi.URLParam(r, "id")
 	movieID, err := strconv.Atoi(movieIDStr)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID do filme inválido"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID do filme inválido"})
 		return
 	}
 
@@ -63,38 +64,38 @@ func (h *Handler) GetMovieSessions(w http.ResponseWriter, r *http.Request) {
 	date := r.URL.Query().Get("date")
 
 	if city == "" || date == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Parâmetros 'city' e 'date' são obrigatórios"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Parâmetros 'city' e 'date' são obrigatórios"})
 		return
 	}
 
 	response, err := h.service.GetMovieSessionsGroupedByCinema(movieID, city, date)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar sessões: " + err.Error()})
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar sessões: " + err.Error()})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, response)
+	httputil.WriteJSON(w, http.StatusOK, response)
 }
 
 func (h *Handler) GetSeatsBySession(w http.ResponseWriter, r *http.Request) {
 	sessionIDStr := chi.URLParam(r, "id")
 	sessionID, err := strconv.Atoi(sessionIDStr)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID da sessão inválido"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID da sessão inválido"})
 		return
 	}
 
 	seats, err := h.service.GetSeatsBySession(sessionID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar mapa de assentos: " + err.Error()})
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar mapa de assentos: " + err.Error()})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, seats)
+	httputil.WriteJSON(w, http.StatusOK, seats)
 }
 
 func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
-	userIDAny := r.Context().Value("userID")
+	userIDAny := r.Context().Value(httputil.UserIDKey)
 	userID, ok := userIDAny.(int)
 	if !ok {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
@@ -103,13 +104,13 @@ func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
 
 	var dto ReserveRequestDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
 	transaction, err := h.service.ReserveSeats(userID, dto.SessionID, dto.SeatIDs)
 	if err != nil {
-		writeJSON(w, http.StatusConflict, map[string]string{"error": "A cadeira já foi reservada!"})
+		httputil.WriteJSON(w, http.StatusConflict, map[string]string{"error": "A cadeira já foi reservada!"})
 		return
 	}
 
@@ -118,64 +119,64 @@ func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
 		"transaction_id": transaction.ID,
 		"valor_total_centavos": transaction.TotalAmount,
 	}
-	writeJSON(w, http.StatusCreated, resposta)
+	httputil.WriteJSON(w, http.StatusCreated, resposta)
 
 }
 
 func (h *Handler) PayReservation(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(httputil.UserIDKey).(int)
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
+		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
 		return
 	}
 
 	transactionID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID de transação inválido"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID de transação inválido"})
 		return
 	}
 
 	var dto PayRequestDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
 		return
 	}
 	
 	err = h.service.PayReservation(r.Context(), transactionID, userID, dto.PaymentMethod)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Pagamento aprovado com sucesso! Ingressos liberados."})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Pagamento aprovado com sucesso! Ingressos liberados."})
 }
 
 func (h *Handler) CancelTicket(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(httputil.UserIDKey).(int)
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
+		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
 		return
 	}
 
 	ticketID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID do ticket inválido"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID do ticket inválido"})
 		return
 	}
 
 	err = h.service.CancelTicket(r.Context(), ticketID, userID)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Estorno processado. Ingresso Cancelado!"})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Estorno processado. Ingresso Cancelado!"})
 }
 
 func (h *Handler) GetUserTickets(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(httputil.UserIDKey).(int)
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
+		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
 		return
 	}
 
@@ -183,38 +184,32 @@ func (h *Handler) GetUserTickets(w http.ResponseWriter, r *http.Request) {
 
 	tickets, err := h.service.GetUserTickets(r.Context(), userID, status)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, tickets)
+	httputil.WriteJSON(w, http.StatusOK, tickets)
 
 }
 
 func (h *Handler) GetTicketDetail(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(httputil.UserIDKey).(int)
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
+		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
 		return
 	}
 
 	ticketID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID de ingresso inválido"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID de ingresso inválido"})
 		return
 	}
 
 	ticket, err := h.service.GetTicketDetail(r.Context(), ticketID, userID)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, ticket)
-}
-
-func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	httputil.WriteJSON(w, http.StatusOK, ticket)
 }

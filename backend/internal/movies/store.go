@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrMovieNotFound       = errors.New("movie not found")
+	ErrMovieNotFound       = errors.New("filme não achado")
 	ErrMovieCacheExpired   = errors.New("revalidar cache do filme")
 	ErrMovieIncompleteData = errors.New("filme incompleto, forçando busca de detalhes")
 )

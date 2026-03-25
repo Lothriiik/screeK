@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -23,6 +24,7 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
 		r.Post("/auth/logout", h.Logout)
+		r.Put("/auth/change-password", h.ChangePassword)
 	})
 }
 
@@ -40,7 +42,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"token": token})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"token": token})
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +58,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Logout efetuado com sucesso!"})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Logout efetuado com sucesso!"})
 }
 
 func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +74,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"token": token})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"token": token})
 }
 
 func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
@@ -87,11 +89,26 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Senha atualizada com sucesso!"})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Senha atualizada com sucesso!"})
 }
 
-func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	var dto ChangePasswordDTO
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		return
+	}
+
+	userID, ok := r.Context().Value(httputil.UserIDKey).(int)
+	if !ok {
+		http.Error(w, "Usuário não autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	if err := h.svc.ChangePassword(userID, dto.OldPassword, dto.Password); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Senha alterada com sucesso"})
 }

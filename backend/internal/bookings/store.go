@@ -10,6 +10,14 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	ErrSeatAlreadyTaken    = errors.New("uma ou mais cadeiras já foram compradas ou estão no carrinho de outra pessoa")
+	ErrTransactionNotFound = errors.New("transação pendente não encontrada ou você não tem permissão")
+	ErrTicketNotFound      = errors.New("ingresso não encontrado ou já cancelado")
+	ErrTxNotFound          = errors.New("transação não encontrada")
+	ErrNotTicketOwner      = errors.New("você não é o dono deste ingresso")
+)
+
 type Store struct {
 	db *gorm.DB
 }
@@ -126,7 +134,7 @@ func (s *Store) CreateReservation(userID, sessionID int, seatIDs []int, totalAmo
 			return err
 		}
 		if occupiedCount > 0 {
-			return errors.New("uma ou mais cadeiras já foram compradas ou estão no carrinho de outra pessoa")
+			return ErrSeatAlreadyTaken
 		}
 
 		transaction = Transaction{
@@ -168,7 +176,7 @@ func (s *Store) PayTransaction(ctx context.Context, transactionID int, userID in
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var transaction Transaction
 		if err := tx.Where("id = ? AND user_id = ? AND status = ?", transactionID, userID, TicketStatusPending).First(&transaction).Error; err != nil {
-			return errors.New("transação pendente não encontrada ou você não tem permissão")
+			return ErrTransactionNotFound
 		}
 
 		transaction.Status = TicketStatusPaid
@@ -201,15 +209,15 @@ func (s *Store) CancelTicket(ctx context.Context, ticketID int, userID int) erro
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var ticket Ticket
 		if err := tx.Where("id = ? AND status != ?", ticketID, TicketStatusCancelled).First(&ticket).Error; err != nil {
-			return errors.New("ingresso não encontrado ou já cancelado")
+			return ErrTicketNotFound
 		}
 		var transaction Transaction
 		if err := tx.First(&transaction, ticket.TransactionID).Error; err != nil {
-            return errors.New("transação não encontrada")
+            return ErrTxNotFound
         }
 
 		if transaction.UserID != userID {
-			return errors.New("você não é o dono deste ingresso")
+			return ErrNotTicketOwner
 		}
 
 		ticket.Status = TicketStatusCancelled

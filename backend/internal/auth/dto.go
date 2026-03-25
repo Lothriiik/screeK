@@ -15,3 +15,8 @@ type ResetPasswordDTO struct {
     PasswordConfirmation string `json:"password_confirmation" validate:"eqfield=NewPassword"`
 }
 
+type ChangePasswordDTO struct {
+	OldPassword          string `json:"old_password" validate:"required,min=6"`
+	Password             string `json:"password" validate:"required,min=6"`
+	PasswordConfirmation string `json:"password_confirmation" validate:"eqfield=Password"`
+}

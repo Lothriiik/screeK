@@ -11,6 +11,11 @@ import (
 	redisclient "github.com/redis/go-redis/v9"
 )
 
+var (
+	ErrSeatLockFailed      = errors.New("uma ou mais cadeiras foram compradas por outro usuário")
+	ErrInvalidTicketStatus = errors.New("query param 'status' inválido")
+)
+
 type BookingsService struct {
 	store BookingsRepository
 	redisClient *redisclient.Client
@@ -90,7 +95,7 @@ func (s *BookingsService) ReserveSeats(userID int, sessionID int, seatIDs []int)
 			for _, lockedAsset := range  lockedAssets {
 				s.redisClient.Del(ctx, lockedAsset)
 			}
-			return nil, errors.New("uma ou mais cadeiras foram compradas por outro usuário")
+			return nil, ErrSeatLockFailed
 		}
 
 		lockedAssets = append(lockedAssets, seat)
@@ -101,7 +106,7 @@ func (s *BookingsService) ReserveSeats(userID int, sessionID int, seatIDs []int)
 		for _, lockedAsset := range  lockedAssets {
 			s.redisClient.Del(ctx, lockedAsset)
 		}
-		return nil, errors.New("uma ou mais cadeiras foram compradas por outro usuário")
+		return nil, ErrSeatLockFailed
 	}
 
 	totalAmount := int(session.Price) * len(seatIDs)
@@ -129,7 +134,7 @@ func (s *BookingsService) CancelTicket(ctx context.Context, ticketID int, userID
 func (s *BookingsService) GetUserTickets(ctx context.Context, userID int, status string) ([]TicketResponseDTO, error) {
 	
 	if status != "" && status != string(TicketStatusPaid) && status != string(TicketStatusPending) && status != string(TicketStatusCancelled) {
-		return nil, errors.New("query param 'status' inválido.")
+		return nil, ErrInvalidTicketStatus
 	}
 
 	tickets, err := s.store.GetUserTickets(ctx, userID, status)

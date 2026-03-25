@@ -19,6 +19,7 @@ var (
 	ErrSamePassword       = errors.New("a nova senha não pode ser igual à senha antiga")
 	ErrPasswordProcess    = errors.New("erro ao processar nova senha")
 	ErrPasswordUpdate     = errors.New("erro ao atualizar senha")
+	ErrOldPasswordInvalid = errors.New("senha antiga incorreta")
 )
 
 type AuthService struct {
@@ -95,6 +96,29 @@ func (s *AuthService) ResetPassword(token, newPassword string) error {
 
 	if crypto.VerifyPassword(newPassword, user.Password) {
 		return ErrSamePassword
+	}
+
+	hashedPassword, err := crypto.HashPassword(newPassword)
+	if err != nil {
+		return ErrPasswordProcess
+	}
+
+	user.Password = hashedPassword
+	if err := s.userRepo.UpdateUser(user); err != nil {
+		return ErrPasswordUpdate
+	}
+
+	return nil
+}
+
+func (s *AuthService) ChangePassword(userID int, oldPassword, newPassword string) error {
+	user, err := s.userRepo.GetUserByID(userID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+
+	if !crypto.VerifyPassword(oldPassword, user.Password) {
+		return ErrOldPasswordInvalid
 	}
 
 	hashedPassword, err := crypto.HashPassword(newPassword)

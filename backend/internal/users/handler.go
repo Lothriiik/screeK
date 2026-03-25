@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/StartLivin/cine-pass/backend/internal/movies"
+	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -36,12 +37,12 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var dto CreateUserDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
 		return
 	}
 
 	if err := dto.Validate(h.svc); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
@@ -53,7 +54,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.CreateUser(userModel); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao criar usuário"})
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao criar usuário"})
 		return
 	}
 
@@ -63,19 +64,19 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		Username: userModel.Username,
 	}
 
-	writeJSON(w, http.StatusCreated, responseDTO)
+	httputil.WriteJSON(w, http.StatusCreated, responseDTO)
 }
 
 func (h *Handler) SearchUsers(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	if q == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "O parâmetro 'q' (busca) é obrigatório"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "O parâmetro 'q' (busca) é obrigatório"})
 		return
 	}
 
 	users, err := h.svc.SearchUsers(q)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar usuários"})
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar usuários"})
 		return
 	}
 
@@ -89,18 +90,18 @@ func (h *Handler) SearchUsers(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	writeJSON(w, http.StatusOK, dtos)
+	httputil.WriteJSON(w, http.StatusOK, dtos)
 }
 
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
 		return
 	}
 	user, err := h.svc.GetUserByID(id)
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Usuário não encontrado"})
+		httputil.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "Usuário não encontrado"})
 		return
 	}
 
@@ -125,11 +126,11 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		FavoriteMovies: favoriteMovies,
 	}
 
-	writeJSON(w, http.StatusOK, userDTO)
+	httputil.WriteJSON(w, http.StatusOK, userDTO)
 }
 
 func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
-	userIDAny := r.Context().Value("userID")
+	userIDAny := r.Context().Value(httputil.UserIDKey)
 	userID, ok := userIDAny.(int)
 	if !ok {
 		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
@@ -163,11 +164,11 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		FavoriteMovies: favoriteMovies,
 	}
 
-	writeJSON(w, http.StatusOK, userDTO)
+	httputil.WriteJSON(w, http.StatusOK, userDTO)
 }
 
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	userIDAny := r.Context().Value("userID")
+	userIDAny := r.Context().Value(httputil.UserIDKey)
 
 	userID, ok := userIDAny.(int)
 	if !ok {
@@ -177,24 +178,27 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	user := User{ID: userID}
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
 		return
 	}
 	if err := h.svc.UpdateUser(&user); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao atualizar usuário"})
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao atualizar usuário"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Usuário atualizado com sucesso"})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Usuário atualizado com sucesso"})
 }
 
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	var password string
-	if err := json.NewDecoder(r.Body).Decode(&password); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+	var body struct {
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
 		return
 	}
+	password := body.Password
 
-	userIDAny := r.Context().Value("userID")
+	userIDAny := r.Context().Value(httputil.UserIDKey)
 	if userIDAny == nil {
 		http.Error(w, "Usuário não autenticado", http.StatusUnauthorized)
 		return
@@ -207,41 +211,14 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.DeleteUser(userID, password); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao deletar usuário: " + err.Error()})
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao deletar usuário: " + err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Usuário deletado com sucesso"})
-}
-
-func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	var userPassword ChangePasswordDTO
-
-	if err := json.NewDecoder(r.Body).Decode(&userPassword); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
-		return
-	}
-
-	userIDAny := r.Context().Value("userID")
-	if userIDAny == nil {
-		http.Error(w, "Usuário não autenticado", http.StatusUnauthorized)
-		return
-	}
-
-	userID, ok := userIDAny.(int)
-	if !ok {
-		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
-		return
-	}
-
-	if err := h.svc.ChangePassword(userID, userPassword.OldPassword, userPassword.Password); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao alterar senha"})
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Senha alterada com sucesso"})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Usuário deletado com sucesso"})
 }
 
 func (h *Handler) AddFavorite(w http.ResponseWriter, r *http.Request) {
-	userIDAny := r.Context().Value("userID")
+	userIDAny := r.Context().Value(httputil.UserIDKey)
 	userID, ok := userIDAny.(int)
 	if !ok {
 		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
@@ -265,7 +242,7 @@ func (h *Handler) AddFavorite(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
-	userIDAny := r.Context().Value("userID")
+	userIDAny := r.Context().Value(httputil.UserIDKey)
 	userID, ok := userIDAny.(int)
 	if !ok {
 		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
@@ -286,10 +263,4 @@ func (h *Handler) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
 }
