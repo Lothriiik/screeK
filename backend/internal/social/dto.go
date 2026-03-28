@@ -35,6 +35,17 @@ type FeedResponse struct {
 	NextCursor uint              `json:"next_cursor"`
 }
 
+type ReplyRequest struct {
+	Content string `json:"content" validate:"required,max=280"`
+}
+
+func (dto *ReplyRequest) Validate() error {
+	if err := validate.Struct(dto); err != nil {
+		return errors.New("Erro de validação: O conteúdo da resposta passou de 280 caracteres")
+	}
+	return nil
+}
+
 func (dto *CreatePostRequest) Validate() error {
 	if err := validate.Struct(dto); err != nil {
 		return errors.New("Erro de validação: PostType inválido ou conteúdo passou de 280 caracteres")

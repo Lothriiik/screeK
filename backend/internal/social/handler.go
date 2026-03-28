@@ -23,6 +23,7 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 		r.Post("/movies/{id}/log", h.LogMovie)
 		r.Post("/posts", h.CreatePost)
 		r.Get("/feed", h.GetFeed)
+		r.Post("/posts/{id}/reply", h.ReplyToPost)
 	})
 }
 
@@ -106,4 +107,34 @@ func (h *Handler) GetFeed(w http.ResponseWriter, r *http.Request) {
 
 	httputil.WriteJSON(w, http.StatusOK, feedResponse)
 }
+
+func (h *Handler) ReplyToPost(w http.ResponseWriter, r *http.Request) {
+	parentIDStr := chi.URLParam(r, "id")
+	parentID, err := strconv.Atoi(parentIDStr)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID de post inválido no endereço"})
+		return
+	}
+
+	userIDAny := r.Context().Value(httputil.UserIDKey)
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	var req ReplyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Conteúdo JSON inválido"})
+		return
+	}
+
+	if err := h.svc.ReplyToPost(r.Context(), uint(userID), uint(parentID), req); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusCreated, map[string]string{"message": "Resposta enviada com sucesso!"})
+}
+
 

@@ -16,6 +16,8 @@ type Service interface {
 	LogMovie(ctx context.Context, userID uint, movieID uint, req LogMovieRequest) error
 	CreatePost(ctx context.Context, userID uint, req CreatePostRequest) (*PostResponseDTO, error)
 	GetFeed(ctx context.Context, cursorID uint, limit int) (*FeedResponse, error)
+	ReplyToPost(ctx context.Context, userID uint, parentID uint, req ReplyRequest) error
+
 }
 
 func (s *SocialService) LogMovie(ctx context.Context, userID uint, movieID uint, req LogMovieRequest) error {
@@ -96,3 +98,11 @@ func (s *SocialService) GetFeed(ctx context.Context, cursorID uint, limit int) (
 		NextCursor: nextCursor,
 	}, nil
 }
+
+func (s *SocialService) ReplyToPost(ctx context.Context, userID uint, parentID uint, req ReplyRequest) error {
+	if err := req.Validate(); err != nil {
+		return err
+	}
+	return s.store.ReplyPost(ctx, userID, parentID, req.Content)
+}
+
