@@ -50,6 +50,17 @@ func (dto *CreatePostRequest) Validate() error {
 	if err := validate.Struct(dto); err != nil {
 		return errors.New("Erro de validação: PostType inválido ou conteúdo passou de 280 caracteres")
 	}
+
+	isReviewOrSession := dto.PostType == "REVIEW" || dto.PostType == "SESSION_SHARE"
+	
+	if isReviewOrSession && dto.ReferenceID == nil {
+		return errors.New("Erro de validação: Posts do tipo REVIEW ou SESSION_SHARE obrigam o envio de um reference_id válido")
+	}
+
+	if dto.PostType == "TEXT" && dto.ReferenceID != nil {
+		return errors.New("Erro de validação: Posts do tipo TEXT não podem ter um reference_id")
+	}
+
 	return nil
 }
 
