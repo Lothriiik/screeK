@@ -1,12 +1,15 @@
 package movies
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
 
 	"gorm.io/gorm"
 )
+
+var _ MoviesRepository = (*Store)(nil)
 
 var (
 	ErrMovieNotFound       = errors.New("filme não achado")
@@ -22,8 +25,8 @@ func NewStore(db *gorm.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) SaveMovie(movie *Movie) error {
-	result := s.db.Where(Movie{TMDBID: movie.TMDBID}).Assign(Movie{
+func (s *Store) SaveMovie(ctx context.Context, movie *Movie) error {
+	result := s.db.WithContext(ctx).Where(Movie{TMDBID: movie.TMDBID}).Assign(Movie{
 		Title:       movie.Title,
 		Overview:    movie.Overview,
 		PosterURL:   movie.PosterURL,
@@ -33,9 +36,9 @@ func (s *Store) SaveMovie(movie *Movie) error {
 	return result.Error
 }
 
-func (s *Store) GetMovieByTMDBID(tmdbID int) (*Movie, error) {
+func (s *Store) GetMovieByTMDBID(ctx context.Context, tmdbID int) (*Movie, error) {
 	var movie Movie
-	result := s.db.Preload("Genres").Preload("Credits").Preload("Credits.Person").Where("tmdb_id = ?", tmdbID).First(&movie)
+	result := s.db.WithContext(ctx).Preload("Genres").Preload("Credits").Preload("Credits.Person").Where("tmdb_id = ?", tmdbID).First(&movie)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, ErrMovieNotFound
 	}
@@ -50,13 +53,13 @@ func (s *Store) GetMovieByTMDBID(tmdbID int) (*Movie, error) {
 	return &movie, result.Error
 }
 
-func (s *Store) SaveMovieDetails(tmdbData *TMDBMovieDetails) (*Movie, error) {
+func (s *Store) SaveMovieDetails(ctx context.Context, tmdbData *TMDBMovieDetails) (*Movie, error) {
 	var generosDoBanco []Genre
 	var creditosDoBanco []MovieCredit
 
 	for _, g := range tmdbData.Genres {
 		var dbGenre Genre
-		s.db.Where(Genre{TMDBID: g.ID}).Assign(Genre{Name: g.Name}).FirstOrCreate(&dbGenre)
+		s.db.WithContext(ctx).Where(Genre{TMDBID: g.ID}).Assign(Genre{Name: g.Name}).FirstOrCreate(&dbGenre)
 		generosDoBanco = append(generosDoBanco, dbGenre)
 	}
 
@@ -69,7 +72,7 @@ func (s *Store) SaveMovieDetails(tmdbData *TMDBMovieDetails) (*Movie, error) {
 		actor := tmdbData.Credits.Cast[i]
 
 		var dbPerson Person
-		s.db.Where(Person{TMDBID: actor.ID}).Assign(Person{
+		s.db.WithContext(ctx).Where(Person{TMDBID: actor.ID}).Assign(Person{
 			Name:       actor.Name,
 			ProfileURL: actor.ProfilePath,
 		}).FirstOrCreate(&dbPerson)
@@ -107,7 +110,7 @@ func (s *Store) SaveMovieDetails(tmdbData *TMDBMovieDetails) (*Movie, error) {
 	for _, crew := range tmdbData.Credits.Crew {
 		if cargosDesejados[crew.Job] {
 			var dbPerson Person
-			s.db.Where(Person{TMDBID: crew.ID}).Assign(Person{
+			s.db.WithContext(ctx).Where(Person{TMDBID: crew.ID}).Assign(Person{
 				Name:       crew.Name,
 				ProfileURL: crew.ProfilePath,
 			}).FirstOrCreate(&dbPerson)
@@ -142,28 +145,28 @@ func (s *Store) SaveMovieDetails(tmdbData *TMDBMovieDetails) (*Movie, error) {
 	}
 
 	var existingMovie Movie
-	result := s.db.Where("tmdb_id = ?", movie.TMDBID).First(&existingMovie)
+	result := s.db.WithContext(ctx).Where("tmdb_id = ?", movie.TMDBID).First(&existingMovie)
 	if result.Error == nil {
 		movie.ID = existingMovie.ID
-		s.db.Where("movie_id = ?", movie.ID).Delete(&MovieCredit{})
+		s.db.WithContext(ctx).Where("movie_id = ?", movie.ID).Delete(&MovieCredit{})
 	}
 
-	err := s.db.Save(&movie).Error
+	err := s.db.WithContext(ctx).Save(&movie).Error
 	return &movie, err
 }
 
-func (s *Store) GetPersonByTMDBID(tmdbID int) (*Person, error) {
+func (s *Store) GetPersonByTMDBID(ctx context.Context, tmdbID int) (*Person, error) {
 	var person Person
-	result := s.db.Where("tmdb_id = ?", tmdbID).First(&person)
+	result := s.db.WithContext(ctx).Where("tmdb_id = ?", tmdbID).First(&person)
 	if result.Error == nil {
 		return &person, nil
 	}
 	return nil, result.Error
 }
 
-func (s *Store) SavePersonDetails(tmdbData *TMDBPersonDetails) (*Person, error) {
+func (s *Store) SavePersonDetails(ctx context.Context, tmdbData *TMDBPersonDetails) (*Person, error) {
 	var person Person
-	result := s.db.Where(Person{TMDBID: tmdbData.ID}).Assign(Person{
+	result := s.db.WithContext(ctx).Where(Person{TMDBID: tmdbData.ID}).Assign(Person{
 		Name:       tmdbData.Name,
 		ProfileURL: tmdbData.ProfilePath,
 	}).FirstOrCreate(&person)

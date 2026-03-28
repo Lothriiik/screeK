@@ -65,6 +65,7 @@ func (app *Application) mount() {
 	bookingService := bookings.NewService(bookingStore, app.redis)
 	bookingHandler := bookings.NewHandler(bookingService)
 	bookingHandler.RegisterRoutes(app.router, authMiddleware)
+
 }
 
 func (app *Application) Run() error {
@@ -72,15 +73,17 @@ func (app *Application) Run() error {
 	if err != nil {
 		return err
 	}
+
 	app.db = db
-
 	app.redis = redis.InitRedis(app.config.RedisURL)
-
+	
 	log.Println("Rodando migrações do banco de dados (AutoMigrate)...")
 	movies.AutoMigrate(app.db)
 	users.AutoMigrate(app.db)
 	bookings.AutoMigrate(app.db)
 	social.AutoMigrate(app.db)
+
+	bookings.StartExpirationWorker(app.db)
 
 	app.mount()
 

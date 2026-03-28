@@ -32,8 +32,8 @@ func NewAuthService(userRepo users.UserRepository, jwt *JWTService, redisClient 
 	return &AuthService{userRepo: userRepo, jwt: jwt, redis: redisClient}
 }
 
-func (s *AuthService) Login(username, password string) (string, error) {
-	user, err := s.userRepo.GetUserByUsername(username)
+func (s *AuthService) Login(ctx context.Context, username, password string) (string, error) {
+	user, err := s.userRepo.GetUserByUsername(ctx, username)
 	if err != nil {
 		return "", ErrInvalidCredentials
 	}
@@ -69,8 +69,8 @@ func (s *AuthService) Logout(ctx context.Context, tokenString string) error {
 	return nil
 }
 
-func (s *AuthService) ForgotPassword(email string) (string, error) {
-	user, err := s.userRepo.GetUserByEmail(email)
+func (s *AuthService) ForgotPassword(ctx context.Context, email string) (string, error) {
+	user, err := s.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return "", ErrUserNotFound
 	}
@@ -83,13 +83,13 @@ func (s *AuthService) ForgotPassword(email string) (string, error) {
 	return token, nil
 }
 
-func (s *AuthService) ResetPassword(token, newPassword string) error {
+func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword string) error {
 	claims, err := s.jwt.ValidateToken(token)
 	if err != nil {
 		return ErrInvalidToken
 	}
 
-	user, err := s.userRepo.GetUserByID(claims.UserID)
+	user, err := s.userRepo.GetUserByID(ctx, claims.UserID)
 	if err != nil {
 		return ErrUserNotFound
 	}
@@ -104,15 +104,15 @@ func (s *AuthService) ResetPassword(token, newPassword string) error {
 	}
 
 	user.Password = hashedPassword
-	if err := s.userRepo.UpdateUser(user); err != nil {
+	if err := s.userRepo.UpdateUser(ctx, user); err != nil {
 		return ErrPasswordUpdate
 	}
 
 	return nil
 }
 
-func (s *AuthService) ChangePassword(userID int, oldPassword, newPassword string) error {
-	user, err := s.userRepo.GetUserByID(userID)
+func (s *AuthService) ChangePassword(ctx context.Context, userID int, oldPassword, newPassword string) error {
+	user, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return ErrUserNotFound
 	}
@@ -127,7 +127,7 @@ func (s *AuthService) ChangePassword(userID int, oldPassword, newPassword string
 	}
 
 	user.Password = hashedPassword
-	if err := s.userRepo.UpdateUser(user); err != nil {
+	if err := s.userRepo.UpdateUser(ctx, user); err != nil {
 		return ErrPasswordUpdate
 	}
 

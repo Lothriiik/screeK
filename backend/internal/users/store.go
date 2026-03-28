@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"errors"
 	"gorm.io/gorm"
 )
@@ -15,80 +16,73 @@ func NewStore(db *gorm.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) CreateUser(user *User) error {
-	result := s.db.Create(user)
+func (s *Store) CreateUser(ctx context.Context, user *User) error {
+	result := s.db.WithContext(ctx).Create(user)
 	return result.Error
 }
 
-func (s *Store) GetUserByID(id int) (*User, error) {
+func (s *Store) GetUserByID(ctx context.Context, id int) (*User, error) {
 	var user User
-	result := s.db.Preload("FavoriteMovies").First(&user, id)
+	result := s.db.WithContext(ctx).Preload("FavoriteMovies").First(&user, id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, ErrUserNotFound
 	}
 	return &user, result.Error
 }
 
-func (s *Store) SearchUsers(query string) ([]User, error) {
+func (s *Store) SearchUsers(ctx context.Context, query string) ([]User, error) {
 	var users []User
 	pattern := "%" + query + "%"
-	result := s.db.Where("username ILIKE ? OR name ILIKE ?", pattern, pattern).Find(&users)
+	result := s.db.WithContext(ctx).Where("username ILIKE ? OR name ILIKE ?", pattern, pattern).Find(&users)
 	return users, result.Error
 }
 
-func (s *Store) UpdateUser(user *User) error {
-	result := s.db.Save(user)
+func (s *Store) UpdateUser(ctx context.Context, user *User) error {
+	result := s.db.WithContext(ctx).Save(user)
 	return result.Error
 }
 
-func (s *Store) DeleteUser(id int) error {
-	result := s.db.Delete(&User{}, id)
+func (s *Store) DeleteUser(ctx context.Context, id int) error {
+	result := s.db.WithContext(ctx).Delete(&User{}, id)
 	return result.Error
 }
 
-func (s *Store) AddFavorite(userID int, movieID int) error {
-	result := s.db.Exec("INSERT INTO user_favorite_movies (user_id, movie_id) VALUES (?, ?) ON CONFLICT DO NOTHING", userID, movieID)
+func (s *Store) AddFavorite(ctx context.Context, userID int, movieID int) error {
+	result := s.db.WithContext(ctx).Exec("INSERT INTO user_favorite_movies (user_id, movie_id) VALUES (?, ?) ON CONFLICT DO NOTHING", userID, movieID)
 	return result.Error
 }
 
-func (s *Store) RemoveFavorite(userID int, movieID int) error {
-	result := s.db.Exec("DELETE FROM user_favorite_movies WHERE user_id = ? AND movie_id = ?", userID, movieID)
+func (s *Store) RemoveFavorite(ctx context.Context, userID int, movieID int) error {
+	result := s.db.WithContext(ctx).Exec("DELETE FROM user_favorite_movies WHERE user_id = ? AND movie_id = ?", userID, movieID)
 	return result.Error
 }
 
-func (s *Store) Login(user *User) error {
-	result := s.db.Where("username = ?", user.Username).First(&user)
-	return result.Error
-}
-
-func (s *Store) GetUserByUsername(username string) (*User, error) {
+func (s *Store) GetUserByUsername(ctx context.Context, username string) (*User, error) {
 	var user User
-	result := s.db.Where("username = ?", username).First(&user)
+	result := s.db.WithContext(ctx).Where("username = ?", username).First(&user)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, ErrUserNotFound
 	}
 	return &user, result.Error
 }
 
-func (s *Store) GetUserByEmail(email string) (*User, error) {
+func (s *Store) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	var user User
-	result := s.db.Where("email = ?", email).First(&user)
+	result := s.db.WithContext(ctx).Where("email = ?", email).First(&user)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, ErrUserNotFound
 	}
 	return &user, result.Error
 }
 
-func (s *Store) EmailExists(email string) (bool, error) {
+func (s *Store) EmailExists(ctx context.Context, email string) (bool, error) {
 	var count int64
-	err := s.db.Model(&User{}).Where("email = ?", email).Count(&count).Error
+	err := s.db.WithContext(ctx).Model(&User{}).Where("email = ?", email).Count(&count).Error
 	return count > 0, err
 }
 
-func (s *Store) UsernameExists(username string) (bool, error) {
+func (s *Store) UsernameExists(ctx context.Context, username string) (bool, error) {
 	var count int64
-	err := s.db.Model(&User{}).Where("username = ?", username).Count(&count).Error
+	err := s.db.WithContext(ctx).Model(&User{}).Where("username = ?", username).Count(&count).Error
 	return count > 0, err
 }
-
-

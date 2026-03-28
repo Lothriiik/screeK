@@ -1,6 +1,7 @@
 package movies
 
 import (
+	"context"
 	"time"
 )
 
@@ -16,8 +17,8 @@ func NewService(tmdb TMDBService, store MoviesRepository) *MovieService {
 	}
 }
 
-func (s *MovieService) SearchMovies(query string) ([]Movie, error) {
-	tmdbMovies, err := s.tmdb.SearchMovies(query)
+func (s *MovieService) SearchMovies(ctx context.Context, query string) ([]Movie, error) {
+	tmdbMovies, err := s.tmdb.SearchMovies(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -35,57 +36,57 @@ func (s *MovieService) SearchMovies(query string) ([]Movie, error) {
 			ReleaseDate: parsedDate,
 		}
 
-		_ = s.store.SaveMovie(&movie)
+		_ = s.store.SaveMovie(ctx, &movie)
 		localMovies = append(localMovies, movie)
 	}
 
 	return localMovies, nil
 }
 
-func (s *MovieService) GetMovieDetails(tmdbID int) (*Movie, error) {
-	localMovie, err := s.store.GetMovieByTMDBID(tmdbID)
+func (s *MovieService) GetMovieDetails(ctx context.Context, tmdbID int) (*Movie, error) {
+	localMovie, err := s.store.GetMovieByTMDBID(ctx, tmdbID)
 	if err == nil && localMovie != nil {
 		return localMovie, nil
 	}
 
-	tmdbDetails, err := s.tmdb.GetMovieDetails(tmdbID)
+	tmdbDetails, err := s.tmdb.GetMovieDetails(ctx, tmdbID)
 	if err != nil {
 		return nil, err
 	}
 
-	savedMovie, err := s.store.SaveMovieDetails(tmdbDetails)
+	savedMovie, err := s.store.SaveMovieDetails(ctx, tmdbDetails)
 	if err != nil {
 		return nil, err
 	}
 	return savedMovie, nil
 }
 
-func (s *MovieService) GetPersonDetails(tmdbID int) (*Person, error) {
-	localPerson, err := s.store.GetPersonByTMDBID(tmdbID)
+func (s *MovieService) GetPersonDetails(ctx context.Context, tmdbID int) (*Person, error) {
+	localPerson, err := s.store.GetPersonByTMDBID(ctx, tmdbID)
 	if err == nil && localPerson != nil {
 		return localPerson, nil
 	}
 
-	tmdbDetails, err := s.tmdb.GetPersonDetails(tmdbID)
+	tmdbDetails, err := s.tmdb.GetPersonDetails(ctx, tmdbID)
 	if err != nil {
 		return nil, err
 	}
 
-	savedPerson, err := s.store.SavePersonDetails(tmdbDetails)
+	savedPerson, err := s.store.SavePersonDetails(ctx, tmdbDetails)
 	if err != nil {
 		return nil, err
 	}
 	return savedPerson, nil
 }
 
-func (s *MovieService) GetPersonCredits(tmdbID int) ([]TMDBPersonMovieCast, error) {
-	credits, err := s.tmdb.GetPersonCredits(tmdbID)
+func (s *MovieService) GetPersonCredits(ctx context.Context, tmdbID int) ([]TMDBPersonMovieCast, error) {
+	credits, err := s.tmdb.GetPersonCredits(ctx, tmdbID)
 	if err != nil {
 		return nil, err
 	}
 	return credits.Cast, nil
 }
 
-func (s *MovieService) GetMovieRecommendations(tmdbID int) ([]TMDBMovie, error) {
-	return s.tmdb.GetMoviesRecommendations(tmdbID)
+func (s *MovieService) GetMovieRecommendations(ctx context.Context, tmdbID int) ([]TMDBMovie, error) {
+	return s.tmdb.GetMoviesRecommendations(ctx, tmdbID)
 }

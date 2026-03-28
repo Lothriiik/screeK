@@ -35,13 +35,14 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 }
 
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	var dto CreateUserDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
 		return
 	}
 
-	if err := dto.Validate(h.svc); err != nil {
+	if err := dto.Validate(ctx, h.svc); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
@@ -53,7 +54,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		Password: dto.Password,
 	}
 
-	if err := h.svc.CreateUser(userModel); err != nil {
+	if err := h.svc.CreateUser(ctx, userModel); err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao criar usuário"})
 		return
 	}
@@ -74,7 +75,7 @@ func (h *Handler) SearchUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := h.svc.SearchUsers(q)
+	users, err := h.svc.SearchUsers(r.Context(), q)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar usuários"})
 		return
@@ -99,7 +100,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
 		return
 	}
-	user, err := h.svc.GetUserByID(id)
+	user, err := h.svc.GetUserByID(r.Context(), id)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "Usuário não encontrado"})
 		return
@@ -137,7 +138,7 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.svc.GetUserByID(userID)
+	user, err := h.svc.GetUserByID(r.Context(), userID)
 	if err != nil {
 		http.Error(w, "Erro ao buscar dados", http.StatusInternalServerError)
 		return
@@ -181,7 +182,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
 		return
 	}
-	if err := h.svc.UpdateUser(&user); err != nil {
+	if err := h.svc.UpdateUser(r.Context(), &user); err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao atualizar usuário"})
 		return
 	}
@@ -210,7 +211,7 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.DeleteUser(userID, password); err != nil {
+	if err := h.svc.DeleteUser(r.Context(), userID, password); err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao deletar usuário: " + err.Error()})
 		return
 	}
@@ -232,7 +233,7 @@ func (h *Handler) AddFavorite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.svc.AddFavorite(userID, tmdbID)
+	err = h.svc.AddFavorite(r.Context(), userID, tmdbID)
 	if err != nil {
 		http.Error(w, "Erro ao favoritar", http.StatusInternalServerError)
 		return
@@ -256,7 +257,7 @@ func (h *Handler) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.svc.RemoveFavorite(userID, tmdbID)
+	err = h.svc.RemoveFavorite(r.Context(), userID, tmdbID)
 	if err != nil {
 		http.Error(w, "Erro ao remover favorito", http.StatusInternalServerError)
 		return

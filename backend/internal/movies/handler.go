@@ -35,7 +35,7 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	localMovies, err := h.svc.SearchMovies(query)
+	localMovies, err := h.svc.SearchMovies(r.Context(), query)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -47,7 +47,7 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
 	tmdbID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 
-	movie, err := h.svc.GetMovieDetails(tmdbID)
+	movie, err := h.svc.GetMovieDetails(r.Context(), tmdbID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao compilar cache do filme: " + err.Error()})
 		return
@@ -58,7 +58,7 @@ func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetPersonDetails(w http.ResponseWriter, r *http.Request) {
 	tmdbID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 
-	person, err := h.svc.GetPersonDetails(tmdbID)
+	person, err := h.svc.GetPersonDetails(r.Context(), tmdbID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao compilar cache da pessoa: " + err.Error()})
 		return
@@ -73,7 +73,7 @@ func (h *Handler) GetPersonMoviesProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	credits, err := h.svc.GetPersonCredits(tmdbID)
+	credits, err := h.svc.GetPersonCredits(r.Context(), tmdbID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "Créditos não encontrados no TMDB"})
 		return
@@ -89,7 +89,7 @@ func (h *Handler) GetRecommendationsProxy(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	recommendations, err := h.svc.GetMovieRecommendations(movieID)
+	recommendations, err := h.svc.GetMovieRecommendations(r.Context(), movieID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "Filme não encontrado ou sem recomendações"})
 		return

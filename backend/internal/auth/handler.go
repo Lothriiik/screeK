@@ -36,7 +36,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.svc.Login(logindto.Username, logindto.Password)
+	token, err := h.svc.Login(r.Context(), logindto.Username, logindto.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -68,7 +68,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.svc.ForgotPassword(forgotPasswordDTO.Email)
+	token, err := h.svc.ForgotPassword(r.Context(), forgotPasswordDTO.Email)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -84,7 +84,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.ResetPassword(resetPasswordDTO.Token, resetPasswordDTO.NewPassword); err != nil {
+	if err := h.svc.ResetPassword(r.Context(), resetPasswordDTO.Token, resetPasswordDTO.NewPassword); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -105,7 +105,7 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.ChangePassword(userID, dto.OldPassword, dto.Password); err != nil {
+	if err := h.svc.ChangePassword(r.Context(), userID, dto.OldPassword, dto.Password); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}

@@ -1,6 +1,7 @@
 package movies
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -102,12 +103,12 @@ type TMDBPersonMovieCast struct {
 	VoteAverage      float64 `json:"vote_average"`
 }
 
-func (c *TMDBClient) doRequest(endpoint string) (*http.Response, error) {
+func (c *TMDBClient) doRequest(ctx context.Context, endpoint string) (*http.Response, error) {
 	if c.token == "" {
 		return nil, fmt.Errorf("TMDB_TOKEN não encontrado no .env")
 	}
 
-	req, err := http.NewRequest("GET", endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -118,11 +119,11 @@ func (c *TMDBClient) doRequest(endpoint string) (*http.Response, error) {
 	return c.httpClient.Do(req)
 }
 
-func (c *TMDBClient) SearchMovies(query string) ([]TMDBMovie, error) {
+func (c *TMDBClient) SearchMovies(ctx context.Context, query string) ([]TMDBMovie, error) {
 	safeQuery := url.QueryEscape(query)
 	endpoint := fmt.Sprintf("https://api.themoviedb.org/3/search/movie?query=%s&language=pt-BR", safeQuery)
 
-	res, err := c.doRequest(endpoint)
+	res, err := c.doRequest(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -140,10 +141,10 @@ func (c *TMDBClient) SearchMovies(query string) ([]TMDBMovie, error) {
 	return tmdbRes.Results, nil
 }
 
-func (c *TMDBClient) GetMovieDetails(tmdbID int) (*TMDBMovieDetails, error) {
+func (c *TMDBClient) GetMovieDetails(ctx context.Context, tmdbID int) (*TMDBMovieDetails, error) {
 	endpoint := fmt.Sprintf("https://api.themoviedb.org/3/movie/%d?append_to_response=credits&language=pt-BR", tmdbID)
 
-	res, err := c.doRequest(endpoint)
+	res, err := c.doRequest(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -161,10 +162,10 @@ func (c *TMDBClient) GetMovieDetails(tmdbID int) (*TMDBMovieDetails, error) {
 	return &details, nil
 }
 
-func (c *TMDBClient) GetPersonDetails(id int) (*TMDBPersonDetails, error) {
+func (c *TMDBClient) GetPersonDetails(ctx context.Context, id int) (*TMDBPersonDetails, error) {
 	endpoint := fmt.Sprintf("https://api.themoviedb.org/3/person/%d?language=pt-BR", id)
 
-	res, err := c.doRequest(endpoint)
+	res, err := c.doRequest(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -182,10 +183,10 @@ func (c *TMDBClient) GetPersonDetails(id int) (*TMDBPersonDetails, error) {
 	return &details, nil
 }
 
-func (c *TMDBClient) GetPersonCredits(id int) (*TMDBPersonCredits, error) {
+func (c *TMDBClient) GetPersonCredits(ctx context.Context, id int) (*TMDBPersonCredits, error) {
 	endpoint := fmt.Sprintf("https://api.themoviedb.org/3/person/%d/movie_credits?language=pt-BR", id)
 
-	res, err := c.doRequest(endpoint)
+	res, err := c.doRequest(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -203,10 +204,10 @@ func (c *TMDBClient) GetPersonCredits(id int) (*TMDBPersonCredits, error) {
 	return &details, nil
 }
 
-func (c *TMDBClient) GetMoviesRecommendations(movieid int) ([]TMDBMovie, error) {
+func (c *TMDBClient) GetMoviesRecommendations(ctx context.Context, movieid int) ([]TMDBMovie, error) {
 	endpoint := fmt.Sprintf("https://api.themoviedb.org/3/movie/%d/recommendations?language=pt-BR", movieid)
 
-	res, err := c.doRequest(endpoint)
+	res, err := c.doRequest(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}

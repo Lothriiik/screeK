@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var _ BookingsRepository = (*Store)(nil)
+
 var (
 	ErrSeatAlreadyTaken    = errors.New("uma ou mais cadeiras já foram compradas ou estão no carrinho de outra pessoa")
 	ErrTransactionNotFound = errors.New("transação pendente não encontrada ou você não tem permissão")
