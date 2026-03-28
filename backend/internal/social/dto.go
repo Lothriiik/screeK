@@ -30,6 +30,11 @@ type LogMovieRequest struct {
 	Liked   bool    `json:"liked"`
 }
 
+type FeedResponse struct {
+	Posts      []PostResponseDTO `json:"posts"`
+	NextCursor uint              `json:"next_cursor"`
+}
+
 func (dto *CreatePostRequest) Validate() error {
 	if err := validate.Struct(dto); err != nil {
 		return errors.New("Erro de validação: PostType inválido ou conteúdo passou de 280 caracteres")

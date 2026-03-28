@@ -15,6 +15,7 @@ func NewService(store SocialRepository) *SocialService {
 type Service interface {
 	LogMovie(ctx context.Context, userID uint, movieID uint, req LogMovieRequest) error
 	CreatePost(ctx context.Context, userID uint, req CreatePostRequest) (*PostResponseDTO, error)
+	GetFeed(ctx context.Context, cursorID uint, limit int) (*FeedResponse, error)
 }
 
 func (s *SocialService) LogMovie(ctx context.Context, userID uint, movieID uint, req LogMovieRequest) error {
@@ -59,4 +60,39 @@ func (s *SocialService) CreatePost(ctx context.Context, userID uint, req CreateP
 	}
 
 	return dto, nil
+}
+
+func (s *SocialService) GetFeed(ctx context.Context, cursorID uint, limit int) (*FeedResponse, error) {
+
+	if limit <= 0 || limit > 50 {
+		limit = 20
+	}
+
+	posts, err := s.store.GetFeed(ctx, cursorID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	var dtos []PostResponseDTO
+	for _, p := range posts {
+		dtos = append(dtos, PostResponseDTO{
+			ID:           p.ID,
+			Author:       p.User.Username, 
+			PostType:     string(p.PostType),
+			Content:      p.Content,
+			LikesCount:   p.LikesCount,
+			RepliesCount: p.RepliesCount,
+			CreatedAt:    p.CreatedAt.Format("02/01/2006 15:04"),
+		})
+	}
+
+	var nextCursor uint
+	if len(posts) > 0 {
+		nextCursor = posts[len(posts)-1].ID
+	}
+
+	return &FeedResponse{
+		Posts:      dtos,
+		NextCursor: nextCursor,
+	}, nil
 }

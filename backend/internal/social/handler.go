@@ -22,6 +22,7 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 		r.Use(authMiddleware)
 		r.Post("/movies/{id}/log", h.LogMovie)
 		r.Post("/posts", h.CreatePost)
+		r.Get("/feed", h.GetFeed)
 	})
 }
 
@@ -76,3 +77,33 @@ func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 
 	httputil.WriteJSON(w, http.StatusCreated, postResponse)
 }
+
+func (h *Handler) GetFeed(w http.ResponseWriter, r *http.Request) {
+	userIDAny := r.Context().Value(httputil.UserIDKey)
+	_, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+
+	cursorStr := r.URL.Query().Get("cursor")
+	limitStr := r.URL.Query().Get("limit")
+
+	var cursorID, limit int
+	if cursorStr != "" {
+		cursorID, _ = strconv.Atoi(cursorStr)
+	}
+	if limitStr != "" {
+		limit, _ = strconv.Atoi(limitStr)
+	}
+
+	feedResponse, err := h.svc.GetFeed(r.Context(), uint(cursorID), limit)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao montar o feed: " + err.Error()})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, feedResponse)
+}
+
