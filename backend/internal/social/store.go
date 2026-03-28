@@ -20,3 +20,7 @@ func NewStore(db *gorm.DB) *Store {
 func (s *Store) UpsertMovieLog(ctx context.Context, log *MovieLog) error {
 	return s.db.WithContext(ctx).Save(log).Error
 }
+
+func (s *Store) CreatePost(ctx context.Context, post *Post) error {
+	return s.db.WithContext(ctx).Create(post).Error
+}

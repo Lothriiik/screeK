@@ -21,6 +21,7 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
 		r.Post("/movies/{id}/log", h.LogMovie)
+		r.Post("/posts", h.CreatePost)
 	})
 }
 
@@ -51,4 +52,27 @@ func (h *Handler) LogMovie(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Atividade salva com sucesso!"})
+}
+
+func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
+	userIDAny := r.Context().Value(httputil.UserIDKey)
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Não logado ou token expirado", http.StatusUnauthorized)
+		return
+	}
+
+	var req CreatePostRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Payload JSON inválido ou corrompido"})
+		return
+	}
+
+	postResponse, err := h.svc.CreatePost(r.Context(), uint(userID), req)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusCreated, postResponse)
 }
