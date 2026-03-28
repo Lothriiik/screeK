@@ -1,10 +1,10 @@
 package bookings
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
-	"context"
 
 	"github.com/StartLivin/cine-pass/backend/internal/movies"
 	"gorm.io/gorm"
@@ -28,15 +28,15 @@ func NewStore(db *gorm.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetCinemaByID(id int) (*Cinema, error) {
+func (s *Store) GetCinemaByID(ctx context.Context, id int) (*Cinema, error) {
 	var cinema Cinema
-	if err := s.db.Preload("Rooms").First(&cinema, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("Rooms").First(&cinema, id).Error; err != nil {
 		return nil, err
 	}
 	return &cinema, nil
 }
 
-func (s *Store) GetMoviesPlaying(city string, date string) ([]movies.Movie, error) {
+func (s *Store) GetMoviesPlaying(ctx context.Context, city string, date string) ([]movies.Movie, error) {
 	var moviesList []movies.Movie
 
 	parsedDate, err := time.Parse("2006-01-02", date)
@@ -55,7 +55,7 @@ func (s *Store) GetMoviesPlaying(city string, date string) ([]movies.Movie, erro
 		  AND s.start_time >= ? 
 		  AND s.start_time < ?
 	`
-	err = s.db.Preload("Genres").Raw(query, city, parsedDate, endOfDay).Find(&moviesList).Error
+	err = s.db.WithContext(ctx).Preload("Genres").Raw(query, city, parsedDate, endOfDay).Find(&moviesList).Error
 
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (s *Store) GetMoviesPlaying(city string, date string) ([]movies.Movie, erro
 	return moviesList, nil
 }
 
-func (s *Store) GetSessionsByMovie(movieID int, city string, date string) ([]Session, error) {
+func (s *Store) GetSessionsByMovie(ctx context.Context, movieID int, city string, date string) ([]Session, error) {
 	var sessions []Session
 
 	parsedDate, err := time.Parse("2006-01-02", date)
@@ -82,18 +82,18 @@ func (s *Store) GetSessionsByMovie(movieID int, city string, date string) ([]Ses
 		  AND s.start_time >= ? 
 		  AND s.start_time < ?
 	`
-	err = s.db.Preload("Room").Preload("Room.Cinema").Raw(query, movieID, city, parsedDate, endOfDay).Find(&sessions).Error
+	err = s.db.WithContext(ctx).Preload("Room").Preload("Room.Cinema").Raw(query, movieID, city, parsedDate, endOfDay).Find(&sessions).Error
 	if err != nil {
 		return nil, err
 	}
 	return sessions, nil
 }
 
-func (s *Store) GetSeatsBySession(sessionID int) ([]Seat, error) {
+func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]Seat, error) {
 	var seats []Seat
 	var roomID int
 
-	if err := s.db.Model(&Session{}).Select("room_id").Where("id = ?", sessionID).Scan(&roomID).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&Session{}).Select("room_id").Where("id = ?", sessionID).Scan(&roomID).Error; err != nil {
 		return nil, err
 	}
 
@@ -108,7 +108,7 @@ func (s *Store) GetSeatsBySession(sessionID int) ([]Seat, error) {
 		WHERE s.room_id = ?
 		ORDER BY s.row, s.number
 	`
-	err := s.db.Raw(query, sessionID, roomID).Scan(&seats).Error
+	err := s.db.WithContext(ctx).Raw(query, sessionID, roomID).Scan(&seats).Error
 
 	if err != nil {
 		return nil, err
@@ -117,19 +117,19 @@ func (s *Store) GetSeatsBySession(sessionID int) ([]Seat, error) {
 	return seats, nil
 }
 
-func (s *Store) GetSessionByID(sessionID int) (*Session, error) {
+func (s *Store) GetSessionByID(ctx context.Context, sessionID int) (*Session, error) {
     var session Session
-    if err := s.db.First(&session, sessionID).Error; err != nil {
+    if err := s.db.WithContext(ctx).First(&session, sessionID).Error; err != nil {
         return nil, err
     }
     return &session, nil
 }
 
 
-func (s *Store) CreateReservation(userID, sessionID int, seatIDs []int, totalAmount int) (*Transaction, error) {
+func (s *Store) CreateReservation(ctx context.Context, userID, sessionID int, seatIDs []int, totalAmount int) (*Transaction, error) {
 	var transaction Transaction
 
-	err := s.db.Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 
 		var occupiedCount int64
 		if err := tx.Model(&Ticket{}).Where("seat_id IN ? AND session_id = ? AND status != 'CANCELLED'", seatIDs, sessionID).Count(&occupiedCount).Error; err != nil {
@@ -229,7 +229,7 @@ func (s *Store) CancelTicket(ctx context.Context, ticketID int, userID int) erro
 
 func (s *Store) GetUserTickets(ctx context.Context, userID int, status string) ([]Ticket, error) {
 	var tickets []Ticket
-	query := s.db.Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").Where("trx.user_id = ?", userID)
+	query := s.db.WithContext(ctx).Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").Where("trx.user_id = ?", userID)
 
 	if status != "" {
 		query = query.Where("tickets.status = ?", status)
@@ -242,11 +242,9 @@ func (s *Store) GetUserTickets(ctx context.Context, userID int, status string) (
 
 func (s *Store) GetTicketDetail(ctx context.Context, ticketID int, userID int) (*Ticket, error) {
 	var ticket Ticket
-	query := s.db.Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").Where("tickets.id = ? AND trx.user_id = ?", ticketID, userID)
+	query := s.db.WithContext(ctx).Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").Where("tickets.id = ? AND trx.user_id = ?", ticketID, userID)
 
 	err:= query.Preload("Seat").Preload("Session.Movie").Preload("Session.Room.Cinema").First(&ticket).Error
 
 	return &ticket, err
 }
-
-

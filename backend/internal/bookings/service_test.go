@@ -79,7 +79,7 @@ func TestConcurrentReservations(t *testing.T) {
 		go func(idx int, uID int) {
 			defer wg.Done()
 			log.Printf("user %d attempting to reserve seat %d", uID, freeSeatID)
-			_, errs[idx] = service.ReserveSeats(uID, sessionID, seatIDs)
+			_, errs[idx] = service.ReserveSeats(context.Background(), uID, sessionID, seatIDs)
 		}(i, users[i])
 	}
 

@@ -17,9 +17,10 @@ type Service interface {
 }
 
 func (s *SocialService) LogMovie(ctx context.Context, userID uint, movieID uint, req LogMovieRequest) error {
-	// 1. Você usa o validate.Struct(req) aqui e retorna res.ValidationError...
+	if err := req.Validate(); err != nil {
+		return err
+	}
 
-	// 2. Você monta a struct do Gorm
 	log := &MovieLog{
 		UserID:  userID,
 		MovieID: movieID,
@@ -27,6 +28,6 @@ func (s *SocialService) LogMovie(ctx context.Context, userID uint, movieID uint,
 		Rating:  req.Rating,
 		Liked:   req.Liked,
 	}
-	// 3. Repassa o "ctx" lá pro Banco!
+	
 	return s.store.UpsertMovieLog(ctx, log)
 }

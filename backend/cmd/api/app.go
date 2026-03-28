@@ -66,6 +66,11 @@ func (app *Application) mount() {
 	bookingHandler := bookings.NewHandler(bookingService)
 	bookingHandler.RegisterRoutes(app.router, authMiddleware)
 
+	socialStore := social.NewStore(app.db)
+	socialService := social.NewService(socialStore)
+	socialHandler := social.NewHandler(socialService)
+	socialHandler.RegisterRoutes(app.router, authMiddleware)
+
 }
 
 func (app *Application) Run() error {

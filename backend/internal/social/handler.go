@@ -1,1 +1,54 @@
 package social
+
+import (
+	"encoding/json"
+	"net/http"
+	"strconv"
+
+	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
+	"github.com/go-chi/chi/v5"
+)
+
+type Handler struct {
+	svc Service
+}
+
+func NewHandler(svc Service) *Handler {
+	return &Handler{svc: svc}
+}
+
+func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler) http.Handler) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMiddleware)
+		r.Post("/movies/{id}/log", h.LogMovie)
+	})
+}
+
+func (h *Handler) LogMovie(w http.ResponseWriter, r *http.Request) {
+    userIDAny := r.Context().Value(httputil.UserIDKey)
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	movieIDStr := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(movieIDStr)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID de filme inválido"})
+		return
+	}
+
+	var req LogMovieRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		return
+	}
+
+	if err := h.svc.LogMovie(r.Context(), uint(userID), uint(movieID), req); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Atividade salva com sucesso!"})
+}

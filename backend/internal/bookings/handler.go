@@ -43,7 +43,7 @@ func (h *Handler) GetMoviesPlaying(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	moviesPlaying, err := h.service.GetMoviesPlaying(city, date)
+	moviesPlaying, err := h.service.GetMoviesPlaying(r.Context(), city, date)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar filmes em cartaz: " + err.Error()})
 		return
@@ -68,7 +68,7 @@ func (h *Handler) GetMovieSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := h.service.GetMovieSessionsGroupedByCinema(movieID, city, date)
+	response, err := h.service.GetMovieSessionsGroupedByCinema(r.Context(), movieID, city, date)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar sessões: " + err.Error()})
 		return
@@ -85,7 +85,7 @@ func (h *Handler) GetSeatsBySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	seats, err := h.service.GetSeatsBySession(sessionID)
+	seats, err := h.service.GetSeatsBySession(r.Context(), sessionID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar mapa de assentos: " + err.Error()})
 		return
@@ -108,7 +108,7 @@ func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transaction, err := h.service.ReserveSeats(userID, dto.SessionID, dto.SeatIDs)
+	transaction, err := h.service.ReserveSeats(r.Context(), userID, dto.SessionID, dto.SeatIDs)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusConflict, map[string]string{"error": "A cadeira já foi reservada!"})
 		return

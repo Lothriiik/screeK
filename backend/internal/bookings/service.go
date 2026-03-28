@@ -28,12 +28,12 @@ func NewService(store BookingsRepository, redisClient *redisclient.Client) *Book
 	}
 }
 
-func (s *BookingsService) GetMoviesPlaying(city, date string) ([]movies.Movie, error) {
-	return s.store.GetMoviesPlaying(city, date)
+func (s *BookingsService) GetMoviesPlaying(ctx context.Context, city, date string) ([]movies.Movie, error) {
+	return s.store.GetMoviesPlaying(ctx, city, date)
 }
 
-func (s *BookingsService) GetMovieSessionsGroupedByCinema(movieID int, city, date string) ([]CinemaSessionsResponseDTO, error) {
-	sessions, err := s.store.GetSessionsByMovie(movieID, city, date)
+func (s *BookingsService) GetMovieSessionsGroupedByCinema(ctx context.Context, movieID int, city, date string) ([]CinemaSessionsResponseDTO, error) {
+	sessions, err := s.store.GetSessionsByMovie(ctx, movieID, city, date)
 	if err != nil {
 		return nil, err
 	}
@@ -74,17 +74,16 @@ func (s *BookingsService) GetMovieSessionsGroupedByCinema(movieID int, city, dat
 	return response, nil
 }
 
-func (s *BookingsService) GetSeatsBySession(sessionID int) ([]Seat, error) {
-	return s.store.GetSeatsBySession(sessionID)
+func (s *BookingsService) GetSeatsBySession(ctx context.Context, sessionID int) ([]Seat, error) {
+	return s.store.GetSeatsBySession(ctx, sessionID)
 }
 
-func (s *BookingsService) GetSessionByID(sessionID int) (*Session, error) {
-    return s.store.GetSessionByID(sessionID)
+func (s *BookingsService) GetSessionByID(ctx context.Context, sessionID int) (*Session, error) {
+    return s.store.GetSessionByID(ctx, sessionID)
 }
 
 
-func (s *BookingsService) ReserveSeats(userID int, sessionID int, seatIDs []int) (*Transaction, error) {
-	ctx := context.Background()
+func (s *BookingsService) ReserveSeats(ctx context.Context, userID int, sessionID int, seatIDs []int) (*Transaction, error) {
 	var lockedAssets []string
 
 	for _, seats  := range seatIDs {
@@ -101,7 +100,7 @@ func (s *BookingsService) ReserveSeats(userID int, sessionID int, seatIDs []int)
 		lockedAssets = append(lockedAssets, seat)
 	}
 
-	session, err := s.store.GetSessionByID(sessionID)
+	session, err := s.store.GetSessionByID(ctx, sessionID)
 	if err != nil {
 		for _, lockedAsset := range  lockedAssets {
 			s.redisClient.Del(ctx, lockedAsset)
@@ -111,7 +110,7 @@ func (s *BookingsService) ReserveSeats(userID int, sessionID int, seatIDs []int)
 
 	totalAmount := int(session.Price) * len(seatIDs)
 
-	transaction, err := s.store.CreateReservation(userID, sessionID, seatIDs, totalAmount)
+	transaction, err := s.store.CreateReservation(ctx, userID, sessionID, seatIDs, totalAmount)
 	if err != nil {
 		for _, lockedAsset := range lockedAssets {
 			s.redisClient.Del(ctx, lockedAsset)
