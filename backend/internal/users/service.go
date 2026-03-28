@@ -96,6 +96,14 @@ func (s *UserService) GetUserByUsername(ctx context.Context, username string) (*
 	return s.repo.GetUserByUsername(ctx, username)
 }
 
+func (s *UserService) GetIDByUsername(ctx context.Context, username string) (uint, error) {
+	user, err := s.repo.GetUserByUsername(ctx, username)
+	if err != nil {
+		return 0, errors.New("Usuário não encontrado")
+	}
+	return uint(user.ID), nil
+}
+
 func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	return s.repo.GetUserByEmail(ctx, email)
 }

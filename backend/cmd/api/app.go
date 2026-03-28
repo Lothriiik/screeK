@@ -67,7 +67,7 @@ func (app *Application) mount() {
 	bookingHandler.RegisterRoutes(app.router, authMiddleware)
 
 	socialStore := social.NewStore(app.db)
-	socialService := social.NewService(socialStore)
+	socialService := social.NewService(socialStore, userService)
 	socialHandler := social.NewHandler(socialService)
 	socialHandler.RegisterRoutes(app.router, authMiddleware)
 

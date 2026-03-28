@@ -2,13 +2,19 @@ package social
 
 import "context"
 
-type SocialService struct {
-	store SocialRepository
+type UserProvider interface {
+	GetIDByUsername(ctx context.Context, username string) (uint, error)
 }
 
-func NewService(store SocialRepository) *SocialService {
+type SocialService struct {
+	store        SocialRepository
+	userProvider UserProvider
+}
+
+func NewService(store SocialRepository, userProvider UserProvider) *SocialService {
 	return &SocialService{
-		store: store,
+		store:        store,
+		userProvider: userProvider,
 	}
 }
 
@@ -115,7 +121,11 @@ func (s *SocialService) ToggleLike(ctx context.Context, userID uint, postID uint
 }
 
 func (s *SocialService) ToggleFollow(ctx context.Context, followerID uint, followeeUsername string) (bool, error) {
-	return s.store.ToggleFollow(ctx, followerID, followeeUsername)
+	followeeID, err := s.userProvider.GetIDByUsername(ctx, followeeUsername)
+	if err != nil {
+		return false, err
+	}
+	return s.store.ToggleFollow(ctx, followerID, followeeID)
 }
 
 
