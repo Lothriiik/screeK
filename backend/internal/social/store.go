@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var _ SocialRepository = (*Store)(nil)
@@ -68,5 +69,56 @@ func (s *Store) ReplyPost(ctx context.Context, userID uint, parentID uint, conte
 		return nil
 	})
 }
+
+func (s *Store) ToggleLike(ctx context.Context, userID uint, postID uint) (bool, error) {
+	var isLiked bool
+
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var like PostLike
+		
+		err := tx.Where("post_id = ? AND user_id = ?", postID, userID).First(&like).Error
+		
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			newLike := PostLike{
+				PostID: postID,
+				UserID: userID,
+			}
+			
+			res := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&newLike)
+			if res.Error != nil {
+				return res.Error
+			}
+			
+			if res.RowsAffected > 0 {
+				if err := tx.Model(&Post{}).Where("id = ?", postID).UpdateColumn("likes_count", gorm.Expr("likes_count + 1")).Error; err != nil {
+					return err
+				}
+				isLiked = true
+			}
+			return nil
+		}
+
+		res := tx.Delete(&like)
+		if res.Error != nil {
+			return res.Error
+		}
+
+		if res.RowsAffected > 0 {
+			if err := tx.Model(&Post{}).Where("id = ?", postID).UpdateColumn("likes_count", gorm.Expr("likes_count - 1")).Error; err != nil {
+				return err
+			}
+			isLiked = false
+		}
+		
+		return nil
+	})
+
+	return isLiked, err
+}
+
 
 

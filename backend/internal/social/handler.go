@@ -24,6 +24,8 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 		r.Post("/posts", h.CreatePost)
 		r.Get("/feed", h.GetFeed)
 		r.Post("/posts/{id}/reply", h.ReplyToPost)
+		r.Post("/posts/{id}/like", h.ToggleLike)
+
 	})
 }
 
@@ -137,4 +139,35 @@ func (h *Handler) ReplyToPost(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusCreated, map[string]string{"message": "Resposta enviada com sucesso!"})
 }
 
+func (h *Handler) ToggleLike(w http.ResponseWriter, r *http.Request) {
+	postIDStr := chi.URLParam(r, "id")
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid post ID format"})
+		return
+	}
+
+	userIDAny := r.Context().Value(httputil.UserIDKey)
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Unauthorized access", http.StatusUnauthorized)
+		return
+	}
+
+	liked, err := h.svc.ToggleLike(r.Context(), uint(userID), uint(postID))
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	msg := "Post liked"
+	if !liked {
+		msg = "Post unliked"
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]any{
+		"message": msg,
+		"liked":   liked,
+	})
+}
 

@@ -17,6 +17,8 @@ type Service interface {
 	CreatePost(ctx context.Context, userID uint, req CreatePostRequest) (*PostResponseDTO, error)
 	GetFeed(ctx context.Context, cursorID uint, limit int) (*FeedResponse, error)
 	ReplyToPost(ctx context.Context, userID uint, parentID uint, req ReplyRequest) error
+	ToggleLike(ctx context.Context, userID uint, postID uint) (bool, error)
+
 
 }
 
@@ -105,4 +107,9 @@ func (s *SocialService) ReplyToPost(ctx context.Context, userID uint, parentID u
 	}
 	return s.store.ReplyPost(ctx, userID, parentID, req.Content)
 }
+
+func (s *SocialService) ToggleLike(ctx context.Context, userID uint, postID uint) (bool, error) {
+	return s.store.ToggleLike(ctx, userID, postID)
+}
+
 

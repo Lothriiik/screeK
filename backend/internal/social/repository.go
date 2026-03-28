@@ -7,4 +7,5 @@ type SocialRepository interface {
 	CreatePost(ctx context.Context, post *Post) error
 	GetFeed(ctx context.Context, cursorID uint, limit int) ([]Post, error)
 	ReplyPost(ctx context.Context, userID uint, parentID uint, content string) error
+	ToggleLike(ctx context.Context, userID uint, postID uint) (bool, error)
 }
