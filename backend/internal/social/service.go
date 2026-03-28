@@ -18,6 +18,8 @@ type Service interface {
 	GetFeed(ctx context.Context, cursorID uint, limit int) (*FeedResponse, error)
 	ReplyToPost(ctx context.Context, userID uint, parentID uint, req ReplyRequest) error
 	ToggleLike(ctx context.Context, userID uint, postID uint) (bool, error)
+	ToggleFollow(ctx context.Context, followerID uint, followeeUsername string) (bool, error)
+
 
 
 }
@@ -111,5 +113,10 @@ func (s *SocialService) ReplyToPost(ctx context.Context, userID uint, parentID u
 func (s *SocialService) ToggleLike(ctx context.Context, userID uint, postID uint) (bool, error) {
 	return s.store.ToggleLike(ctx, userID, postID)
 }
+
+func (s *SocialService) ToggleFollow(ctx context.Context, followerID uint, followeeUsername string) (bool, error) {
+	return s.store.ToggleFollow(ctx, followerID, followeeUsername)
+}
+
 
 

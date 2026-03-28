@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/StartLivin/cine-pass/backend/internal/users"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -119,6 +120,43 @@ func (s *Store) ToggleLike(ctx context.Context, userID uint, postID uint) (bool,
 
 	return isLiked, err
 }
+
+func (s *Store) ToggleFollow(ctx context.Context, followerID uint, followeeUsername string) (bool, error) {
+	var isFollowing bool
+
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+
+		var followee users.User
+		if err := tx.Where("username = ?", followeeUsername).First(&followee).Error; err != nil {
+			return errors.New("Usuário não encontrado")
+		}
+
+		if followerID == uint(followee.ID) {
+			return errors.New("Você não pode seguir a si mesmo!")
+		}
+
+		var follow Follow
+		err := tx.Where("follower_id = ? AND followee_id = ?", followerID, followee.ID).First(&follow).Error
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			newFollow := Follow{FollowerID: followerID, FolloweeID: uint(followee.ID)}
+			if res := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&newFollow); res.Error != nil {
+				return res.Error
+			}
+			isFollowing = true
+			return nil
+		}
+
+		if err := tx.Delete(&follow).Error; err != nil {
+			return err
+		}
+		isFollowing = false
+		return nil
+	})
+
+	return isFollowing, err
+}
+
 
 
 

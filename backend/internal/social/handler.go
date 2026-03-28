@@ -25,6 +25,8 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 		r.Get("/feed", h.GetFeed)
 		r.Post("/posts/{id}/reply", h.ReplyToPost)
 		r.Post("/posts/{id}/like", h.ToggleLike)
+		r.Post("/users/{username}/follow", h.ToggleFollow)
+
 
 	})
 }
@@ -170,4 +172,32 @@ func (h *Handler) ToggleLike(w http.ResponseWriter, r *http.Request) {
 		"liked":   liked,
 	})
 }
+
+func (h *Handler) ToggleFollow(w http.ResponseWriter, r *http.Request) {
+	targetUsername := chi.URLParam(r, "username")
+
+	userIDAny := r.Context().Value(httputil.UserIDKey)
+	userID, ok := userIDAny.(int)
+	if !ok {
+		http.Error(w, "Unauthorized access", http.StatusUnauthorized)
+		return
+	}
+
+	isFollowing, err := h.svc.ToggleFollow(r.Context(), uint(userID), targetUsername)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	msg := "Agora você está seguindo " + targetUsername + ""
+	if !isFollowing {
+		msg = "Você deixou de seguir " + targetUsername + ""
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]any{
+		"message":      msg,
+		"is_following": isFollowing,
+	})
+}
+
 
