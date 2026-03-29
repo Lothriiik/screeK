@@ -7,6 +7,7 @@ import (
 
 type Mailer interface {
 	SendTicketEmail(to, userName, qrCode string) error
+	SendPasswordReset(to, token string) error
 }
 
 type ResendClient struct {
@@ -25,6 +26,18 @@ func (r *ResendClient) SendTicketEmail(to, userName, qrCode string) error {
 		Html:    fmt.Sprintf("<p>Olá %s,</p><p>Sua compra foi aprovada! Aqui está o QRCode do seu ingresso:</p><p><strong>%s</strong></p><p>Apresente este código na entrada da Sessão.</p>", userName, qrCode),
 	}
 	
+	_, err := r.client.Emails.Send(params)
+	return err
+}
+
+func (r *ResendClient) SendPasswordReset(to, token string) error {
+	params := &resend.SendEmailRequest{
+		From:    "screeK <onboarding@resend.dev>",
+		To:      []string{to},
+		Subject: "Recuperação de Senha - screeK 🔑",
+		Html:    fmt.Sprintf("<p>Você solicitou a recuperação de senha.</p><p>Use o token abaixo para definir sua nova senha:</p><p><strong>%s</strong></p><p>Este token expira em 15 minutos.</p>", token),
+	}
+
 	_, err := r.client.Emails.Send(params)
 	return err
 }

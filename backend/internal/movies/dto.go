@@ -6,3 +6,7 @@ type MovieDTO struct {
     Title      	string 	`json:"title"`
     PosterURL  	string 	`json:"poster_url"`
 }
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
