@@ -28,10 +28,67 @@ func (s *Store) CreatePost(ctx context.Context, post *Post) error {
 	return s.db.WithContext(ctx).Create(post).Error
 }
 
-func (s *Store) GetFeed(ctx context.Context, cursorID uint, limit int) ([]Post, error) {
+func (s *Store) GetPostByID(ctx context.Context, postID uint) (*Post, error) {
+	var post Post
+	err := s.db.WithContext(ctx).Preload("User").First(&post, postID).Error
+	return &post, err
+}
+
+func (s *Store) UpdatePost(ctx context.Context, post *Post) error {
+	return s.db.WithContext(ctx).Save(post).Error
+}
+
+func (s *Store) DeletePost(ctx context.Context, postID uint) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 1. Decrementar replies_count do pai, se existir
+		var post Post
+		if err := tx.First(&post, postID).Error; err == nil && post.ParentID != nil {
+			tx.Model(&Post{}).Where("id = ?", *post.ParentID).UpdateColumn("replies_count", gorm.Expr("replies_count - 1"))
+		}
+
+		// 2. Apagar curtidas (PostLike)
+		if err := tx.Where("post_id = ?", postID).Delete(&PostLike{}).Error; err != nil {
+			return err
+		}
+
+		// 3. Apagar o post (e recursivamente os replies)
+		if err := tx.Where("parent_id = ?", postID).Delete(&Post{}).Error; err != nil {
+			return err
+		}
+
+		return tx.Delete(&Post{}, postID).Error
+	})
+}
+
+func (s *Store) GetGlobalFeed(ctx context.Context, cursorID uint, limit int) ([]Post, error) {
 	var posts []Post
 
 	query := s.db.WithContext(ctx).Model(&Post{})
+
+	if cursorID > 0 {
+		query = query.Where("id < ?", cursorID)
+	}
+
+	err := query.
+		Preload("User").
+		Order("id DESC").
+		Limit(limit).
+		Find(&posts).Error
+
+	return posts, err
+}
+
+func (s *Store) GetFollowingFeed(ctx context.Context, userID uuid.UUID, cursorID uint, limit int) ([]Post, error) {
+	var posts []Post
+
+	followingSubquery := s.db.WithContext(ctx).
+		Model(&Follow{}).
+		Select("followee_id").
+		Where("follower_id = ?", userID)
+
+	query := s.db.WithContext(ctx).
+		Model(&Post{}).
+		Where("user_id IN (?) OR user_id = ?", followingSubquery, userID)
 
 	if cursorID > 0 {
 		query = query.Where("id < ?", cursorID)
@@ -55,7 +112,7 @@ func (s *Store) ReplyPost(ctx context.Context, userID uuid.UUID, parentID uint, 
 
 		reply := Post{
 			UserID:   userID,
-			PostType: PostTypeText,
+			PostType: PostType(PostTypeText),
 			Content:  content,
 			ParentID: &parentID,
 		}
@@ -151,6 +208,55 @@ func (s *Store) ToggleFollow(ctx context.Context, followerID uuid.UUID, followee
 	return isFollowing, err
 }
 
+// --- Watchlist ---
 
+func (s *Store) AddToWatchlist(ctx context.Context, item *WatchlistItem) error {
+	return s.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(item).Error
+}
 
+func (s *Store) RemoveFromWatchlist(ctx context.Context, userID uuid.UUID, movieID uint) error {
+	return s.db.WithContext(ctx).Where("user_id = ? AND movie_id = ?", userID, movieID).Delete(&WatchlistItem{}).Error
+}
 
+func (s *Store) GetWatchlist(ctx context.Context, userID uuid.UUID) ([]WatchlistItem, error) {
+	var items []WatchlistItem
+	err := s.db.WithContext(ctx).Preload("Movie").Where("user_id = ?", userID).Find(&items).Error
+	return items, err
+}
+
+// --- MovieLists ---
+
+func (s *Store) CreateMovieList(ctx context.Context, list *MovieList) error {
+	return s.db.WithContext(ctx).Create(list).Error
+}
+
+func (s *Store) GetMovieLists(ctx context.Context, userID uuid.UUID) ([]MovieList, error) {
+	var lists []MovieList
+	err := s.db.WithContext(ctx).Preload("Items").Where("user_id = ?", userID).Find(&lists).Error
+	return lists, err
+}
+
+func (s *Store) GetMovieListByID(ctx context.Context, listID uint) (*MovieList, error) {
+	var list MovieList
+	err := s.db.WithContext(ctx).Preload("User").Preload("Items.Movie").First(&list, listID).Error
+	return &list, err
+}
+
+func (s *Store) AddMovieToList(ctx context.Context, listID uint, movieID uint) error {
+	item := MovieListItem{ListID: listID, MovieID: movieID}
+	return s.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&item).Error
+}
+
+func (s *Store) RemoveMovieFromList(ctx context.Context, listID uint, movieID uint) error {
+	return s.db.WithContext(ctx).Where("list_id = ? AND movie_id = ?", listID, movieID).Delete(&MovieListItem{}).Error
+}
+
+func (s *Store) DeleteMovieList(ctx context.Context, listID uint) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Apagar itens da lista
+		if err := tx.Where("list_id = ?", listID).Delete(&MovieListItem{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&MovieList{}, listID).Error
+	})
+}
