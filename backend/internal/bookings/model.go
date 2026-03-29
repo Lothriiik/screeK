@@ -46,10 +46,10 @@ const (
 )
 
 type Cinema struct {
-	ID      int    `json:"id" gorm:"primaryKey;autoIncrement"`
-	Name    string `json:"name" gorm:"not null"`
-	Address string `json:"address" gorm:"not null"`
-	City    string `json:"city" gorm:"not null"`
+	ID      int    		`json:"id" gorm:"primaryKey;autoIncrement"`
+	Name    string 		`json:"name" gorm:"not null"`
+	Address string		 `json:"address" gorm:"not null"`
+	City    string 		`json:"city" gorm:"not null"`
 	Phone   string       `json:"phone" gorm:"not null"`
 	Email   string       `json:"email" gorm:"not null"`
 	Rooms   []Room       `json:"rooms" gorm:"foreignKey:CinemaID"`
@@ -69,9 +69,9 @@ type Room struct {
 
 type Seat struct {
 	ID         int    `json:"id" gorm:"primaryKey;autoIncrement"`
-	RoomID     int    `json:"room_id" gorm:"not null"`
-	Row        string `json:"row" gorm:"not null"`
-	Number     int    `json:"number" gorm:"not null"`
+	RoomID     int    `json:"room_id" gorm:"not null;index:idx_seats_room_row_number,composite:room"`
+	Row        string `json:"row" gorm:"not null;index:idx_seats_room_row_number,composite:row"`
+	Number     int    `json:"number" gorm:"not null;index:idx_seats_room_row_number,composite:number"`
 	PosX       int    `json:"pos_x" gorm:"not null"`
 	PosY       int    `json:"pos_y" gorm:"not null"`
 	Type       string `json:"type" gorm:"not null"`
@@ -81,9 +81,9 @@ type Seat struct {
 
 type Session struct {
 	ID        	int          `json:"id" gorm:"primaryKey;autoIncrement"`
-	MovieID  	int          `json:"movie_id" gorm:"not null"`
-	RoomID    	int          `json:"room_id" gorm:"not null"`
-	StartTime   time.Time    `json:"start_time" gorm:"not null"`
+	MovieID  	int          `json:"movie_id" gorm:"not null;index"`
+	RoomID    	int          `json:"room_id" gorm:"not null;index"`
+	StartTime   time.Time    `json:"start_time" gorm:"not null;index"`
 	Price       int			 `json:"price" gorm:"not null"`
 	SessionType SessionType  `json:"session_type" gorm:"type:varchar(20);not null;default:'REGULAR'"`
 	IsFree      bool         `json:"is_free" gorm:"default:false"`
@@ -93,9 +93,9 @@ type Session struct {
 
 type Transaction struct {
 	ID            uuid.UUID     `json:"id" gorm:"type:uuid;primaryKey"` 
-	UserID        uuid.UUID     `json:"user_id" gorm:"type:uuid;not null"`
+	UserID        uuid.UUID     `json:"user_id" gorm:"type:uuid;not null;index:idx_tx_user_status,composite:user"`
 	TotalAmount   int           `json:"total_amount" gorm:"not null"`
-	Status        TicketStatus  `json:"status" gorm:"type:varchar(20);not null"`
+	Status        TicketStatus  `json:"status" gorm:"type:varchar(20);not null;index:idx_tx_user_status,composite:status"`
 	PaymentMethod string        `json:"payment_method" gorm:"not null"`
 	User          users.User    `json:"user" gorm:"foreignKey:UserID"`
 	Tickets       []Ticket      `json:"tickets" gorm:"foreignKey:TransactionID"`
@@ -104,13 +104,13 @@ type Transaction struct {
 
 type Ticket struct {
 	ID            uuid.UUID    `json:"id" gorm:"type:uuid;primaryKey"`
-	TransactionID uuid.UUID    `json:"transaction_id" gorm:"type:uuid;not null"` 
-	SessionID     int          `json:"session_id" gorm:"not null"`
-	SeatID        *int         `json:"seat_id"`
+	TransactionID uuid.UUID    `json:"transaction_id" gorm:"type:uuid;not null;index"` 
+	SessionID     int          `json:"session_id" gorm:"not null;index:idx_tickets_session_seat_status,composite:session"`
+	SeatID        *int         `json:"seat_id" gorm:"index:idx_tickets_session_seat_status,composite:seat"`
+	Status        TicketStatus `json:"status" gorm:"type:varchar(20);not null;index:idx_tickets_session_seat_status,composite:status"`
 	Type          TicketType   `json:"type" gorm:"type:varchar(20);not null;default:'STANDARD'"`
 	PricePaid     int          `json:"price_paid" gorm:"not null;default:0"`                     
 	QRCode        string       `json:"qr_code" gorm:"not null;unique"`
-	Status        TicketStatus `json:"status" gorm:"type:varchar(20);not null"`
 	Transaction   Transaction  `json:"-" gorm:"foreignKey:TransactionID"`
 	Session       Session      `json:"session" gorm:"foreignKey:SessionID"`
 	Seat          *Seat        `json:"seat" gorm:"foreignKey:SeatID"`

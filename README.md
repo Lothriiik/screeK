@@ -2,66 +2,88 @@
 
 > **O ecossistema perfeito para verdadeiros amantes de cinema. Descubra filmes, avalie, acompanhe seus amigos e compre seu ingresso — tudo no mesmo lugar.**
 
-O **screeK** é o software centralizado que resolve o problema da fragmentação na experiência do cinéfilo. Em vez de usar diferentes aplicativos para buscar filmes (IMDB/Letterboxd), conversar com amigos (Redes Sociais) e comprar o bilhete (Ingresso.com), o projeto une a **Auditoria Social** ao **Comércio de Ingresso**, tornando o processo orgânico, engajante e seguro.
+O **screeK** é uma plataforma que resolve a fragmentação da experiência do cinéfilo. Unificando a busca por metadados (TMDB), a interação social (Reviews/Feed) e a compra garantida de ingressos com **Locking de Assentos**, o projeto demonstra uma arquitetura robusta voltada para consistência e performance.
 
 ---
 
-## 🎯 Objetivo do Projeto (Portfólio / Aprendizado)
-- **Para o Usuário (Produto):** Unificar a experiência de ida ao cinema.
-- **Para o Desenvolvedor:** Desenvolver e expor arquiteturas Backend concisas de alto nível. Validar a performance e consistência transacional do ecossistema construído com alta linguagem de concorrência (Go), implementando travas precisas (Locking) durante a compra para assegurar a consistência de cadeiras simultâneas, servindo de portfólio rico.
+## 🎯 Objetivo do Projeto
+- **Para o Usuário:** Unificar a jornada de ida ao cinema em um único app social e transacional.
+- **Para o Desenvolvedor:** Validar a performance e consistência transacional usando **Go**, implementando travas precisas (Locking) via **Redis** para evitar double-booking, servindo como um portfólio técnico de alto nível.
 
 ---
 
-## � Requisitos Funcionais
+## 🏗 Arquitetura & Stack Técnica
 
-### 1. Gestão de Usuário e Autenticação
-- **RF01:** O usuário deve poder se cadastrar e fazer login no sistema (JWT).
-- **RF02:** O usuário deve poder ter um perfil customizável com foto, bio e seleção de pronomes.
-- **RF03:** O usuário deve poder fixar 3 filmes favoritos em seu perfil global.
+O backend é um **Monólito Modular** (Feature-First) onde cada domínio vive em seu próprio pacote, facilitando a manutenção e testes isolados.
 
-### 2. Domínio de Filmes (Catálogo)
-- **RF04:** O usuário deve poder pesquisar filmes e pessoas (Atores/Diretores).
-- **RF05:** O sistema consumirá e fará cache automático dos metadados globais da API TMDB.
-- **RF06:** O usuário deve acessar a biblioteca completa de informações de um filme: sinopse, capa, gênero, duração e membros do elenco.
-
-### 3. Aspectos Sociais e Iterativos
-- **RF07:** O usuário deve poder registrar ("logar") se assistiu a um filme, sua data de visualização, dar like e nota.
-- **RF08:** O usuário deve poder criar, editar e apagar "Reviews" textuais com **Defesa Anti-Spoiler** ativada.
-- **RF09:** O usuário deve ser capaz de curtir e comentar nas reviews de outras pessoas.
-- **RF10:** O fluxo comportará a função de Seguir e Deixar de Seguir perfis.
-- **RF11:** O sistema deve oferecer um Feed Pessoal ("Meus logs") e Feed Social ("Logs e reviews recentes dos meus amigos").
-- **RF12:** O usuário deve poder criar Listas customizadas e gerenciar itens da própria "Watchlist".
-
-### 4. Compra de Ingressos (Booking)
-- **RF13:** O sistema listará os Filmes Ativos em Cartaz na cidade/data escolhida.
-- **RF14:** O aplicativo mostrará a matriz visual das sessões mapeando as cadeiras ocupadas e livres.
-- **RF15:** O usuário deve conseguir selecionar e "travar" 1 ou mais cadeiras no banco de dados temporariamente (Lock).
-- **RF16:** O sistema fará a conversão do "Carrinho" em "Transaction Paga" mediante finalização, gerando tickets únicos com QR Code.
-- **RF17:** O dono do ingresso poderá cancelar bilhetes (estornando os assentos do banco).
-
-### 5. Notificações Tempo Real
-- **RF18:** O sistema enviará notificações através do sino global quando: um pacote de ingresso for lançado, a compra expirar, novas interações sociais acontecerem ou quando um filme da sua watchlist estrear no cinema local.
+### Tecnologias Core
+| Camada | Tecnologia |
+|--------|-----------|
+| **Linguagem** | Go 1.25+ |
+| **Banco de Dados** | PostgreSQL + GORM (Locks Pessimistas) |
+| **Cache & Locks** | Redis (TTL de 10min para assentos) |
+| **Pagamentos** | Stripe API (Idempotency + Webhooks) |
+| **E-mails** | Resend API (Tickets via QR Code) |
+| **Docs** | Swagger / OpenAPI (via `swaggo`) |
 
 ---
 
-## 🏗 Arquitetura & Tecnologias
-- **Backend Core:** **Monólito Modular** (Feature-First) em **Go** (Chi Router + net/http). Cada domínio (Users, Movies, Bookings, Social) vive em seu próprio pacote com handlers, models e stores isolados. Toda a API é **REST**.
-- **Banco de Dados:** PostgreSQL com **GORM**. Transações com Locking Pessimista para compras de ingressos. Índices compostos nas queries mais frequentes.
-- **Pagamentos & Webhooks:** Integração total com **Stripe** para processamento de pagamentos reais e gestão de idempotência.
-- **Emails Transacionais:** Despacho assíncrono de tickets via **Resend API**.
-- **Cache & Lock de Assentos:** **Redis** para lock temporário de poltronas (TTL) durante o fluxo de compra, evitando double-booking.
-- **Resiliência:** **Circuit Breaker** (`sony/gobreaker`) na integração com a API TMDB — se a API externa cair, o app serve dados do cache local.
-- **Segurança:** Bcrypt (hashing de senhas) + JWT (autenticação stateless) + Rate Limiting.
-- **Observabilidade:** Logging estruturado com `slog` (stdlib Go 1.21+).
-- **DevOps:** Docker + Docker Compose (Postgres + Redis + API) + CI/CD com GitHub Actions + Swagger/OpenAPI.
+## 🚀 Como Rodar o Projeto (Backend)
 
+### Pré-requisitos
+- Go 1.25+ e Docker / Docker Compose.
+- Tokens de API: [TMDB](https://www.themoviedb.org/settings/api), [Stripe](https://dashboard.stripe.com/apikeys) e [Resend](https://resend.com).
 
-## 🎨 UI & Frontend
-O ecossistema é suportado por uma Interface User-Centric baseada na estética **Brutalist Design**. O Design System independente define a tipografia, colorimetria e componentes isolados.
-- **Design System & Mockups:** [Acesse o projeto oficial no Figma](https://www.figma.com/design/YU8WBTTEUgTk70VLmZAtBo/Design-Project---screek?node-id=0-1&t=Ok9SFoy1isIhGm2T-1)
-- O frontend consome a API REST do backend.
+### 1. Configuração do Ambiente
+Crie um arquivo `.env` na pasta `backend/` seguindo o exemplo:
+```env
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/screek?sslmode=disable
+REDIS_URL=localhost:6379
+TMDB_TOKEN=seu_token
+JWT_SECRET=sua_secret
+STRIPE_KEY=sk_test_...
+RESEND_KEY=re_...
+```
 
-> Para detalhes das APIs e da Modelagem do Banco de Dados, consulte o [README Técnico na pasta /backend](backend/README.md).
+### 2. Subir Infraestrutura e API
+```bash
+# Na raiz do projeto ou na pasta backend
+docker-compose up -d
+go mod download
+go run cmd/api/main.go
+```
+A API estará disponível em `http://localhost:8003` (conforme config). O **Swagger** pode ser acessado em `/swagger/index.html`.
 
 ---
-*Projeto desenvolvido para fins de aprendizado, validação de arquitetura e portfólio profissional.*
+
+## 🛠 Fluxos Críticos & Performance
+
+### 🔒 Reserva de Assentos (Redis Lock)
+O sistema utiliza um **Locking Distribuído** no Redis com TTL de 10 minutos. Se o pagamento não for confirmado via Webhook do Stripe nesse período, os assentos são liberados automaticamente por um worker interno.
+
+### 🍱 Cache-Aside (TMDB)
+Para evitar limites de taxa da API externa e lentidão, o sistema faz cache automático de filmes, gêneros e créditos no PostgreSQL. Se os dados locais tiverem menos de 7 dias, eles são servidos instantaneamente.
+
+### ⚡ Performance PostgreSQL
+Implementamos **índices compostos** nas tabelas de `tickets`, `sessions` e `transactions` para eliminar Sequential Scans. Confira o guia [PERFORMANCE_INDEXES.md](backend/PERFORMANCE_INDEXES.md) para detalhes.
+
+---
+
+## 📖 Referência da API (Principais Endpoints)
+
+| Domínio | Método | Rota | Descrição |
+|--------|--------|------|-----------|
+| **Auth** | POST | `/auth/login` | Login stateless (JWT) |
+| **Movies** | GET | `/movies/{id}` | Detalhes com Cache-Aside |
+| **Bookings** | POST | `/tickets/reserve` | Reserva com Redis Lock |
+| **Social** | GET | `/feed` | Feed polimórfico de amigos |
+| **Notifications** | WS | `/ws` | Notificações real-time via WebSocket |
+
+---
+
+## 🎨 Design & UI
+O ecossistema é suportado por uma Interface baseada na estética **Brutalist Design**.
+- [Acesse o projeto oficial no Figma](https://www.figma.com/design/YU8WBTTEUgTk70VLmZAtBo/Design-Project---screek)
+
+---
+*Desenvolvido como portfólio focado em arquitetura modular, concorrência em Go e resiliência de sistemas.*
