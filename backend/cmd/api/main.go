@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/StartLivin/screek/backend/internal/app"
 	"github.com/StartLivin/screek/backend/internal/platform/config"
 )
 
@@ -26,11 +27,14 @@ import (
 // @name Authorization
 
 func main() {
+	// 1. Carregar Configurações
 	cfg := config.LoadConfig()
 
-	app := NewApplication(cfg)
+	// 2. Instanciar a Aplicação (internal/app)
+	application := app.NewApplication(cfg)
 
-	if err := app.Run(); err != nil {
-		log.Fatal("Erro na aplicação: ", err)
+	// 3. Rodar a aplicação (com Graceful Shutdown embutido)
+	if err := application.Run(); err != nil {
+		log.Fatal("Erro fatal na aplicação: ", err)
 	}
 }

@@ -1,9 +1,15 @@
-package main
+package app
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/StartLivin/screek/backend/internal/auth"
 	"github.com/StartLivin/screek/backend/internal/bookings"
@@ -15,6 +21,7 @@ import (
 	"github.com/StartLivin/screek/backend/internal/platform/email"
 	"github.com/StartLivin/screek/backend/internal/platform/redis"
 	redisclient "github.com/redis/go-redis/v9"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/StartLivin/screek/backend/internal/social"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/go-chi/chi/v5"
@@ -44,6 +51,7 @@ func NewApplication(cfg config.Config) *Application {
 func (app *Application) mount() {
 	app.router.Use(middleware.Logger)
 	app.router.Use(middleware.Recoverer)
+	app.router.Use(httputil.RateLimit(10, 15))
 
 	app.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -119,11 +127,55 @@ func (app *Application) Run() error {
 
 	bookings.StartExpirationWorker(app.db)
 	
-	// Inicia o Hub de notificações em tempo real
 	go app.hub.Run()
 
 	app.mount()
 
+	srv := &http.Server{
+		Addr:    ":" + app.config.Port,
+		Handler: app.router,
+	}
+
+	shutdownError := make(chan error)
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit
+
+		log.Printf("Sinal recebido: %s. Iniciando desligamento suave...", s.String())
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			shutdownError <- err
+		}
+
+		log.Println("Fechando conexão com PostgreSQL...")
+		sqlDB, _ := app.db.DB()
+		if sqlDB != nil {
+			sqlDB.Close()
+		}
+
+		log.Println("Fechando conexão com Redis...")
+		app.redis.Close()
+
+		shutdownError <- nil
+	}()
+
 	log.Printf("Servidor rodando em http://localhost:%s", app.config.Port)
-	return http.ListenAndServe(":"+app.config.Port, app.router)
+	
+	err = srv.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdownError
+	if err != nil {
+		return err
+	}
+
+	log.Println("Desligamento completo com sucesso.")
+	return nil
 }
