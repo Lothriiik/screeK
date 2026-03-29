@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -49,7 +49,8 @@ func NewApplication(cfg config.Config) *Application {
 }
 
 func (app *Application) mount() {
-	app.router.Use(middleware.Logger)
+	// middlewares Globais
+	app.router.Use(httputil.Logger) // Nosso novo Logger estruturado
 	app.router.Use(middleware.Recoverer)
 	app.router.Use(httputil.RateLimit(10, 15))
 
@@ -110,6 +111,10 @@ func (app *Application) mount() {
 }
 
 func (app *Application) Run() error {
+	// 1. Configurar slog global para JSON
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	db, err := database.InitDB(app.config.DatabaseURL)
 	if err != nil {
 		return err
@@ -118,7 +123,7 @@ func (app *Application) Run() error {
 	app.db = db
 	app.redis = redis.InitRedis(app.config.RedisURL)
 	
-	log.Println("Rodando migrações do banco de dados (AutoMigrate)...")
+	slog.Info("Sistema iniciado - Rodando migrações...", "db", "postgres")
 	movies.AutoMigrate(app.db)
 	users.AutoMigrate(app.db)
 	bookings.AutoMigrate(app.db)
@@ -142,7 +147,7 @@ func (app *Application) Run() error {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		s := <-quit
 
-		log.Printf("Sinal recebido: %s. Iniciando desligamento suave...", s.String())
+		slog.Warn("Sinal de encerramento recebido", "signal", s.String())
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -152,19 +157,17 @@ func (app *Application) Run() error {
 			shutdownError <- err
 		}
 
-		log.Println("Fechando conexão com PostgreSQL...")
+		slog.Info("Limpando conexões e enviando logs finais...")
 		sqlDB, _ := app.db.DB()
 		if sqlDB != nil {
 			sqlDB.Close()
 		}
-
-		log.Println("Fechando conexão com Redis...")
 		app.redis.Close()
 
 		shutdownError <- nil
 	}()
 
-	log.Printf("Servidor rodando em http://localhost:%s", app.config.Port)
+	slog.Info("Servidor rodando", "host", "http://localhost:"+app.config.Port)
 	
 	err = srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
@@ -176,6 +179,6 @@ func (app *Application) Run() error {
 		return err
 	}
 
-	log.Println("Desligamento completo com sucesso.")
+	slog.Info("Desligamento completo com sucesso")
 	return nil
 }
