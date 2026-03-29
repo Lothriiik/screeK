@@ -48,6 +48,7 @@ require (
 	github.com/resend/resend-go/v2 v2.28.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
+	github.com/sony/gobreaker v1.0.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/stripe/stripe-go/v78 v78.12.0 // indirect
 	github.com/swaggo/files v1.0.1 // indirect

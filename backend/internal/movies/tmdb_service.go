@@ -4,19 +4,42 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"time"
+
+	"github.com/sony/gobreaker"
 )
 
 type TMDBClient struct {
 	token      string
 	httpClient *http.Client
+	cb         *gobreaker.CircuitBreaker
 }
 
 func NewTMDBClient(token string) *TMDBClient {
+	st := gobreaker.Settings{
+		Name:        "TMDB-API",
+		MaxRequests: 1,               
+		Interval:    60 * time.Second, 
+		Timeout:     30 * time.Second, 
+		ReadyToTrip: func(counts gobreaker.Counts) bool {
+			return counts.ConsecutiveFailures > 5
+		},
+		OnStateChange: func(name string, from, to gobreaker.State) {
+			slog.Warn("Circuit Breaker alterou estado",
+				"name", name,
+				"from", from.String(),
+				"to", to.String(),
+			)
+		},
+	}
+
 	return &TMDBClient{
 		token:      token,
 		httpClient: &http.Client{},
+		cb:         gobreaker.NewCircuitBreaker(st),
 	}
 }
 
@@ -108,15 +131,33 @@ func (c *TMDBClient) doRequest(ctx context.Context, endpoint string) (*http.Resp
 		return nil, fmt.Errorf("TMDB_TOKEN não encontrado no .env")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	body, err := c.cb.Execute(func() (any, error) {
+		req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Add("Authorization", "Bearer "+c.token)
+		req.Header.Add("Accept", "application/json")
+
+		res, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if res.StatusCode >= http.StatusInternalServerError {
+			res.Body.Close()
+			return nil, fmt.Errorf("TMDB retornou erro interno: %d", res.StatusCode)
+		}
+
+		return res, nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", "Bearer "+c.token)
-	req.Header.Add("Accept", "application/json")
-
-	return c.httpClient.Do(req)
+	return body.(*http.Response), nil
 }
 
 func (c *TMDBClient) SearchMovies(ctx context.Context, query string) ([]TMDBMovie, error) {
