@@ -2,7 +2,8 @@ package users
 
 import (
 	"time"
-	"github.com/StartLivin/cine-pass/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -15,11 +16,11 @@ const (
 )
 
 type User struct {
-	ID             int            `json:"id" gorm:"primaryKey;autoIncrement"`
+	ID             uuid.UUID      `json:"id" gorm:"type:uuid;primaryKey"`
 	Username       string         `json:"username" gorm:"not null;uniqueIndex"`
 	Name           string         `json:"name" gorm:"not null"`
 	Email          string         `json:"email" gorm:"not null;uniqueIndex"`
-	Password       string         `json:"password" gorm:"not null"`
+	Password       string         `json:"-" gorm:"not null"`
 	Bio            string         `json:"bio"`
 	PhotoURL       string         `json:"photo_url"`
 	Pronouns       string         `json:"pronouns"`

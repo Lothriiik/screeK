@@ -5,15 +5,16 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/StartLivin/cine-pass/backend/internal/auth"
-	"github.com/StartLivin/cine-pass/backend/internal/bookings"
-	"github.com/StartLivin/cine-pass/backend/internal/movies"
-	"github.com/StartLivin/cine-pass/backend/internal/platform/config"
-	"github.com/StartLivin/cine-pass/backend/internal/platform/database"
-	"github.com/StartLivin/cine-pass/backend/internal/platform/redis"
+	"github.com/StartLivin/screek/backend/internal/auth"
+	"github.com/StartLivin/screek/backend/internal/bookings"
+	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/platform/config"
+	"github.com/StartLivin/screek/backend/internal/platform/database"
+	"github.com/StartLivin/screek/backend/internal/platform/email"
+	"github.com/StartLivin/screek/backend/internal/platform/redis"
 	redisclient "github.com/redis/go-redis/v9"
-	"github.com/StartLivin/cine-pass/backend/internal/social"
-	"github.com/StartLivin/cine-pass/backend/internal/users"
+	"github.com/StartLivin/screek/backend/internal/social"
+	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"gorm.io/gorm"
@@ -40,7 +41,7 @@ func (app *Application) mount() {
 	app.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
-			"message": "Bem-vindo à API do Cine Pass! 🎬",
+			"message": "Bem-vindo à API do screeK! 🎬",
 		})
 	})
 
@@ -61,10 +62,16 @@ func (app *Application) mount() {
 	movieHandler := movies.NewHandler(movieService)
 	movieHandler.RegisterRoutes(app.router)
 
+	resendClient := email.NewResendClient(app.config.ResendKey)
+
 	bookingStore := bookings.NewStore(app.db)
-	bookingService := bookings.NewService(bookingStore, app.redis)
+	stripeProcessor := bookings.NewStripeProcessor(app.config.StripeKey)
+	bookingService := bookings.NewService(bookingStore, app.redis, stripeProcessor, resendClient)
 	bookingHandler := bookings.NewHandler(bookingService)
 	bookingHandler.RegisterRoutes(app.router, authMiddleware)
+
+	webhookHandler := bookings.NewWebhookHandler(bookingService, app.config.StripeWebhookSecret)
+	app.router.Post("/webhooks/stripe", webhookHandler.StripeWebhook)
 
 	socialStore := social.NewStore(app.db)
 	socialService := social.NewService(socialStore, userService)

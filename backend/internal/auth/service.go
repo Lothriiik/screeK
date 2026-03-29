@@ -5,8 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/StartLivin/cine-pass/backend/internal/platform/crypto"
-	"github.com/StartLivin/cine-pass/backend/internal/users"
+	"github.com/StartLivin/screek/backend/internal/platform/crypto"
+	"github.com/StartLivin/screek/backend/internal/users"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -111,7 +112,7 @@ func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword stri
 	return nil
 }
 
-func (s *AuthService) ChangePassword(ctx context.Context, userID int, oldPassword, newPassword string) error {
+func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, oldPassword, newPassword string) error {
 	user, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return ErrUserNotFound

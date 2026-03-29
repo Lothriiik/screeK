@@ -1,4 +1,4 @@
-# Fluxo de Notificações (Cine Pass)
+# Fluxo de Notificações (screeK)
 
 A central nervosa que engaja o usuário a não fechar o aplicativo e retornar sempre pra ver as novidades quentes do cinema e dos amigos.
 

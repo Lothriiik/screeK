@@ -3,6 +3,8 @@ package users
 import (
 	"context"
 	"errors"
+
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +23,7 @@ func (s *Store) CreateUser(ctx context.Context, user *User) error {
 	return result.Error
 }
 
-func (s *Store) GetUserByID(ctx context.Context, id int) (*User, error) {
+func (s *Store) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	var user User
 	result := s.db.WithContext(ctx).Preload("FavoriteMovies").First(&user, id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -42,17 +44,17 @@ func (s *Store) UpdateUser(ctx context.Context, user *User) error {
 	return result.Error
 }
 
-func (s *Store) DeleteUser(ctx context.Context, id int) error {
+func (s *Store) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	result := s.db.WithContext(ctx).Delete(&User{}, id)
 	return result.Error
 }
 
-func (s *Store) AddFavorite(ctx context.Context, userID int, movieID int) error {
+func (s *Store) AddFavorite(ctx context.Context, userID uuid.UUID, movieID int) error {
 	result := s.db.WithContext(ctx).Exec("INSERT INTO user_favorite_movies (user_id, movie_id) VALUES (?, ?) ON CONFLICT DO NOTHING", userID, movieID)
 	return result.Error
 }
 
-func (s *Store) RemoveFavorite(ctx context.Context, userID int, movieID int) error {
+func (s *Store) RemoveFavorite(ctx context.Context, userID uuid.UUID, movieID int) error {
 	result := s.db.WithContext(ctx).Exec("DELETE FROM user_favorite_movies WHERE user_id = ? AND movie_id = ?", userID, movieID)
 	return result.Error
 }

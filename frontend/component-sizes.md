@@ -1,5 +1,5 @@
 # Component Sizes Specification
-**CinePass Design System V3 - Brutalist Style**
+**screek Design System V3 - Brutalist Style**
 
 ---
 

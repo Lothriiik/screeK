@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/go-chi/chi/v5"
 )
 

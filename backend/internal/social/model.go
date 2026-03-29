@@ -3,13 +3,14 @@ package social
 import (
 	"time"
 
-	"github.com/StartLivin/cine-pass/backend/internal/movies"
-	"github.com/StartLivin/cine-pass/backend/internal/users"
+	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/users"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type MovieLog struct {
-	UserID    uint         `json:"user_id" gorm:"primaryKey;autoIncrement:false"`
+	UserID    uuid.UUID    `json:"user_id" gorm:"type:uuid;primaryKey"`
 	MovieID   uint         `json:"movie_id" gorm:"primaryKey;autoIncrement:false"`
 	Watched   bool         `json:"watched" gorm:"not null"`
 	Rating    float64      `json:"rating" gorm:"not null"`
@@ -32,7 +33,7 @@ const (
 
 type Post struct {
 	ID           uint       `json:"id" gorm:"primaryKey;autoIncrement"`
-	UserID       uint       `json:"user_id" gorm:"not null;index"`
+	UserID       uuid.UUID  `json:"user_id" gorm:"type:uuid;not null;index"`
 	PostType     PostType   `json:"post_type" gorm:"type:string;not null;index"`
 	Content      string     `json:"content"`
 	ReferenceID  *uint      `json:"reference_id" gorm:"index"` 
@@ -51,7 +52,7 @@ type Post struct {
 
 type PostLike struct {
 	PostID    uint       `json:"post_id" gorm:"primaryKey;autoIncrement:false"`
-	UserID    uint       `json:"user_id" gorm:"primaryKey;autoIncrement:false"`
+	UserID    uuid.UUID  `json:"user_id" gorm:"type:uuid;primaryKey"`
 	CreatedAt time.Time  `json:"created_at" gorm:"not null;default:now()"`
 	
 	Post Post       `json:"post" gorm:"foreignKey:PostID"`
@@ -60,8 +61,8 @@ type PostLike struct {
 
 type Follow struct {
 	ID         uint       `json:"id" gorm:"primaryKey;autoIncrement"`
-	FollowerID uint       `json:"follower_id" gorm:"not null;uniqueIndex:idx_follower_followee"`
-	FolloweeID uint       `json:"followee_id" gorm:"not null;uniqueIndex:idx_follower_followee"`
+	FollowerID uuid.UUID  `json:"follower_id" gorm:"type:uuid;not null;uniqueIndex:idx_follower_followee"`
+	FolloweeID uuid.UUID  `json:"followee_id" gorm:"type:uuid;not null;uniqueIndex:idx_follower_followee"`
 	CreatedAt  time.Time  `json:"created_at" gorm:"not null;default:now()"`
 	
 	Follower users.User `json:"follower" gorm:"foreignKey:FollowerID"`
@@ -70,7 +71,7 @@ type Follow struct {
 
 type Notification struct {
 	ID        uint       `json:"id" gorm:"primaryKey;autoIncrement"`
-	UserID    uint       `json:"user_id" gorm:"not null"`
+	UserID    uuid.UUID  `json:"user_id" gorm:"type:uuid;not null"`
 	Type      string     `json:"type" gorm:"not null"`
 	Title     string     `json:"title" gorm:"not null"`
 	Message   string     `json:"message" gorm:"not null"`
@@ -83,7 +84,7 @@ type Notification struct {
 
 type MovieList struct {
 	ID          uint            `json:"id" gorm:"primaryKey;autoIncrement"`
-	UserID      uint            `json:"user_id" gorm:"not null"`
+	UserID      uuid.UUID       `json:"user_id" gorm:"type:uuid;not null"`
 	Title       string          `json:"title" gorm:"not null"`
 	IsPublic    bool            `json:"is_public" gorm:"not null;default:true"`
 	Description string          `json:"description" gorm:"not null"`
@@ -104,7 +105,7 @@ type MovieListItem struct {
 }
 
 type WatchlistItem struct {
-	UserID  uint         `json:"user_id" gorm:"primaryKey;autoIncrement:false"`
+	UserID  uuid.UUID    `json:"user_id" gorm:"type:uuid;primaryKey"`
 	MovieID uint         `json:"movie_id" gorm:"primaryKey;autoIncrement:false"`
 	AddedAt time.Time    `json:"added_at" gorm:"not null;default:now()"`
 	

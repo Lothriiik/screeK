@@ -8,11 +8,14 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string
-	Port        string
-	TMDBToken   string
-	JWTSecret   string
-	RedisURL    string
+	DatabaseURL         string
+	Port                string
+	TMDBToken           string
+	JWTSecret           string
+	RedisURL            string
+	StripeKey           string 
+	StripeWebhookSecret string
+	ResendKey           string
 }
 
 func LoadConfig() Config {
@@ -42,10 +45,13 @@ func LoadConfig() Config {
 	}
 
 	return Config{
-		DatabaseURL: DatabaseURL,
-		Port:        port,
-		TMDBToken:   TMDBToken,
-		JWTSecret:   JWTSecret,
-		RedisURL:    redisURL,
+		DatabaseURL:         DatabaseURL,
+		Port:                port,
+		TMDBToken:           TMDBToken,
+		JWTSecret:           JWTSecret,
+		RedisURL:            redisURL,
+		StripeKey:           os.Getenv("STRIPE_KEY"),
+		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
+		ResendKey:           os.Getenv("RESEND_KEY"),
 	}
 }

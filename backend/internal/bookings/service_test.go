@@ -7,8 +7,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/StartLivin/cine-pass/backend/internal/platform/database"
-	"github.com/StartLivin/cine-pass/backend/internal/platform/redis"
+	"github.com/StartLivin/screek/backend/internal/platform/database"
+	"github.com/StartLivin/screek/backend/internal/platform/redis"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 )
@@ -35,7 +36,8 @@ func setupTestEnvironment(t *testing.T) (*BookingsService, *gorm.DB) {
 	rdb := redis.InitRedis(redisURL)
 
 	store := NewStore(db)
-	service := NewService(store, rdb)
+	fakePayment := NewStripeProcessor("sk_test_123")
+	service := NewService(store, rdb, fakePayment, nil)
 
 	rdb.FlushAll(context.Background())
 
@@ -59,10 +61,12 @@ func TestConcurrentReservations(t *testing.T) {
 		t.Fatalf("no free seats available for session %d", sessionID)
 	}
 
-	seatIDs := []int{freeSeatID}
+	ticketReqs := []TicketRequest{
+		{SeatID: freeSeatID, Type: TicketTypeStandard},
+	}
 	t.Logf("testing with seat id: %d", freeSeatID)
 
-	var users []int
+	var users []uuid.UUID
 	db.Raw("SELECT id FROM users LIMIT 4").Scan(&users)
 
 	if len(users) < 4 {
@@ -76,10 +80,10 @@ func TestConcurrentReservations(t *testing.T) {
 	wg.Add(4)
 
 	for i := 0; i < 4; i++ {
-		go func(idx int, uID int) {
+		go func(idx int, uID uuid.UUID) {
 			defer wg.Done()
 			log.Printf("user %d attempting to reserve seat %d", uID, freeSeatID)
-			_, errs[idx] = service.ReserveSeats(context.Background(), uID, sessionID, seatIDs)
+			_, errs[idx] = service.ReserveSeats(context.Background(), uID, sessionID, ticketReqs)
 		}(i, users[i])
 	}
 

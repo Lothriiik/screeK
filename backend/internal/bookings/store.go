@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/StartLivin/cine-pass/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -71,7 +72,7 @@ func (s *Store) GetSessionsByMovie(ctx context.Context, movieID int, city string
 		return nil, err
 	}
 	endOfDay := parsedDate.Add(24 * time.Hour)
-	
+
 	query := `
 		SELECT s.* 
 		FROM sessions s
@@ -118,18 +119,22 @@ func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]Seat, e
 }
 
 func (s *Store) GetSessionByID(ctx context.Context, sessionID int) (*Session, error) {
-    var session Session
-    if err := s.db.WithContext(ctx).First(&session, sessionID).Error; err != nil {
-        return nil, err
-    }
-    return &session, nil
+	var session Session
+	if err := s.db.WithContext(ctx).First(&session, sessionID).Error; err != nil {
+		return nil, err
+	}
+	return &session, nil
 }
 
-
-func (s *Store) CreateReservation(ctx context.Context, userID, sessionID int, seatIDs []int, totalAmount int) (*Transaction, error) {
+func (s *Store) CreateReservation(ctx context.Context, userID uuid.UUID, sessionID int, ticketsToCreate []Ticket, totalAmount int) (*Transaction, error) {
 	var transaction Transaction
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+
+		var seatIDs []int
+		for _, t := range ticketsToCreate {
+			seatIDs = append(seatIDs, *t.SeatID)
+		}
 
 		var occupiedCount int64
 		if err := tx.Model(&Ticket{}).Where("seat_id IN ? AND session_id = ? AND status != 'CANCELLED'", seatIDs, sessionID).Count(&occupiedCount).Error; err != nil {
@@ -140,6 +145,7 @@ func (s *Store) CreateReservation(ctx context.Context, userID, sessionID int, se
 		}
 
 		transaction = Transaction{
+			ID:            uuid.New(),
 			UserID:        userID,
 			TotalAmount:   totalAmount,
 			Status:        TicketStatusPending,
@@ -149,19 +155,12 @@ func (s *Store) CreateReservation(ctx context.Context, userID, sessionID int, se
 			return err
 		}
 
-		for _, seatID := range seatIDs {
-			sID := seatID
-			ticket := Ticket{
-				TransactionID: transaction.ID,
-				SessionID:     sessionID,
-				SeatID:        &sID,
-				Status:        TicketStatusPending,
-				QRCode:        "",
-			}
-			if err := tx.Create(&ticket).Error; err != nil {
+		for i := range ticketsToCreate {
+			ticketsToCreate[i].TransactionID = transaction.ID
+			if err := tx.Create(&ticketsToCreate[i]).Error; err != nil {
 				return err
 			}
-			transaction.Tickets = append(transaction.Tickets, ticket)
+			transaction.Tickets = append(transaction.Tickets, ticketsToCreate[i])
 		}
 
 		return nil
@@ -174,7 +173,15 @@ func (s *Store) CreateReservation(ctx context.Context, userID, sessionID int, se
 	return &transaction, nil
 }
 
-func (s *Store) PayTransaction(ctx context.Context, transactionID int, userID int, method string) error {
+func (s *Store) GetTransactionByID(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID) (*Transaction, error) {
+	var transaction Transaction
+	if err := s.db.WithContext(ctx).Preload("User").Preload("Tickets").Where("id = ? AND user_id = ?", transactionID, userID).First(&transaction).Error; err != nil {
+		return nil, ErrTxNotFound
+	}
+	return &transaction, nil
+}
+
+func (s *Store) PayTransaction(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var transaction Transaction
 		if err := tx.Where("id = ? AND user_id = ? AND status = ?", transactionID, userID, TicketStatusPending).First(&transaction).Error; err != nil {
@@ -193,7 +200,7 @@ func (s *Store) PayTransaction(ctx context.Context, transactionID int, userID in
 		}
 
 		for _, ticket := range tickets {
-			qrCode := fmt.Sprintf("CINEPASS-TX%d-TK%d-%d", transactionID, ticket.ID, time.Now().UnixNano())
+			qrCode := fmt.Sprintf("SCREEK-TX%s-TK%s-%d", transactionID.String()[:8], ticket.ID.String()[:8], time.Now().UnixNano())
 
 			ticket.Status = TicketStatusPaid
 			ticket.QRCode = qrCode
@@ -207,7 +214,7 @@ func (s *Store) PayTransaction(ctx context.Context, transactionID int, userID in
 	})
 }
 
-func (s *Store) CancelTicket(ctx context.Context, ticketID int, userID int) error {
+func (s *Store) CancelTicket(ctx context.Context, ticketID int, userID uuid.UUID) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var ticket Ticket
 		if err := tx.Where("id = ? AND status != ?", ticketID, TicketStatusCancelled).First(&ticket).Error; err != nil {
@@ -215,8 +222,8 @@ func (s *Store) CancelTicket(ctx context.Context, ticketID int, userID int) erro
 		}
 		var transaction Transaction
 		if err := tx.First(&transaction, ticket.TransactionID).Error; err != nil {
-            return ErrTxNotFound
-        }
+			return ErrTxNotFound
+		}
 
 		if transaction.UserID != userID {
 			return ErrNotTicketOwner
@@ -227,7 +234,7 @@ func (s *Store) CancelTicket(ctx context.Context, ticketID int, userID int) erro
 	})
 }
 
-func (s *Store) GetUserTickets(ctx context.Context, userID int, status string) ([]Ticket, error) {
+func (s *Store) GetUserTickets(ctx context.Context, userID uuid.UUID, status string) ([]Ticket, error) {
 	var tickets []Ticket
 	query := s.db.WithContext(ctx).Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").Where("trx.user_id = ?", userID)
 
@@ -240,11 +247,11 @@ func (s *Store) GetUserTickets(ctx context.Context, userID int, status string) (
 	return tickets, err
 }
 
-func (s *Store) GetTicketDetail(ctx context.Context, ticketID int, userID int) (*Ticket, error) {
+func (s *Store) GetTicketDetail(ctx context.Context, ticketID int, userID uuid.UUID) (*Ticket, error) {
 	var ticket Ticket
 	query := s.db.WithContext(ctx).Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").Where("tickets.id = ? AND trx.user_id = ?", ticketID, userID)
 
-	err:= query.Preload("Seat").Preload("Session.Movie").Preload("Session.Room.Cinema").First(&ticket).Error
+	err := query.Preload("Seat").Preload("Session.Movie").Preload("Session.Room.Cinema").First(&ticket).Error
 
 	return &ticket, err
 }

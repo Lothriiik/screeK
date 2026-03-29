@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/StartLivin/cine-pass/backend/internal/movies"
-	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -48,6 +49,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userModel := &User{
+		ID:       uuid.New(),
 		Name:     dto.Name,
 		Username: dto.Username,
 		Email:    dto.Email,
@@ -95,7 +97,7 @@ func (h *Handler) SearchUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID inválido. Use números"})
 		return
@@ -132,7 +134,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	userIDAny := r.Context().Value(httputil.UserIDKey)
-	userID, ok := userIDAny.(int)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
 		return
@@ -171,7 +173,7 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	userIDAny := r.Context().Value(httputil.UserIDKey)
 
-	userID, ok := userIDAny.(int)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
 		return
@@ -205,7 +207,7 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := userIDAny.(int)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
 		return
@@ -220,7 +222,7 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) AddFavorite(w http.ResponseWriter, r *http.Request) {
 	userIDAny := r.Context().Value(httputil.UserIDKey)
-	userID, ok := userIDAny.(int)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
 		return
@@ -244,7 +246,7 @@ func (h *Handler) AddFavorite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
 	userIDAny := r.Context().Value(httputil.UserIDKey)
-	userID, ok := userIDAny.(int)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Erro de sessão", http.StatusUnauthorized)
 		return

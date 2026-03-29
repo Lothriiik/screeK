@@ -1,6 +1,9 @@
 package bookings
 
-import "time"
+import (
+	"time"
+	"github.com/google/uuid"
+)
 
 type SessionResponseDTO struct {
 	ID          int         `json:"id"`
@@ -17,9 +20,14 @@ type CinemaSessionsResponseDTO struct {
 	Sessions    []SessionResponseDTO `json:"sessions"`
 }
 
+type TicketRequest struct {
+	SeatID int        `json:"seat_id"`
+	Type   TicketType `json:"type" validate:"required,oneof=STANDARD HALF FREE"`
+}
+
 type ReserveRequestDTO struct {
-	SessionID int   `json:"session_id"`
-	SeatIDs   []int `json:"seat_ids"`
+	SessionID        int             `json:"session_id" validate:"required"`
+	TicketsRequested []TicketRequest `json:"tickets_request" validate:"required,min=1"`
 }
 
 type PayRequestDTO struct {
@@ -27,7 +35,7 @@ type PayRequestDTO struct {
 }
 
 type TicketResponseDTO struct {
-	ID        int    `json:"ticket_id"`
+	ID        uuid.UUID  `json:"ticket_id"`
 	MovieName string `json:"movie_name"`
 	Cinema    string `json:"cinema"`
 	Date      string `json:"date"`

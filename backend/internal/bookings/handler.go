@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -94,9 +95,9 @@ func (h *Handler) GetSeatsBySession(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, seats)
 }
 
-func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ReserveTickets(w http.ResponseWriter, r *http.Request) {
 	userIDAny := r.Context().Value(httputil.UserIDKey)
-	userID, ok := userIDAny.(int)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
@@ -108,15 +109,15 @@ func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transaction, err := h.service.ReserveSeats(r.Context(), userID, dto.SessionID, dto.SeatIDs)
+	transaction, err := h.service.ReserveSeats(r.Context(), userID, dto.SessionID, dto.TicketsRequested)
 	if err != nil {
-		httputil.WriteJSON(w, http.StatusConflict, map[string]string{"error": "A cadeira já foi reservada!"})
+		httputil.WriteJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
 		return
 	}
 
 	resposta := map[string]any{
-		"message": "Reserva garantida por 10 minutos!",
-		"transaction_id": transaction.ID,
+		"message":              "Reserva garantida por 10 minutos!",
+		"transaction_id":       transaction.ID,
 		"valor_total_centavos": transaction.TotalAmount,
 	}
 	httputil.WriteJSON(w, http.StatusCreated, resposta)
@@ -124,15 +125,21 @@ func (h *Handler) ReserveTickets (w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PayReservation(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(httputil.UserIDKey).(int)
+	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	if !ok {
-		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
+		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado"})
 		return
 	}
 
-	transactionID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	transactionID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "ID de transação inválido"})
+		return
+	}
+
+	idempotencyKey := r.Header.Get("Idempotency-Key")
+	if idempotencyKey == "" {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Cabeçalho Idempotency-Key ausente ou inválido"})
 		return
 	}
 
@@ -141,18 +148,21 @@ func (h *Handler) PayReservation(w http.ResponseWriter, r *http.Request) {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
 		return
 	}
-	
-	err = h.service.PayReservation(r.Context(), transactionID, userID, dto.PaymentMethod)
+
+	clientSecret, err := h.service.PayReservation(r.Context(), transactionID, userID, dto.PaymentMethod, idempotencyKey)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
-	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Pagamento aprovado com sucesso! Ingressos liberados."})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{
+		"message":       "Intenção de Pagamento gerada.",
+		"client_secret": clientSecret,
+	})
 }
 
 func (h *Handler) CancelTicket(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(httputil.UserIDKey).(int)
+	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	if !ok {
 		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
 		return
@@ -174,7 +184,7 @@ func (h *Handler) CancelTicket(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetUserTickets(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(httputil.UserIDKey).(int)
+	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	if !ok {
 		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
 		return
@@ -193,7 +203,7 @@ func (h *Handler) GetUserTickets(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetTicketDetail(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(httputil.UserIDKey).(int)
+	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	if !ok {
 		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "usuário não logado ou token inválido"})
 		return

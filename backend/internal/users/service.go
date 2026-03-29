@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/StartLivin/cine-pass/backend/internal/movies"
-	"github.com/StartLivin/cine-pass/backend/internal/platform/crypto"
+	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/platform/crypto"
+	"github.com/google/uuid"
 )
 
 var (
@@ -37,7 +38,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *User) error {
 	return s.repo.CreateUser(ctx, user)
 }
 
-func (s *UserService) GetUserByID(ctx context.Context, id int) (*User, error) {
+func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	return s.repo.GetUserByID(ctx, id)
 }
 
@@ -49,7 +50,7 @@ func (s *UserService) UpdateUser(ctx context.Context, user *User) error {
 	return s.repo.UpdateUser(ctx, user)
 }
 
-func (s *UserService) DeleteUser(ctx context.Context, id int, password string) error {
+func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID, password string) error {
 	user, err := s.repo.GetUserByID(ctx, id)
 	if err != nil {
 		return err
@@ -60,7 +61,7 @@ func (s *UserService) DeleteUser(ctx context.Context, id int, password string) e
 	return s.repo.DeleteUser(ctx, id)
 }
 
-func (s *UserService) ChangePassword(ctx context.Context, id int, oldPassword string, newPasswordPlain string) error {
+func (s *UserService) ChangePassword(ctx context.Context, id uuid.UUID, oldPassword string, newPasswordPlain string) error {
 	user, err := s.repo.GetUserByID(ctx, id)
 	if err != nil {
 		return err
@@ -76,7 +77,7 @@ func (s *UserService) ChangePassword(ctx context.Context, id int, oldPassword st
 	return s.repo.UpdateUser(ctx, user)
 }
 
-func (s *UserService) AddFavorite(ctx context.Context, userID int, tmdbID int) error {
+func (s *UserService) AddFavorite(ctx context.Context, userID uuid.UUID, tmdbID int) error {
 	movie, err := s.movieRepo.GetMovieByTMDBID(ctx, tmdbID)
 	if err != nil {
 		return ErrMovieNotFound
@@ -84,7 +85,7 @@ func (s *UserService) AddFavorite(ctx context.Context, userID int, tmdbID int) e
 	return s.repo.AddFavorite(ctx, userID, movie.ID)
 }
 
-func (s *UserService) RemoveFavorite(ctx context.Context, userID int, tmdbID int) error {
+func (s *UserService) RemoveFavorite(ctx context.Context, userID uuid.UUID, tmdbID int) error {
 	movie, err := s.movieRepo.GetMovieByTMDBID(ctx, tmdbID)
 	if err != nil {
 		return ErrMovieNotFound
@@ -96,12 +97,12 @@ func (s *UserService) GetUserByUsername(ctx context.Context, username string) (*
 	return s.repo.GetUserByUsername(ctx, username)
 }
 
-func (s *UserService) GetIDByUsername(ctx context.Context, username string) (uint, error) {
+func (s *UserService) GetIDByUsername(ctx context.Context, username string) (uuid.UUID, error) {
 	user, err := s.repo.GetUserByUsername(ctx, username)
 	if err != nil {
-		return 0, errors.New("Usuário não encontrado")
+		return uuid.Nil, errors.New("Usuário não encontrado")
 	}
-	return uint(user.ID), nil
+	return user.ID, nil
 }
 
 func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*User, error) {

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/redis/go-redis/v9"
 )
 

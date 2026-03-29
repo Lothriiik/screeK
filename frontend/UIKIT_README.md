@@ -1,6 +1,6 @@
-# CinePass UI Kit v3.0 - Referência
+# screek UI Kit v3.0 - Referência
 
-Este diretório contém o **CinePass UI Kit v3.0**, um design system completo e reutilizável para projetos futuros.
+Este diretório contém o **screek UI Kit v3.0**, um design system completo e reutilizável para projetos futuros.
 
 ## 📦 Componentes Incluídos
 

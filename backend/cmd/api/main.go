@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/StartLivin/cine-pass/backend/internal/platform/config"
+	"github.com/StartLivin/screek/backend/internal/platform/config"
 )
 
 func main() {

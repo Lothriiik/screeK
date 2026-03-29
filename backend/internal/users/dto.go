@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/StartLivin/cine-pass/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 var validate = validator.New()
@@ -19,13 +20,13 @@ type CreateUserDTO struct {
 }
 
 type UserDTO struct {
-	ID       int    `json:"id"`
+	ID       uuid.UUID    `json:"id"`
 	Name     string `json:"name"`
 	Username string `json:"username"`
 }
 
 type UserDetailsDTO struct {
-	ID             int               `json:"id"`
+	ID             uuid.UUID               `json:"id"`
 	Name           string            `json:"name"`
 	Username       string            `json:"username"`
 	Email          string            `json:"email"`

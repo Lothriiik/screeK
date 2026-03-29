@@ -2,13 +2,15 @@ package auth
 
 import (
 	"time"
-	"github.com/StartLivin/cine-pass/backend/internal/platform/config"
+
+	"github.com/StartLivin/screek/backend/internal/platform/config"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type Claims struct {
-	UserID   int    `json:"user_id"`
-	Username string `json:"username"`
+	UserID   uuid.UUID `json:"user_id"`
+	Username string    `json:"username"`
 	jwt.RegisteredClaims
 }
 
@@ -20,7 +22,7 @@ func NewJWTService(cfg *config.Config) *JWTService {
 	return &JWTService{cfg: cfg}
 }
 
-func (s *JWTService) GenerateToken(userID int, username string) (string, error) {
+func (s *JWTService) GenerateToken(userID uuid.UUID, username string) (string, error) {
 
 	claims := Claims{
 		UserID:   userID,
@@ -36,11 +38,10 @@ func (s *JWTService) GenerateToken(userID int, username string) (string, error) 
 	return token.SignedString([]byte(s.cfg.JWTSecret))
 }
 
-
-func (s *JWTService) GeneratePasswordResetToken(userID int) (string, error) {
+func (s *JWTService) GeneratePasswordResetToken(userID uuid.UUID) (string, error) {
 
 	claims := Claims{
-		UserID:   userID,
+		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

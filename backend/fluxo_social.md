@@ -1,4 +1,4 @@
-# Fluxo Social e Interações (Cine Pass)
+# Fluxo Social e Interações (screeK)
 
 O coração comunitário do nosso app fica aqui. Onde os usuários expressam suas opiniões, criam listas (estilo Letterboxd) e interagem uns com os outros.
 

@@ -7,7 +7,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/StartLivin/cine-pass/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/google/uuid"
 	redisclient "github.com/redis/go-redis/v9"
 )
 
@@ -16,15 +17,23 @@ var (
 	ErrInvalidTicketStatus = errors.New("query param 'status' inválido")
 )
 
-type BookingsService struct {
-	store BookingsRepository
-	redisClient *redisclient.Client
+type Mailer interface {
+	SendTicketEmail(to, userName, qrCode string) error
 }
 
-func NewService(store BookingsRepository, redisClient *redisclient.Client) *BookingsService {
+type BookingsService struct {
+	store       BookingsRepository
+	redisClient *redisclient.Client
+	payment     PaymentProcessor
+	mailer      Mailer
+}
+
+func NewService(store BookingsRepository, redisClient *redisclient.Client, payment PaymentProcessor, mailer Mailer) *BookingsService {
 	return &BookingsService{
-		store: store,
+		store:       store,
 		redisClient: redisClient,
+		payment:     payment,
+		mailer:      mailer,
 	}
 }
 
@@ -83,15 +92,15 @@ func (s *BookingsService) GetSessionByID(ctx context.Context, sessionID int) (*S
 }
 
 
-func (s *BookingsService) ReserveSeats(ctx context.Context, userID int, sessionID int, seatIDs []int) (*Transaction, error) {
+func (s *BookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, sessionID int, ticketsReq []TicketRequest) (*Transaction, error) {
 	var lockedAssets []string
 
-	for _, seats  := range seatIDs {
-		seat := fmt.Sprintf("seat:%d:%d", sessionID, seats)
+	for _, tReq := range ticketsReq {
+		seat := fmt.Sprintf("seat:%d:%d", sessionID, tReq.SeatID)
 		resultado := s.redisClient.SetNX(ctx, seat, userID, 10*time.Minute).Val()
 
 		if !resultado {
-			for _, lockedAsset := range  lockedAssets {
+			for _, lockedAsset := range lockedAssets {
 				s.redisClient.Del(ctx, lockedAsset)
 			}
 			return nil, ErrSeatLockFailed
@@ -102,15 +111,47 @@ func (s *BookingsService) ReserveSeats(ctx context.Context, userID int, sessionI
 
 	session, err := s.store.GetSessionByID(ctx, sessionID)
 	if err != nil {
-		for _, lockedAsset := range  lockedAssets {
+		for _, lockedAsset := range lockedAssets {
 			s.redisClient.Del(ctx, lockedAsset)
 		}
 		return nil, ErrSeatLockFailed
 	}
 
-	totalAmount := int(session.Price) * len(seatIDs)
+	basePrice := session.Price
+	
+	if session.Room.Type == RoomTypeVIP {
+		basePrice = int(float64(basePrice) * 1.5)
+	} else if session.Room.Type == RoomTypeIMAX {
+		basePrice = int(float64(basePrice) * 1.3)
+	}
 
-	transaction, err := s.store.CreateReservation(ctx, userID, sessionID, seatIDs, totalAmount)
+	var totalAmount int
+	var ticketsToSave []Ticket
+
+	for _, tReq := range ticketsReq {
+		finalPrice := basePrice
+
+		if tReq.Type == TicketTypeHalf {
+			finalPrice = finalPrice / 2
+		} else if tReq.Type == TicketTypeFree || session.IsFree {
+			finalPrice = 0
+		}
+
+		totalAmount += finalPrice
+		
+		sID := tReq.SeatID
+		ticketsToSave = append(ticketsToSave, Ticket{
+			ID:        uuid.New(),
+			SessionID: sessionID,
+			SeatID:    &sID,
+			Type:      tReq.Type,
+			PricePaid: finalPrice,
+			QRCode:    "temp_" + uuid.NewString(), // Tapa-buraco pra restrição do banco até ele ser pago
+			Status:    TicketStatusPending,
+		})
+	}
+
+	transaction, err := s.store.CreateReservation(ctx, userID, sessionID, ticketsToSave, totalAmount)
 	if err != nil {
 		for _, lockedAsset := range lockedAssets {
 			s.redisClient.Del(ctx, lockedAsset)
@@ -120,17 +161,36 @@ func (s *BookingsService) ReserveSeats(ctx context.Context, userID int, sessionI
 	return transaction, nil
 }
 
-func (s *BookingsService) PayReservation(ctx context.Context, transactionID int, userID int, method string) error {
-	return s.store.PayTransaction(ctx, transactionID, userID, method)
+func (s *BookingsService) PayReservation(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, idempotencyKey string) (string, error) {
+	transaction, err := s.store.GetTransactionByID(ctx, transactionID, userID)
+	if err != nil {
+		return "", errors.New("transação não encontrada, não pertence a você ou já paga")
+	}
+	if transaction.Status != TicketStatusPending { 
+		return "", errors.New("esta transação não está mais pendente")
+	}
+
+	metadata := map[string]string{
+		"transaction_id": transactionID.String(),
+		"user_id":        userID.String(),
+		"method":         method,
+	}
+
+	result, err := s.payment.CreatePaymentIntent(ctx, transaction.TotalAmount, "brl", idempotencyKey, metadata)
+	if err != nil {
+		return "", errors.New("falha na conexão com meio de pagamento: " + err.Error())
+	}
+
+	return result.ClientSecret, nil
 }
 
 
-func (s *BookingsService) CancelTicket(ctx context.Context, ticketID int, userID int) error {
+func (s *BookingsService) CancelTicket(ctx context.Context, ticketID int, userID uuid.UUID) error {
 	return s.store.CancelTicket(ctx, ticketID, userID)
 }
 
 
-func (s *BookingsService) GetUserTickets(ctx context.Context, userID int, status string) ([]TicketResponseDTO, error) {
+func (s *BookingsService) GetUserTickets(ctx context.Context, userID uuid.UUID, status string) ([]TicketResponseDTO, error) {
 	
 	if status != "" && status != string(TicketStatusPaid) && status != string(TicketStatusPending) && status != string(TicketStatusCancelled) {
 		return nil, ErrInvalidTicketStatus
@@ -164,7 +224,7 @@ func (s *BookingsService) GetUserTickets(ctx context.Context, userID int, status
     return response, nil
 }
 
-func (s *BookingsService) GetTicketDetail(ctx context.Context, ticketID int, userID int) (TicketResponseDTO, error) {
+func (s *BookingsService) GetTicketDetail(ctx context.Context, ticketID int, userID uuid.UUID) (TicketResponseDTO, error) {
 	ticket, err := s.store.GetTicketDetail(ctx, ticketID, userID)
 	if err != nil{
 		return TicketResponseDTO{}, err 
@@ -187,4 +247,26 @@ func (s *BookingsService) GetTicketDetail(ctx context.Context, ticketID int, use
 	}
 
 	return dto, err
+}
+
+func (s *BookingsService) ConfirmPaymentWebhook(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string) error {
+	err := s.store.PayTransaction(ctx, transactionID, userID, method)
+	if err != nil {
+		return err
+	}
+
+	transaction, err := s.store.GetTransactionByID(ctx, transactionID, userID)
+	if err != nil {
+		return nil
+	}
+	
+	if s.mailer != nil {
+		go func() {
+			for _, t := range transaction.Tickets {
+				s.mailer.SendTicketEmail(transaction.User.Email, transaction.User.Name, t.QRCode)
+			}
+		}()
+	}
+
+	return nil
 }

@@ -1,9 +1,13 @@
 package social
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type UserProvider interface {
-	GetIDByUsername(ctx context.Context, username string) (uint, error)
+	GetIDByUsername(ctx context.Context, username string) (uuid.UUID, error)
 }
 
 type SocialService struct {
@@ -19,18 +23,18 @@ func NewService(store SocialRepository, userProvider UserProvider) *SocialServic
 }
 
 type Service interface {
-	LogMovie(ctx context.Context, userID uint, movieID uint, req LogMovieRequest) error
-	CreatePost(ctx context.Context, userID uint, req CreatePostRequest) (*PostResponseDTO, error)
+	LogMovie(ctx context.Context, userID uuid.UUID, movieID uint, req LogMovieRequest) error
+	CreatePost(ctx context.Context, userID uuid.UUID, req CreatePostRequest) (*PostResponseDTO, error)
 	GetFeed(ctx context.Context, cursorID uint, limit int) (*FeedResponse, error)
-	ReplyToPost(ctx context.Context, userID uint, parentID uint, req ReplyRequest) error
-	ToggleLike(ctx context.Context, userID uint, postID uint) (bool, error)
-	ToggleFollow(ctx context.Context, followerID uint, followeeUsername string) (bool, error)
+	ReplyToPost(ctx context.Context, userID uuid.UUID, parentID uint, req ReplyRequest) error
+	ToggleLike(ctx context.Context, userID uuid.UUID, postID uint) (bool, error)
+	ToggleFollow(ctx context.Context, followerID uuid.UUID, followeeUsername string) (bool, error)
 
 
 
 }
 
-func (s *SocialService) LogMovie(ctx context.Context, userID uint, movieID uint, req LogMovieRequest) error {
+func (s *SocialService) LogMovie(ctx context.Context, userID uuid.UUID, movieID uint, req LogMovieRequest) error {
 	if err := req.Validate(); err != nil {
 		return err
 	}
@@ -46,7 +50,7 @@ func (s *SocialService) LogMovie(ctx context.Context, userID uint, movieID uint,
 	return s.store.UpsertMovieLog(ctx, log)
 }
 
-func (s *SocialService) CreatePost(ctx context.Context, userID uint, req CreatePostRequest) (*PostResponseDTO, error) {
+func (s *SocialService) CreatePost(ctx context.Context, userID uuid.UUID, req CreatePostRequest) (*PostResponseDTO, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -109,18 +113,18 @@ func (s *SocialService) GetFeed(ctx context.Context, cursorID uint, limit int) (
 	}, nil
 }
 
-func (s *SocialService) ReplyToPost(ctx context.Context, userID uint, parentID uint, req ReplyRequest) error {
+func (s *SocialService) ReplyToPost(ctx context.Context, userID uuid.UUID, parentID uint, req ReplyRequest) error {
 	if err := req.Validate(); err != nil {
 		return err
 	}
 	return s.store.ReplyPost(ctx, userID, parentID, req.Content)
 }
 
-func (s *SocialService) ToggleLike(ctx context.Context, userID uint, postID uint) (bool, error) {
+func (s *SocialService) ToggleLike(ctx context.Context, userID uuid.UUID, postID uint) (bool, error) {
 	return s.store.ToggleLike(ctx, userID, postID)
 }
 
-func (s *SocialService) ToggleFollow(ctx context.Context, followerID uint, followeeUsername string) (bool, error) {
+func (s *SocialService) ToggleFollow(ctx context.Context, followerID uuid.UUID, followeeUsername string) (bool, error) {
 	followeeID, err := s.userProvider.GetIDByUsername(ctx, followeeUsername)
 	if err != nil {
 		return false, err

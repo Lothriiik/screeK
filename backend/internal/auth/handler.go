@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -99,7 +100,7 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := r.Context().Value(httputil.UserIDKey).(int)
+	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	if !ok {
 		http.Error(w, "Usuário não autenticado", http.StatusUnauthorized)
 		return

@@ -1,4 +1,4 @@
-# Fluxo de Filmes, Cinemas e Elenco (Cine Pass)
+# Fluxo de Filmes, Cinemas e Elenco (screeK)
 
 O catálogo universal da plataforma, que vai funcionar juntando os dados perfeitos da nossa API (TMDB) e misturando com as informações do nosso Banco Privado (Cinemas, Ingressos e Redes Sociais).
 

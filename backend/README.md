@@ -1,6 +1,6 @@
-# 🛠 Cine Pass: Backend Architecture
+# 🛠 screeK: Backend Architecture
 
-Este diretório contém o coração transacional e API do Cine Pass. Construído com **Arquitetura de Monólito Modular** (Feature-First) em Go, onde cada domínio do sistema vive isolado em seu próprio pacote.
+Este diretório contém o coração transacional e API do screeK. Construído com **Arquitetura de Monólito Modular** (Feature-First) em Go, onde cada domínio do sistema vive isolado em seu próprio pacote.
 
 ---
 
@@ -11,13 +11,15 @@ backend/
 ├── cmd/api/             → Entrypoint (main.go, env vars, boot)
 ├── internal/
 │   ├── users/           → Gestão de Usuários (model, handler, store)
-│   ├── movies/          → Catálogo de Filmes + TMDB Client (model, handler, store, tmdb_service)
-│   ├── bookings/        → Cinemas, Sessões, Ingressos e Pagamento (model, store)
-│   ├── social/          → Reviews, Listas, Follow, Feed (model)
-│   ├── auth/            → JWT, Login, Middleware (TODO)
+│   ├── movies/          → Catálogo de Filmes + TMDB Service (model, handler, store, tmdb_service)
+│   ├── bookings/        → Cinemas, Sessões, Ingressos, Pagamento e Webhooks (model, store)
+│   ├── social/          → Atividade social, feed e registros (model)
+│   ├── auth/            → JWT, Login, Password Reset, Logout (handler, service)
 │   └── platform/
-│       ├── database/    → Conexão central PostgreSQL (compartilhada)
-│       └── redis/       → Conexão Redis para locks de assentos (TODO)
+│       ├── database/    → Conexão central PostgreSQL
+│       ├── redis/       → Conexão Redis para locks de assentos
+│       ├── email/       → Integração com Resend
+│       └── httputil/    → Helpers de resposta e contexto
 ├── fluxo_*.md           → Documentação dos fluxos de negócio
 └── ROADMAP.md           → Roadmap completo do projeto
 ```
@@ -39,14 +41,13 @@ O banco suporta carga relacional massiva com Foreign Keys e Unique Indices. As t
 ### 2. Usuários & Social (`internal/users/` + `internal/social/`)
 - **`User`** → Core de contas e autenticação
 - **`Follow`** → Tabela pivot Seguidor ↔ Seguido
-- **`Review`**, **`WatchedMovie`** → Ligações User ↔ Movie com suporte a `ReviewLike` e `ReviewComment`
+- **`Post`**, **`MovieLog`** → Atividade social, feed e registros de filmes assistidos
 - **`MovieList`**, **`WatchlistItem`** → Listas e filas de filmes
 
 ### 3. Booking & Venda (`internal/bookings/`)
 - Ambiente: **`Cinema`** → **`Room`** → **`Seat`**
 - Motor: **`Session`** (vincula Sala + Horário + Filme + `SessionType`)
-- Tipos de Sessão: `PREMIERE` | `RESCREENING` | `FESTIVAL`
-- Carrinho: **`Transaction`** → **`Ticket`** (amarrado à poltrona final com QR Code)
+- Transação: **`Transaction`** → **`Ticket`** (amarrado à poltrona final com QR Code `SCREEK-`)
 
 ---
 
@@ -80,17 +81,18 @@ Backup de segurança: Locking Pessimista no PostgreSQL (`SELECT FOR UPDATE`) par
 
 | Camada | Tecnologia |
 |---|---|
-| Linguagem | Go 1.21+ |
-| Router HTTP | Chi v5 (100% net/http) |
+| Linguagem | Go 1.24+ |
+| Router HTTP | Chi v5 |
 | ORM | GORM |
 | Banco de Dados | PostgreSQL |
 | Cache / Locks | Redis |
+| Pagamentos | **Stripe API** |
+| Emails | **Resend API** |
 | Autenticação | Bcrypt + JWT |
 | API Externa | TMDB (The Movie Database) |
-| Resiliência | Circuit Breaker (sony/gobreaker) |
-| Docs | Swagger / OpenAPI (swaggo/swag) |
-| DevOps | Docker + Docker Compose + GitHub Actions CI/CD |
-| Observabilidade | slog (logging estruturado JSON) |
+| Docs | Swagger / OpenAPI (Planned) |
+| DevOps | Docker + Docker Compose |
+| Observabilidade | slog (Planned) |
 
 ---
 

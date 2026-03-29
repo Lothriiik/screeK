@@ -1,4 +1,4 @@
-# 🗺️ Roadmap — Cine Pass Backend
+# 🗺️ Roadmap — screeK Backend
 
 > Visão macro das próximas fases de desenvolvimento. Documento informativo.
 
@@ -7,29 +7,31 @@
 ## Fase 1 · Segurança, Autenticação e Gestão de Usuários
 Blindar a API antes de expor qualquer funcionalidade.
 
-- Hashing de senhas com **Bcrypt**
-- Geração e validação de **JWT** (Access Token)
-- Middleware de autenticação no Chi
-- Rotas de Auth: Register, Login, Logout, Forgot/Reset Password, Change Password
-- Rotas protegidas de Perfil: `GET/PUT/DELETE /users/me`, `GET /users/{username}`
-- Busca de usuários, Followers/Following, Watchlist
-- **Interfaces nos stores** (Repository Pattern com Dependency Inversion)
-- **DTOs** (separar request/response dos models internos)
-- **Config struct** centralizada + separação `main.go`/`app.go`
+- [x] Hashing de senhas com **Bcrypt**
+- [x] Geração e validação de **JWT** (Access Token)
+- [x] Middleware de autenticação no Chi
+- [x] Rotas de Auth: Register, Login, Logout, Forgot/Reset Password, Change Password
+- [x] Rotas protegidas de Perfil: `GET/PUT/DELETE /users/me`, `GET /users/{id}`
+- [ ] Busca de usuários, Followers/Following, Watchlist
+- [x] **Interfaces nos stores** (Repository Pattern com Dependency Inversion)
+- [x] **DTOs** (separar request/response dos models internos)
+- [x] **Config struct** centralizada + separação `main.go`/`app.go`
 
 ---
 
 ## Fase 2 · Motor de Compras & Alta Concorrência (Bookings)
 O coração transacional com lock de assentos via Redis.
 
-- Handlers REST para Cinemas, Sessões e Mapa de Assentos
-- **Redis**: Lock temporário de poltronas (TTL ~5 min) no carrinho
-- Fluxo completo: Reservar → Pagar → Gerar QR Code
-- Cancelamento com liberação automática de assento
-- Campo `SessionType` (`PREMIERE`, `RESCREENING`, `FESTIVAL`)
-- **Lock Pessimista (PostgreSQL)**: Uso de `SELECT FOR UPDATE` (`clause.Locking`) no GORM para a gravação definitiva do assento.
-- **Context Propagation**: Passar o `r.Context()` do HTTP para o GORM impedir operações fantasmas no banco.
-- Testes de race condition na reserva simultânea
+- [x] Handlers REST para Cinemas, Sessões e Mapa de Assentos
+- [x] **Redis**: Lock temporário de poltronas (TTL 10m) no carrinho
+- [x] Fluxo completo: Reservar → Pagar → Gerar QR Code
+- [x] **Stripe Integration**: Checkout real via Webhook
+- [x] **Resend Integration**: Envio de ingressos via Email
+- [x] Cancelamento com liberação automática de assento
+- [x] Campo `SessionType` (`PREMIERE`, `RESCREENING`, `FESTIVAL`)
+- [ ] **Lock Pessimista (PostgreSQL)**: Uso de `SELECT FOR UPDATE`
+- [x] **Context Propagation**: Passar o `r.Context()` para o GORM
+- [x] Testes de race condition na reserva simultânea
 
 ---
 
@@ -48,10 +50,10 @@ Reviews, Listas, Feed e Follow.
 ## Fase 4 · Integrações Externas (Pagamento & Email)
 Conectar com serviços reais para fluxos críticos.
 
-- **Strategy Pattern** no pagamento: interface `PaymentStrategy` com implementações pra Cartão (Stripe) e PIX
-- **Idempotency-Key**: Garantir processamento único de pagamentos evitando cobranças duplicadas
-- **Stripe (Sandbox)**: Substituir mock por PaymentIntent + Webhooks
-- **Resend (Email)**: Emails transacionais (confirmação de compra, redefinição de senha, alertas)
+- [x] **Strategy Pattern** no pagamento (Interface Mailer/Payment)
+- [x] **Idempotency-Key**: Processamento único de pagamentos
+- [x] **Stripe (Produção)**: Substituir mock por PaymentIntent + Webhooks
+- [x] **Resend (Email)**: Emails transacionais (confirmação de compra)
 
 ---
 

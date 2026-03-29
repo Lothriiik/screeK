@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 var _ SocialRepository = (*Store)(nil)
-
 
 type Store struct {
 	db *gorm.DB
@@ -45,7 +46,7 @@ func (s *Store) GetFeed(ctx context.Context, cursorID uint, limit int) ([]Post, 
 	return posts, err
 }
 
-func (s *Store) ReplyPost(ctx context.Context, userID uint, parentID uint, content string) error {
+func (s *Store) ReplyPost(ctx context.Context, userID uuid.UUID, parentID uint, content string) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var parent Post
 		if err := tx.First(&parent, parentID).Error; err != nil {
@@ -70,7 +71,7 @@ func (s *Store) ReplyPost(ctx context.Context, userID uint, parentID uint, conte
 	})
 }
 
-func (s *Store) ToggleLike(ctx context.Context, userID uint, postID uint) (bool, error) {
+func (s *Store) ToggleLike(ctx context.Context, userID uuid.UUID, postID uint) (bool, error) {
 	var isLiked bool
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -120,7 +121,7 @@ func (s *Store) ToggleLike(ctx context.Context, userID uint, postID uint) (bool,
 	return isLiked, err
 }
 
-func (s *Store) ToggleFollow(ctx context.Context, followerID uint, followeeID uint) (bool, error) {
+func (s *Store) ToggleFollow(ctx context.Context, followerID uuid.UUID, followeeID uuid.UUID) (bool, error) {
 	var isFollowing bool
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/StartLivin/cine-pass/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -27,13 +28,12 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 		r.Post("/posts/{id}/like", h.ToggleLike)
 		r.Post("/users/{username}/follow", h.ToggleFollow)
 
-
 	})
 }
 
 func (h *Handler) LogMovie(w http.ResponseWriter, r *http.Request) {
-    userIDAny := r.Context().Value(httputil.UserIDKey)
-	userID, ok := userIDAny.(int)
+	userIDAny := r.Context().Value(httputil.UserIDKey)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
@@ -52,7 +52,7 @@ func (h *Handler) LogMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.LogMovie(r.Context(), uint(userID), uint(movieID), req); err != nil {
+	if err := h.svc.LogMovie(r.Context(), uuid.UUID(userID), uint(movieID), req); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
@@ -62,7 +62,7 @@ func (h *Handler) LogMovie(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	userIDAny := r.Context().Value(httputil.UserIDKey)
-	userID, ok := userIDAny.(int)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Não logado ou token expirado", http.StatusUnauthorized)
 		return
@@ -74,7 +74,7 @@ func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	postResponse, err := h.svc.CreatePost(r.Context(), uint(userID), req)
+	postResponse, err := h.svc.CreatePost(r.Context(), uuid.UUID(userID), req)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
@@ -85,12 +85,11 @@ func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetFeed(w http.ResponseWriter, r *http.Request) {
 	userIDAny := r.Context().Value(httputil.UserIDKey)
-	_, ok := userIDAny.(int)
+	_, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
 	}
-
 
 	cursorStr := r.URL.Query().Get("cursor")
 	limitStr := r.URL.Query().Get("limit")
@@ -121,7 +120,7 @@ func (h *Handler) ReplyToPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userIDAny := r.Context().Value(httputil.UserIDKey)
-	userID, ok := userIDAny.(int)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
@@ -133,7 +132,7 @@ func (h *Handler) ReplyToPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.ReplyToPost(r.Context(), uint(userID), uint(parentID), req); err != nil {
+	if err := h.svc.ReplyToPost(r.Context(), uuid.UUID(userID), uint(parentID), req); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
@@ -150,13 +149,13 @@ func (h *Handler) ToggleLike(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userIDAny := r.Context().Value(httputil.UserIDKey)
-	userID, ok := userIDAny.(int)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Unauthorized access", http.StatusUnauthorized)
 		return
 	}
 
-	liked, err := h.svc.ToggleLike(r.Context(), uint(userID), uint(postID))
+	liked, err := h.svc.ToggleLike(r.Context(), uuid.UUID(userID), uint(postID))
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -177,13 +176,13 @@ func (h *Handler) ToggleFollow(w http.ResponseWriter, r *http.Request) {
 	targetUsername := chi.URLParam(r, "username")
 
 	userIDAny := r.Context().Value(httputil.UserIDKey)
-	userID, ok := userIDAny.(int)
+	userID, ok := userIDAny.(uuid.UUID)
 	if !ok {
 		http.Error(w, "Unauthorized access", http.StatusUnauthorized)
 		return
 	}
 
-	isFollowing, err := h.svc.ToggleFollow(r.Context(), uint(userID), targetUsername)
+	isFollowing, err := h.svc.ToggleFollow(r.Context(), uuid.UUID(userID), targetUsername)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
@@ -199,5 +198,3 @@ func (h *Handler) ToggleFollow(w http.ResponseWriter, r *http.Request) {
 		"is_following": isFollowing,
 	})
 }
-
-

@@ -1,8 +1,8 @@
-# 🎬 Cine Pass
+# 🎬 screeK
 
 > **O ecossistema perfeito para verdadeiros amantes de cinema. Descubra filmes, avalie, acompanhe seus amigos e compre seu ingresso — tudo no mesmo lugar.**
 
-O **Cine Pass** é o software centralizado que resolve o problema da fragmentação na experiência do cinéfilo. Em vez de usar diferentes aplicativos para buscar filmes (IMDB/Letterboxd), conversar com amigos (Redes Sociais) e comprar o bilhete (Ingresso.com), o projeto une a **Auditoria Social** ao **Comércio de Ingresso**, tornando o processo orgânico, engajante e seguro.
+O **screeK** é o software centralizado que resolve o problema da fragmentação na experiência do cinéfilo. Em vez de usar diferentes aplicativos para buscar filmes (IMDB/Letterboxd), conversar com amigos (Redes Sociais) e comprar o bilhete (Ingresso.com), o projeto une a **Auditoria Social** ao **Comércio de Ingresso**, tornando o processo orgânico, engajante e seguro.
 
 ---
 
@@ -47,15 +47,18 @@ O **Cine Pass** é o software centralizado que resolve o problema da fragmentaç
 ## 🏗 Arquitetura & Tecnologias
 - **Backend Core:** **Monólito Modular** (Feature-First) em **Go** (Chi Router + net/http). Cada domínio (Users, Movies, Bookings, Social) vive em seu próprio pacote com handlers, models e stores isolados. Toda a API é **REST**.
 - **Banco de Dados:** PostgreSQL com **GORM**. Transações com Locking Pessimista para compras de ingressos. Índices compostos nas queries mais frequentes.
+- **Pagamentos & Webhooks:** Integração total com **Stripe** para processamento de pagamentos reais e gestão de idempotência.
+- **Emails Transacionais:** Despacho assíncrono de tickets via **Resend API**.
 - **Cache & Lock de Assentos:** **Redis** para lock temporário de poltronas (TTL) durante o fluxo de compra, evitando double-booking.
 - **Resiliência:** **Circuit Breaker** (`sony/gobreaker`) na integração com a API TMDB — se a API externa cair, o app serve dados do cache local.
 - **Segurança:** Bcrypt (hashing de senhas) + JWT (autenticação stateless) + Rate Limiting.
 - **Observabilidade:** Logging estruturado com `slog` (stdlib Go 1.21+).
 - **DevOps:** Docker + Docker Compose (Postgres + Redis + API) + CI/CD com GitHub Actions + Swagger/OpenAPI.
 
+
 ## 🎨 UI & Frontend
 O ecossistema é suportado por uma Interface User-Centric baseada na estética **Brutalist Design**. O Design System independente define a tipografia, colorimetria e componentes isolados.
-- **Design System & Mockups:** [Acesse o projeto oficial no Figma](https://www.figma.com/design/YU8WBTTEUgTk70VLmZAtBo/Design-Project---CINEPASS?node-id=0-1&t=Ok9SFoy1isIhGm2T-1)
+- **Design System & Mockups:** [Acesse o projeto oficial no Figma](https://www.figma.com/design/YU8WBTTEUgTk70VLmZAtBo/Design-Project---screek?node-id=0-1&t=Ok9SFoy1isIhGm2T-1)
 - O frontend consome a API REST do backend.
 
 > Para detalhes das APIs e da Modelagem do Banco de Dados, consulte o [README Técnico na pasta /backend](backend/README.md).
