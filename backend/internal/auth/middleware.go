@@ -14,34 +14,35 @@ func AuthMiddleware(jwtService *JWTService, redisClient *redis.Client) func(next
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, "Token Ausente", http.StatusUnauthorized)
+				httputil.WriteJSON(w, http.StatusUnauthorized, httputil.ErrorResponse{Error: "Token Ausente"})
 				return
 			}
 
 			tokenParts := strings.Split(authHeader, " ")
 			if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-				http.Error(w, "Token mal formatado", http.StatusUnauthorized)
+				httputil.WriteJSON(w, http.StatusUnauthorized, httputil.ErrorResponse{Error: "Token mal formatado"})
 				return
 			}
 			tokenString := tokenParts[1]
 
 			isBlacklisted, err := redisClient.Exists(r.Context(), "blacklist:"+tokenString).Result()
 			if err != nil {
-				http.Error(w, "Erro ao verificar segurança do token", http.StatusInternalServerError)
+				httputil.WriteJSON(w, http.StatusInternalServerError, httputil.ErrorResponse{Error: "Erro ao verificar segurança do token"})
 				return
 			}
 			if isBlacklisted > 0 {
-				http.Error(w, "Token inválido ou expirado (Sessão Encerrada)", http.StatusUnauthorized)
+				httputil.WriteJSON(w, http.StatusUnauthorized, httputil.ErrorResponse{Error: "Token inválido ou expirado (Sessão Encerrada)"})
 				return
 			}
 
-			claims, err := jwtService.ValidateToken(tokenString)
+			claims, err := jwtService.ValidateToken(tokenString, TokenTypeSession)
 			if err != nil {
-				http.Error(w, "Token inválido/expirado", http.StatusUnauthorized)
+				httputil.WriteJSON(w, http.StatusUnauthorized, httputil.ErrorResponse{Error: "Token inválido/expirado"})
 				return
 			}
 
 			ctx := context.WithValue(r.Context(), httputil.UserIDKey, claims.UserID)
+			ctx = context.WithValue(ctx, httputil.UserRoleKey, claims.Role)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

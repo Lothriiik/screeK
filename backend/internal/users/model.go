@@ -3,16 +3,9 @@ package users
 import (
 	"time"
 	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-)
-
-type Role string
-
-const (
-	RoleUser    Role = "USER"
-	RoleManager Role = "MANAGER"
-	RoleAdmin   Role = "ADMIN"
 )
 
 type User struct {
@@ -24,7 +17,7 @@ type User struct {
 	Bio            string         `json:"bio"`
 	PhotoURL       string         `json:"photo_url"`
 	Pronouns       string         `json:"pronouns"`
-	Role           Role           `json:"role" gorm:"type:varchar(20);default:'USER'"`
+	Role           httputil.Role  `json:"role" gorm:"type:varchar(20);default:'USER'"`
 	DefaultCity    string         `json:"default_city"`
 	FavoriteMovies []movies.Movie `json:"favorite_movies" gorm:"many2many:user_favorite_movies;"`
 	IsActive       bool           `json:"is_active" gorm:"not null;default:true"`

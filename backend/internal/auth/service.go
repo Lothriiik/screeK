@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/platform/crypto"
+	"github.com/StartLivin/screek/backend/internal/platform/email"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -27,10 +29,11 @@ type AuthService struct {
 	userRepo users.UserRepository
 	jwt      *JWTService
 	redis    *redis.Client
+	mailer   email.Mailer
 }
 
-func NewAuthService(userRepo users.UserRepository, jwt *JWTService, redisClient *redis.Client) *AuthService {
-	return &AuthService{userRepo: userRepo, jwt: jwt, redis: redisClient}
+func NewAuthService(userRepo users.UserRepository, jwt *JWTService, redisClient *redis.Client, mailer email.Mailer) *AuthService {
+	return &AuthService{userRepo: userRepo, jwt: jwt, redis: redisClient, mailer: mailer}
 }
 
 func (s *AuthService) Login(ctx context.Context, username, password string) (string, error) {
@@ -43,7 +46,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 		return "", ErrInvalidCredentials
 	}
 
-	token, err := s.jwt.GenerateToken(user.ID, user.Username)
+	token, err := s.jwt.GenerateToken(user.ID, user.Username, httputil.Role(user.Role))
 	if err != nil {
 		return "", ErrTokenGeneration
 	}
@@ -52,7 +55,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 }
 
 func (s *AuthService) Logout(ctx context.Context, tokenString string) error {
-	claims, err := s.jwt.ValidateToken(tokenString)
+	claims, err := s.jwt.ValidateToken(tokenString, TokenTypeSession)
 	if err != nil {
 		return ErrInvalidToken
 	}
@@ -70,22 +73,26 @@ func (s *AuthService) Logout(ctx context.Context, tokenString string) error {
 	return nil
 }
 
-func (s *AuthService) ForgotPassword(ctx context.Context, email string) (string, error) {
+func (s *AuthService) ForgotPassword(ctx context.Context, email string) error {
 	user, err := s.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return "", ErrUserNotFound
+		return nil 
 	}
 
 	token, err := s.jwt.GeneratePasswordResetToken(user.ID)
 	if err != nil {
-		return "", ErrTokenGeneration
+		return ErrTokenGeneration
 	}
 
-	return token, nil
+	if s.mailer != nil {
+		s.mailer.SendPasswordReset(user.Email, token)
+	}
+
+	return nil
 }
 
 func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword string) error {
-	claims, err := s.jwt.ValidateToken(token)
+	claims, err := s.jwt.ValidateToken(token, TokenTypeReset)
 	if err != nil {
 		return ErrInvalidToken
 	}
