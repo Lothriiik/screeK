@@ -214,7 +214,7 @@ func (s *Store) PayTransaction(ctx context.Context, transactionID uuid.UUID, use
 	})
 }
 
-func (s *Store) CancelTicket(ctx context.Context, ticketID int, userID uuid.UUID) error {
+func (s *Store) CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var ticket Ticket
 		if err := tx.Where("id = ? AND status != ?", ticketID, TicketStatusCancelled).First(&ticket).Error; err != nil {
@@ -247,11 +247,94 @@ func (s *Store) GetUserTickets(ctx context.Context, userID uuid.UUID, status str
 	return tickets, err
 }
 
-func (s *Store) GetTicketDetail(ctx context.Context, ticketID int, userID uuid.UUID) (*Ticket, error) {
+func (s *Store) GetTicketDetail(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) (*Ticket, error) {
 	var ticket Ticket
-	query := s.db.WithContext(ctx).Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").Where("tickets.id = ? AND trx.user_id = ?", ticketID, userID)
+	query := s.db.WithContext(ctx).
+		Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").
+		Where("tickets.id = ? AND trx.user_id = ?", ticketID, userID)
 
 	err := query.Preload("Seat").Preload("Session.Movie").Preload("Session.Room.Cinema").First(&ticket).Error
 
 	return &ticket, err
+}
+
+// --- Métodos de Gerenciamento (Backoffice) ---
+
+func (s *Store) CreateCinema(ctx context.Context, cinema *Cinema) error {
+	return s.db.WithContext(ctx).Create(cinema).Error
+}
+
+func (s *Store) CreateRoom(ctx context.Context, room *Room, seats []Seat) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(room).Error; err != nil {
+			return err
+		}
+
+		if len(seats) > 0 {
+			for i := range seats {
+				seats[i].RoomID = room.ID
+			}
+			if err := tx.Create(&seats).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+func (s *Store) CreateSession(ctx context.Context, session *Session) error {
+	return s.db.WithContext(ctx).Create(session).Error
+}
+
+func (s *Store) DeleteSession(ctx context.Context, sessionID int) error {
+	return s.db.WithContext(ctx).Delete(&Session{}, sessionID).Error
+}
+
+func (s *Store) GetSessionsByRoom(ctx context.Context, roomID int, startTime time.Time) ([]Session, error) {
+	var sessions []Session
+	date := startTime.Format("2006-01-02")
+	
+	// Filtra por sala e pelo dia da sessão pretendida para checar overlaps
+	err := s.db.WithContext(ctx).
+		Where("room_id = ? AND DATE(start_time) = ?", roomID, date).
+		Preload("Movie").
+		Find(&sessions).Error
+	return sessions, err
+}
+
+func (s *Store) GetRoomByID(ctx context.Context, roomID int) (*Room, error) {
+	var room Room
+	err := s.db.WithContext(ctx).Preload("Cinema").First(&room, roomID).Error
+	return &room, err
+}
+
+func (s *Store) IsManagerOfCinema(ctx context.Context, userID uuid.UUID, cinemaID int) (bool, error) {
+	var count int64
+	err := s.db.WithContext(ctx).
+		Table("cinema_managers").
+		Where("user_id = ? AND cinema_id = ?", userID, cinemaID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (s *Store) ListCinemas(ctx context.Context) ([]Cinema, error) {
+	var cinemas []Cinema
+	err := s.db.WithContext(ctx).Order("name asc").Find(&cinemas).Error
+	return cinemas, err
+}
+
+func (s *Store) ListSessions(ctx context.Context, cinemaID int, date string) ([]Session, error) {
+	var sessions []Session
+	query := s.db.WithContext(ctx).
+		Joins("JOIN rooms r ON r.id = sessions.room_id").
+		Where("r.cinema_id = ?", cinemaID)
+
+	if date != "" {
+		// PostgreSQL-compatible DATE cast. Use simple string comparison for generic SQL if needed.
+		query = query.Where("sessions.start_time::date = ?", date)
+	}
+
+	err := query.Preload("Movie").Preload("Room").Order("sessions.start_time asc").Find(&sessions).Error
+	return sessions, err
 }

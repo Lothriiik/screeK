@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/payment"
 	"github.com/google/uuid"
 	redisclient "github.com/redis/go-redis/v9"
 )
@@ -15,25 +16,33 @@ import (
 var (
 	ErrSeatLockFailed      = errors.New("uma ou mais cadeiras foram compradas por outro usuário")
 	ErrInvalidTicketStatus = errors.New("query param 'status' inválido")
+	ErrSessionOverlap     = errors.New("conflito de horário: a sala já possui uma sessão neste período")
+	ErrNotCinemaManager   = errors.New("acesso negado: você não é gerente deste cinema")
 )
 
 type Mailer interface {
 	SendTicketEmail(to, userName, qrCode string) error
 }
 
-type BookingsService struct {
-	store       BookingsRepository
-	redisClient *redisclient.Client
-	payment     PaymentProcessor
-	mailer      Mailer
+type MovieProvider interface {
+	GetMovieDetails(ctx context.Context, tmdbID int) (*movies.Movie, error)
 }
 
-func NewService(store BookingsRepository, redisClient *redisclient.Client, payment PaymentProcessor, mailer Mailer) *BookingsService {
+type BookingsService struct {
+	store         BookingsRepository
+	redisClient   *redisclient.Client
+	payment       payment.Service
+	mailer        Mailer
+	movieProvider MovieProvider
+}
+
+func NewService(store BookingsRepository, redisClient *redisclient.Client, payment payment.Service, mailer Mailer, movieProvider MovieProvider) *BookingsService {
 	return &BookingsService{
-		store:       store,
-		redisClient: redisClient,
-		payment:     payment,
-		mailer:      mailer,
+		store:         store,
+		redisClient:   redisClient,
+		payment:       payment,
+		mailer:        mailer,
+		movieProvider: movieProvider,
 	}
 }
 
@@ -91,7 +100,6 @@ func (s *BookingsService) GetSessionByID(ctx context.Context, sessionID int) (*S
     return s.store.GetSessionByID(ctx, sessionID)
 }
 
-
 func (s *BookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, sessionID int, ticketsReq []TicketRequest) (*Transaction, error) {
 	var lockedAssets []string
 
@@ -114,7 +122,7 @@ func (s *BookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, se
 		for _, lockedAsset := range lockedAssets {
 			s.redisClient.Del(ctx, lockedAsset)
 		}
-		return nil, ErrSeatLockFailed
+		return nil, errors.New("sessão não encontrada")
 	}
 
 	basePrice := session.Price
@@ -146,7 +154,7 @@ func (s *BookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, se
 			SeatID:    &sID,
 			Type:      tReq.Type,
 			PricePaid: finalPrice,
-			QRCode:    "temp_" + uuid.NewString(), // Tapa-buraco pra restrição do banco até ele ser pago
+			QRCode:    "temp_" + uuid.NewString(),
 			Status:    TicketStatusPending,
 		})
 	}
@@ -171,21 +179,39 @@ func (s *BookingsService) PayReservation(ctx context.Context, transactionID uuid
 	}
 
 	metadata := map[string]string{
-		"transaction_id": transactionID.String(),
-		"user_id":        userID.String(),
-		"method":         method,
+		"booking_id": transactionID.String(),
+		"user_id":    userID.String(),
+		"method":     method,
 	}
 
-	result, err := s.payment.CreatePaymentIntent(ctx, transaction.TotalAmount, "brl", idempotencyKey, metadata)
+	if transaction.TotalAmount == 0 {
+		if err := s.store.PayTransaction(ctx, transactionID, userID, "FREE"); err != nil {
+			return "", errors.New("erro ao processar reserva gratuita")
+		}
+		
+		if s.mailer != nil {
+			go func() {
+				fullTransaction, err := s.store.GetTransactionByID(ctx, transactionID, userID)
+				if err == nil {
+					for _, t := range fullTransaction.Tickets {
+						s.mailer.SendTicketEmail(fullTransaction.User.Email, fullTransaction.User.Name, t.QRCode)
+					}
+				}
+			}()
+		}
+		return "FREE", nil
+	}
+
+	result, err := s.payment.CreatePayment(ctx, transaction.TotalAmount, "brl", metadata, idempotencyKey)
 	if err != nil {
-		return "", errors.New("falha na conexão com meio de pagamento: " + err.Error())
+		return "", fmt.Errorf("falha na conexão com meio de pagamento: %w", err)
 	}
 
 	return result.ClientSecret, nil
 }
 
 
-func (s *BookingsService) CancelTicket(ctx context.Context, ticketID int, userID uuid.UUID) error {
+func (s *BookingsService) CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) error {
 	return s.store.CancelTicket(ctx, ticketID, userID)
 }
 
@@ -221,12 +247,16 @@ func (s *BookingsService) GetUserTickets(ctx context.Context, userID uuid.UUID, 
 		response = append(response, dto)
 	}
 
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Date > response[j].Date
+	})
+
     return response, nil
 }
 
-func (s *BookingsService) GetTicketDetail(ctx context.Context, ticketID int, userID uuid.UUID) (TicketResponseDTO, error) {
+func (s *BookingsService) GetTicketDetail(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) (TicketResponseDTO, error) {
 	ticket, err := s.store.GetTicketDetail(ctx, ticketID, userID)
-	if err != nil{
+	if err != nil {
 		return TicketResponseDTO{}, err 
 	}
 
@@ -269,4 +299,150 @@ func (s *BookingsService) ConfirmPaymentWebhook(ctx context.Context, transaction
 	}
 
 	return nil
+}
+
+// --- Funções de Gerenciamento (Backoffice) ---
+
+func (s *BookingsService) CreateCinema(ctx context.Context, req CreateCinemaRequest) error {
+	if err := req.Validate(); err != nil {
+		return err
+	}
+
+	cinema := &Cinema{
+		Name:    req.Name,
+		Address: req.Address,
+		City:    req.City,
+		Phone:   req.Phone,
+		Email:   req.Email,
+	}
+
+	return s.store.CreateCinema(ctx, cinema)
+}
+
+func (s *BookingsService) CreateRoom(ctx context.Context, req CreateRoomRequest) error {
+	if err := req.Validate(); err != nil {
+		return err
+	}
+
+	room := &Room{
+		CinemaID: req.CinemaID,
+		Name:     req.Name,
+		Capacity: req.Capacity,
+		Type:     RoomType(req.Type),
+	}
+
+	// Geração automática de assentos (Grade aproximada)
+	var seats []Seat
+	cols := 10
+	rows := (req.Capacity + cols - 1) / cols
+
+	for r := 0; r < rows; r++ {
+		rowLabel := string(rune('A' + r))
+		for c := 1; c <= cols; c++ {
+			if len(seats) >= req.Capacity {
+				break
+			}
+			seats = append(seats, Seat{
+				Row:    rowLabel,
+				Number: c,
+				PosX:   c * 40,
+				PosY:   r * 40,
+				Type:   "STANDARD",
+			})
+		}
+	}
+
+	return s.store.CreateRoom(ctx, room, seats)
+}
+
+func (s *BookingsService) CreateSession(ctx context.Context, userID uuid.UUID, req CreateSessionRequest) error {
+	if err := req.Validate(); err != nil {
+		return err
+	}
+
+	room, err := s.store.GetRoomByID(ctx, req.RoomID)
+	if err != nil {
+		return errors.New("sala não encontrada")
+	}
+
+	// RBAC: Verifica se é gerente do cinema
+	isManager, err := s.store.IsManagerOfCinema(ctx, userID, room.CinemaID)
+	if err != nil {
+		return err
+	}
+	if !isManager {
+		return ErrNotCinemaManager
+	}
+
+	movie, err := s.movieProvider.GetMovieDetails(ctx, req.MovieID)
+	if err != nil {
+		return errors.New("filme não encontrado na base ou TMDB")
+	}
+
+	// Validação de Overlap
+	existingSessions, err := s.store.GetSessionsByRoom(ctx, req.RoomID, req.StartTime)
+	if err != nil {
+		return err
+	}
+
+	newStart := req.StartTime
+	newEnd := newStart.Add(time.Duration(movie.Runtime+15) * time.Minute)
+
+	for _, es := range existingSessions {
+		esStart := es.StartTime
+		esEnd := esStart.Add(time.Duration(es.Movie.Runtime+15) * time.Minute)
+
+		if newStart.Before(esEnd) && esStart.Before(newEnd) {
+			return ErrSessionOverlap
+		}
+	}
+
+	session := &Session{
+		MovieID:     req.MovieID,
+		RoomID:      req.RoomID,
+		StartTime:   req.StartTime,
+		Price:       req.Price,
+		SessionType: SessionType(req.SessionType),
+		IsFree:      req.Price == 0,
+	}
+
+	return s.store.CreateSession(ctx, session)
+}
+
+func (s *BookingsService) ListCinemas(ctx context.Context) ([]CinemaAdminResponseDTO, error) {
+	cinemas, err := s.store.ListCinemas(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []CinemaAdminResponseDTO
+	for _, c := range cinemas {
+		response = append(response, CinemaAdminResponseDTO{
+			ID:      c.ID,
+			Name:    c.Name,
+			City:    c.City,
+			Address: c.Address,
+		})
+	}
+	return response, nil
+}
+
+func (s *BookingsService) ListSessions(ctx context.Context, cinemaID int, date string) ([]SessionAdminResponseDTO, error) {
+	sessions, err := s.store.ListSessions(ctx, cinemaID, date)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []SessionAdminResponseDTO
+	for _, sess := range sessions {
+		response = append(response, SessionAdminResponseDTO{
+			ID:          sess.ID,
+			MovieTitle:  sess.Movie.Title,
+			RoomName:    sess.Room.Name,
+			StartTime:   sess.StartTime,
+			Price:       sess.Price,
+			SessionType: string(sess.SessionType),
+		})
+	}
+	return response, nil
 }

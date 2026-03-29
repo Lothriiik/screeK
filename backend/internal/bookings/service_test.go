@@ -3,16 +3,28 @@ package bookings
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"sync"
 	"testing"
 
 	"github.com/StartLivin/screek/backend/internal/platform/database"
 	"github.com/StartLivin/screek/backend/internal/platform/redis"
+	"github.com/StartLivin/screek/backend/internal/payment"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 )
+
+type MockPaymentService struct{}
+
+func (m *MockPaymentService) CreatePayment(ctx context.Context, amount int, currency string, metadata map[string]string, idempotencyKey string) (*payment.PaymentResponse, error) {
+	return &payment.PaymentResponse{ID: "pi_mock", ClientSecret: "secret_mock"}, nil
+}
+
+func (m *MockPaymentService) ParseWebhook(r *http.Request) (*payment.Event, error) {
+	return nil, nil
+}
 
 func setupTestEnvironment(t *testing.T) (*BookingsService, *gorm.DB) {
 	if err := godotenv.Load("../../.env"); err != nil {
@@ -36,8 +48,8 @@ func setupTestEnvironment(t *testing.T) (*BookingsService, *gorm.DB) {
 	rdb := redis.InitRedis(redisURL)
 
 	store := NewStore(db)
-	fakePayment := NewStripeProcessor("sk_test_123")
-	service := NewService(store, rdb, fakePayment, nil)
+	mockPayment := &MockPaymentService{}
+	service := NewService(store, rdb, mockPayment, nil, nil)
 
 	rdb.FlushAll(context.Background())
 

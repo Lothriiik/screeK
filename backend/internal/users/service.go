@@ -6,6 +6,7 @@ import (
 
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/platform/crypto"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/google/uuid"
 )
 
@@ -61,21 +62,6 @@ func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID, password str
 	return s.repo.DeleteUser(ctx, id)
 }
 
-func (s *UserService) ChangePassword(ctx context.Context, id uuid.UUID, oldPassword string, newPasswordPlain string) error {
-	user, err := s.repo.GetUserByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	if !crypto.VerifyPassword(oldPassword, user.Password) {
-		return ErrOldPasswordInvalid
-	}
-	hashedPassword, err := crypto.HashPassword(newPasswordPlain)
-	if err != nil {
-		return errors.New("erro ao processar nova senha")
-	}
-	user.Password = hashedPassword
-	return s.repo.UpdateUser(ctx, user)
-}
 
 func (s *UserService) AddFavorite(ctx context.Context, userID uuid.UUID, tmdbID int) error {
 	movie, err := s.movieRepo.GetMovieByTMDBID(ctx, tmdbID)
@@ -115,4 +101,12 @@ func (s *UserService) EmailExists(ctx context.Context, email string) (bool, erro
 
 func (s *UserService) UsernameExists(ctx context.Context, username string) (bool, error) {
 	return s.repo.UsernameExists(ctx, username)
+}
+
+func (s *UserService) UpdateUserRole(ctx context.Context, userID uuid.UUID, role httputil.Role) error {
+	_, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdateUserRole(ctx, userID, role)
 }

@@ -5,11 +5,10 @@ import (
 	"errors"
 
 	"github.com/StartLivin/screek/backend/internal/movies"
-	"github.com/go-playground/validator/v10"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/platform/validation"
 	"github.com/google/uuid"
 )
-
-var validate = validator.New()
 
 type CreateUserDTO struct {
 	Name                 string `json:"name" validate:"required"`
@@ -29,6 +28,17 @@ type UserDetailsDTO struct {
 	ID             uuid.UUID               `json:"id"`
 	Name           string            `json:"name"`
 	Username       string            `json:"username"`
+	Bio            string            `json:"bio"`
+	PhotoURL       string            `json:"photo_url"`
+	Pronouns       string            `json:"pronouns"`
+	DefaultCity    string            `json:"default_city"`
+	FavoriteMovies []movies.MovieDTO `json:"favorite_movies"`
+}
+
+type UserMeDetailsDTO struct {
+	ID             uuid.UUID         `json:"id"`
+	Name           string            `json:"name"`
+	Username       string            `json:"username"`
 	Email          string            `json:"email"`
 	Bio            string            `json:"bio"`
 	PhotoURL       string            `json:"photo_url"`
@@ -37,6 +47,15 @@ type UserDetailsDTO struct {
 	FavoriteMovies []movies.MovieDTO `json:"favorite_movies"`
 }
 
+type UpdateUserDTO struct {
+	Name        string   `json:"name" validate:"omitempty"`
+	Bio         string   `json:"bio" validate:"omitempty"`
+	PhotoURL    string   `json:"photo_url" validate:"omitempty,url"`
+	Pronouns    string   `json:"pronouns" validate:"omitempty"`
+	DefaultCity string   `json:"default_city" validate:"omitempty"`
+}
+
+
 type ChangePasswordDTO struct {
 	OldPassword          string `json:"old_password" validate:"required,min=6"`
 	Password             string `json:"password" validate:"required,min=6"`
@@ -44,7 +63,7 @@ type ChangePasswordDTO struct {
 }
 
 func (dto *CreateUserDTO) Validate(ctx context.Context, svc *UserService) error {
-	if err := validate.Struct(dto); err != nil {
+	if err := validation.Validate.Struct(dto); err != nil {
 		return errors.New("Erro de validação: verifique os campos fornecidos")
 	}
 
@@ -59,4 +78,20 @@ func (dto *CreateUserDTO) Validate(ctx context.Context, svc *UserService) error 
 	}
 
 	return nil
+}
+
+func (dto *UpdateUserDTO) Validate() error {
+	return validation.Validate.Struct(dto)
+}
+
+func (dto *ChangePasswordDTO) Validate() error {
+	return validation.Validate.Struct(dto)
+}
+
+type UpdateRoleDTO struct {
+	Role httputil.Role `json:"role" validate:"required,oneof=USER MANAGER ADMIN"`
+}
+
+func (dto *UpdateRoleDTO) Validate() error {
+	return validation.Validate.Struct(dto)
 }

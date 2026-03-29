@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -87,4 +88,8 @@ func (s *Store) UsernameExists(ctx context.Context, username string) (bool, erro
 	var count int64
 	err := s.db.WithContext(ctx).Model(&User{}).Where("username = ?", username).Count(&count).Error
 	return count > 0, err
+}
+
+func (s *Store) UpdateUserRole(ctx context.Context, userID uuid.UUID, role httputil.Role) error {
+	return s.db.WithContext(ctx).Model(&User{}).Where("id = ?", userID).Update("role", role).Error
 }

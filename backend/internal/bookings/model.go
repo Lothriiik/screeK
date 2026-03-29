@@ -63,7 +63,7 @@ type Room struct {
 	Capacity         	int      `json:"capacity" gorm:"not null"`
 	Type             	RoomType `json:"type" gorm:"type:varchar(20);not null"`
 	HasNumberedSeats 	bool   `json:"has_numbered_seats" gorm:"default:true"`
-	Cinema           	Cinema `json:"cinema" gorm:"foreignKey:CinemaID"`
+	Cinema           	Cinema `json:"-" gorm:"foreignKey:CinemaID"`
 	Seats    			[]Seat `json:"seats" gorm:"foreignKey:RoomID"`
 }
 
@@ -75,7 +75,7 @@ type Seat struct {
 	PosX       int    `json:"pos_x" gorm:"not null"`
 	PosY       int    `json:"pos_y" gorm:"not null"`
 	Type       string `json:"type" gorm:"not null"`
-	Room       Room   `json:"room" gorm:"foreignKey:RoomID"`
+	Room       Room   `json:"-" gorm:"foreignKey:RoomID"`
 	IsOccupied bool   `json:"is_occupied" gorm:"-"`
 }
 
@@ -111,7 +111,7 @@ type Ticket struct {
 	PricePaid     int          `json:"price_paid" gorm:"not null;default:0"`                     
 	QRCode        string       `json:"qr_code" gorm:"not null;unique"`
 	Status        TicketStatus `json:"status" gorm:"type:varchar(20);not null"`
-	Transaction   Transaction  `json:"transaction" gorm:"foreignKey:TransactionID"`
+	Transaction   Transaction  `json:"-" gorm:"foreignKey:TransactionID"`
 	Session       Session      `json:"session" gorm:"foreignKey:SessionID"`
 	Seat          *Seat        `json:"seat" gorm:"foreignKey:SeatID"`
 }
