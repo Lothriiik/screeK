@@ -13,7 +13,8 @@ import (
 type TokenType string
 
 const (
-	TokenTypeSession TokenType = "session"
+	TokenTypeAccess  TokenType = "access"
+	TokenTypeRefresh TokenType = "refresh"
 	TokenTypeReset   TokenType = "reset"
 )
 
@@ -33,26 +34,37 @@ func NewJWTService(cfg *config.Config) *JWTService {
 	return &JWTService{cfg: cfg}
 }
 
-func (s *JWTService) GenerateToken(userID uuid.UUID, username string, role httputil.Role) (string, error) {
-
+func (s *JWTService) GenerateAccessToken(userID uuid.UUID, username string, role httputil.Role) (string, error) {
 	claims := Claims{
 		UserID:    userID,
 		Username:  username,
 		Role:      role,
-		TokenType: TokenTypeSession,
+		TokenType: TokenTypeAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(s.cfg.JWTSecret))
+}
 
+func (s *JWTService) GenerateRefreshToken(userID uuid.UUID) (string, error) {
+	claims := Claims{
+		UserID:    userID,
+		TokenType: TokenTypeRefresh,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(s.cfg.JWTSecret))
 }
 
 func (s *JWTService) GeneratePasswordResetToken(userID uuid.UUID) (string, error) {
-
 	claims := Claims{
 		UserID:    userID,
 		TokenType: TokenTypeReset,
@@ -63,7 +75,6 @@ func (s *JWTService) GeneratePasswordResetToken(userID uuid.UUID) (string, error
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
 	return token.SignedString([]byte(s.cfg.JWTSecret))
 }
 

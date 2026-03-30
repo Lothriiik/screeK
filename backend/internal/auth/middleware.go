@@ -35,9 +35,9 @@ func AuthMiddleware(jwtService *JWTService, redisClient *redis.Client) func(next
 				return
 			}
 
-			claims, err := jwtService.ValidateToken(tokenString, TokenTypeSession)
+			claims, err := jwtService.ValidateToken(tokenString, TokenTypeAccess)
 			if err != nil {
-				httputil.WriteJSON(w, http.StatusUnauthorized, httputil.ErrorResponse{Error: "Token inválido/expirado"})
+				httputil.WriteJSON(w, http.StatusUnauthorized, httputil.ErrorResponse{Error: "Token inválido ou expirado"})
 				return
 			}
 

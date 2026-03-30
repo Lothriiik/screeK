@@ -23,6 +23,7 @@ var (
 	ErrPasswordProcess    = errors.New("erro ao processar nova senha")
 	ErrPasswordUpdate     = errors.New("erro ao atualizar senha")
 	ErrOldPasswordInvalid = errors.New("senha antiga incorreta")
+	ErrRefreshRevoked     = errors.New("token de atualização revogado ou expirado")
 )
 
 type AuthService struct {
@@ -36,38 +37,93 @@ func NewAuthService(userRepo users.UserRepository, jwt *JWTService, redisClient 
 	return &AuthService{userRepo: userRepo, jwt: jwt, redis: redisClient, mailer: mailer}
 }
 
-func (s *AuthService) Login(ctx context.Context, username, password string) (string, error) {
+func (s *AuthService) Login(ctx context.Context, username, password string) (*AuthTokenResponse, error) {
 	user, err := s.userRepo.GetUserByUsername(ctx, username)
 	if err != nil {
-		return "", ErrInvalidCredentials
+		return nil, ErrInvalidCredentials
 	}
 
 	if !crypto.VerifyPassword(password, user.Password) {
-		return "", ErrInvalidCredentials
+		return nil, ErrInvalidCredentials
 	}
 
-	token, err := s.jwt.GenerateToken(user.ID, user.Username, httputil.Role(user.Role))
+	accessToken, err := s.jwt.GenerateAccessToken(user.ID, user.Username, httputil.Role(user.Role))
 	if err != nil {
-		return "", ErrTokenGeneration
+		return nil, ErrTokenGeneration
 	}
 
-	return token, nil
+	refreshToken, err := s.jwt.GenerateRefreshToken(user.ID)
+	if err != nil {
+		return nil, ErrTokenGeneration
+	}
+
+	err = s.redis.Set(ctx, "refresh:"+user.ID.String()+":"+refreshToken, "true", time.Hour*24*7).Err()
+	if err != nil {
+		return nil, ErrTokenGeneration
+	}
+
+	return &AuthTokenResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
 
-func (s *AuthService) Logout(ctx context.Context, tokenString string) error {
-	claims, err := s.jwt.ValidateToken(tokenString, TokenTypeSession)
+func (s *AuthService) RefreshToken(ctx context.Context, refreshTokenString string) (*AuthTokenResponse, error) {
+	claims, err := s.jwt.ValidateToken(refreshTokenString, TokenTypeRefresh)
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
+
+	exists, err := s.redis.Exists(ctx, "refresh:"+claims.UserID.String()+":"+refreshTokenString).Result()
+	if err != nil || exists == 0 {
+		return nil, ErrRefreshRevoked
+	}
+
+	user, err := s.userRepo.GetUserByID(ctx, claims.UserID)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+
+	s.redis.Del(ctx, "refresh:"+claims.UserID.String()+":"+refreshTokenString)
+
+	accessToken, err := s.jwt.GenerateAccessToken(user.ID, user.Username, httputil.Role(user.Role))
+	if err != nil {
+		return nil, ErrTokenGeneration
+	}
+
+	newRefreshToken, err := s.jwt.GenerateRefreshToken(user.ID)
+	if err != nil {
+		return nil, ErrTokenGeneration
+	}
+
+	err = s.redis.Set(ctx, "refresh:"+user.ID.String()+":"+newRefreshToken, "true", time.Hour*24*7).Err()
+	if err != nil {
+		return nil, ErrTokenGeneration
+	}
+
+	return &AuthTokenResponse{
+		AccessToken:  accessToken,
+		RefreshToken: newRefreshToken,
+	}, nil
+}
+
+func (s *AuthService) Logout(ctx context.Context, accessTokenString string) error {
+	claims, err := s.jwt.ValidateToken(accessTokenString, TokenTypeAccess)
 	if err != nil {
 		return ErrInvalidToken
 	}
 
-	expirationTime := claims.ExpiresAt.Time
-	timeUntilExpiry := time.Until(expirationTime)
-
+	timeUntilExpiry := time.Until(claims.ExpiresAt.Time)
 	if timeUntilExpiry > 0 {
-		err := s.redis.Set(ctx, "blacklist:"+tokenString, "true", timeUntilExpiry).Err()
+		err := s.redis.Set(ctx, "blacklist:"+accessTokenString, "true", timeUntilExpiry).Err()
 		if err != nil {
 			return ErrLogoutProcess
 		}
+	}
+
+	iter := s.redis.Scan(ctx, 0, "refresh:"+claims.UserID.String()+":*", 0).Iterator()
+	for iter.Next(ctx) {
+		s.redis.Del(ctx, iter.Val())
 	}
 
 	return nil

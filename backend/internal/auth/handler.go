@@ -20,6 +20,7 @@ func NewHandler(svc *AuthService) *Handler {
 
 func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler) http.Handler) {
 	r.Post("/auth/login", h.Login)
+	r.Post("/auth/refresh", h.Refresh)
 	r.Post("/auth/forgot-password", h.ForgotPassword)
 	r.Post("/auth/reset-password", h.ResetPassword)
 
@@ -41,13 +42,35 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.svc.Login(r.Context(), dto.Username, dto.Password)
+	resp, err := h.svc.Login(r.Context(), dto.Username, dto.Password)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusUnauthorized, httputil.ErrorResponse{Error: "Usuário ou senha inválidos"})
 		return
 	}
 
-	httputil.WriteJSON(w, http.StatusOK, AuthTokenResponse{Token: token})
+	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+// @Success 200 {object} AuthTokenResponse
+// @Failure 401 {object} httputil.ErrorResponse "Token de atualização inválido ou expirado"
+// @Router /auth/refresh [post]
+func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
+	var dto struct {
+		RefreshToken string `json:"refresh_token" validate:"required"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "JSON inválido"})
+		return
+	}
+
+	resp, err := h.svc.RefreshToken(r.Context(), dto.RefreshToken)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusUnauthorized, httputil.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, resp)
 }
 
 // @Success 200 {object} httputil.MessageResponse
