@@ -3,7 +3,9 @@ package notifications
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"log/slog"
 
 	"github.com/google/uuid"
 )
@@ -30,7 +32,6 @@ func (s *NotificationService) Notify(ctx context.Context, userID uuid.UUID, nTyp
 		return err
 	}
 
-	// Tentar enviar via WebSocket
 	payload, err := json.Marshal(notification)
 	if err == nil {
 		s.hub.SendToUser(userID, payload)
@@ -51,4 +52,31 @@ func (s *NotificationService) MarkAsRead(ctx context.Context, userID uuid.UUID, 
 
 func (s *NotificationService) MarkAllAsRead(ctx context.Context, userID uuid.UUID) error {
 	return s.repo.MarkAllAsRead(ctx, userID)
+}
+
+type WatchlistMatchDTO struct {
+	UserID     uuid.UUID
+	MovieID    int
+	MovieTitle string
+	City       string
+	Type       string
+}
+
+func (s *NotificationService) ProcessWatchlistMatches(ctx context.Context, matches []WatchlistMatchDTO) error {
+	for _, m := range matches {
+		title := "Filme em Reexibição!"
+		message := fmt.Sprintf("O filme '%s' está em REEXIBIÇÃO em %s. Garanta seu ingresso!", m.MovieTitle, m.City)
+		if m.Type == "PREMIERE" {
+			title = "Estreia Confirmada!"
+			message = fmt.Sprintf("O filme '%s' ESTREIA em breve em %s. Confira as sessões!", m.MovieTitle, m.City)
+		}
+
+		s.Notify(ctx, m.UserID, "WATCHLIST_MATCH", title, message, fmt.Sprintf("/movies/%d", m.MovieID))
+	}
+
+	if len(matches) > 0 {
+		slog.Info("[Job] Notificações de watchlist enviadas", "total", len(matches))
+	}
+
+	return nil
 }

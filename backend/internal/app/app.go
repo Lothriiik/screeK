@@ -22,6 +22,7 @@ import (
 	"github.com/StartLivin/screek/backend/internal/platform/redis"
 	redisclient "github.com/redis/go-redis/v9"
 	"github.com/StartLivin/screek/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/platform/jobs"
 	"github.com/StartLivin/screek/backend/internal/social"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/go-chi/chi/v5"
@@ -38,6 +39,7 @@ type Application struct {
 	redis  *redisclient.Client
 	router *chi.Mux
 	hub    *notifications.Hub
+	jobs   *jobs.JobRunner
 }
 
 func NewApplication(cfg config.Config) *Application {
@@ -45,12 +47,12 @@ func NewApplication(cfg config.Config) *Application {
 		config: cfg,
 		router: chi.NewRouter(),
 		hub:    notifications.NewHub(),
+		jobs:   jobs.NewRunner(),
 	}
 }
 
 func (app *Application) mount() {
-	// middlewares Globais
-	app.router.Use(httputil.Logger) // Nosso novo Logger estruturado
+	app.router.Use(httputil.Logger) 
 	app.router.Use(middleware.Recoverer)
 	app.router.Use(httputil.RateLimit(10, 15))
 
@@ -111,10 +113,34 @@ func (app *Application) mount() {
 	socialService := social.NewService(socialStore, userService, notificationService)
 	socialHandler := social.NewHandler(socialService)
 	socialHandler.RegisterRoutes(app.router, authMiddleware)
+
+	app.jobs.Register("@every 1m", "Reserva Cleanup", func() {
+		bookingService.CleanupExpiredReservations(context.Background())
+	})
+	app.jobs.Register("@midnight", "Analytics Diário", func() {
+		bookingService.RunAnalyticsAggregation(context.Background(), time.Now().AddDate(0, 0, -1))
+	})
+	app.jobs.Register("@daily", "Watchlist Matches", func() {
+		matches, err := bookingStore.GetWatchlistMatches(context.Background())
+		if err != nil {
+			return
+		}
+		var dtos []notifications.WatchlistMatchDTO
+		for _, m := range matches {
+			dtos = append(dtos, notifications.WatchlistMatchDTO{
+				UserID:     m.UserID,
+				MovieID:    m.MovieID,
+				MovieTitle: m.MovieTitle,
+				City:       m.City,
+				Type:       m.Type,
+			})
+		}
+		notificationService.ProcessWatchlistMatches(context.Background(), dtos)
+	})
 }
 
 func (app *Application) Run() error {
-	// 1. Configurar slog global para JSON
+
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
@@ -132,12 +158,13 @@ func (app *Application) Run() error {
 	bookings.AutoMigrate(app.db)
 	social.AutoMigrate(app.db)
 	notifications.AutoMigrate(app.db)
-
-	bookings.StartWorkers(app.db)
 	
 	go app.hub.Run()
 
 	app.mount()
+
+	app.jobs.Start()
+	defer app.jobs.Stop()
 
 	srv := &http.Server{
 		Addr:    ":" + app.config.Port,

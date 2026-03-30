@@ -46,7 +46,7 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 // @Produce json
 // @Param city query string true "Cidade (ex: Sorocaba)"
 // @Param date query string true "Data (ex: 2024-10-25)"
-// @Success 200 {array} movies.Movie
+// @Success 200 {array} movies.MovieDTO
 // @Failure 400 {object} httputil.ErrorResponse "Parâmetros city e date são obrigatórios"
 // @Router /playing [get]
 func (h *Handler) GetMoviesPlaying(w http.ResponseWriter, r *http.Request) {

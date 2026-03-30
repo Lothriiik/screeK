@@ -31,6 +31,8 @@ type BookingsRepository interface {
 
 	ListCinemas(ctx context.Context) ([]Cinema, error)
 	ListSessions(ctx context.Context, cinemaID int, date string) ([]Session, error)
+	GetSpecialStatusForMovies(ctx context.Context, city string, movieIDs []int) (map[int]map[string]bool, error)
+	CleanupExpiredReservations(ctx context.Context) (int64, int64, error)
 }
 
 type AnalyticsRepository interface {

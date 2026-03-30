@@ -472,3 +472,105 @@ func (s *Store) GetRevenueTrends(ctx context.Context, start, end time.Time, peri
 	err := s.db.WithContext(ctx).Raw(query, start, end).Scan(&stats).Error
 	return stats, err
 }
+
+func (s *Store) GetSpecialStatusForMovies(ctx context.Context, city string, movieIDs []int) (map[int]map[string]bool, error) {
+	if len(movieIDs) == 0 {
+		return make(map[int]map[string]bool), nil
+	}
+
+	type Result struct {
+		MovieID     int
+		SessionType SessionType
+	}
+	var results []Result
+
+	query := `
+		SELECT s.movie_id, s.session_type
+		FROM sessions s
+		JOIN rooms r ON s.room_id = r.id
+		JOIN cinemas c ON r.cinema_id = c.id
+		WHERE c.city = ? AND s.movie_id IN (?) AND s.session_type IN ('PREMIERE', 'RESCREENING')
+		AND s.start_time >= now()
+	`
+	err := s.db.WithContext(ctx).Raw(query, city, movieIDs).Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	statusMap := make(map[int]map[string]bool)
+	for _, mID := range movieIDs {
+		statusMap[mID] = map[string]bool{"premiere": false, "rescreening": false}
+	}
+
+	for _, r := range results {
+		if r.SessionType == SessionTypePremiere {
+			statusMap[r.MovieID]["premiere"] = true
+		} else if r.SessionType == SessionTypeRescreen {
+			statusMap[r.MovieID]["rescreening"] = true
+		}
+	}
+
+	return statusMap, nil
+}
+
+type WatchlistMatch struct {
+	UserID     uuid.UUID
+	MovieID    int
+	MovieTitle string
+	City       string
+	Type       string 
+}
+
+func (s *Store) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error) {
+	var matches []WatchlistMatch
+	query := `
+		SELECT 
+			wi.user_id, 
+			wi.movie_id, 
+			m.title as movie_title, 
+			u.default_city as city,
+			s.session_type as type
+		FROM watchlist_items wi
+		JOIN users u ON wi.user_id = u.id
+		JOIN movies m ON wi.movie_id = m.id
+		JOIN sessions s ON s.movie_id = m.id
+		JOIN rooms r ON s.room_id = r.id
+		JOIN cinemas c ON r.cinema_id = c.id
+		WHERE u.default_city = c.city 
+		AND s.session_type IN ('PREMIERE', 'RESCREENING')
+		AND s.start_time >= now()
+		AND s.start_time <= (now() + interval '48 hours')
+		GROUP BY 1, 2, 3, 4, 5
+	`
+	err := s.db.WithContext(ctx).Raw(query).Scan(&matches).Error
+	return matches, err
+}
+
+func (s *Store) CleanupExpiredReservations(ctx context.Context) (int64, int64, error) {
+	cutoff := time.Now().Add(-10 * time.Minute)
+	var ticketsDeleted, transactionsDeleted int64
+
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		res1 := tx.Where(
+			"transaction_id IN (SELECT id FROM transactions WHERE status = ? AND created_at < ?)",
+			TicketStatusPending, cutoff,
+		).Delete(&Ticket{})
+		if res1.Error != nil {
+			return res1.Error
+		}
+		ticketsDeleted = res1.RowsAffected
+
+		res2 := tx.Where(
+			"status = ? AND created_at < ?",
+			TicketStatusPending, cutoff,
+		).Delete(&Transaction{})
+		if res2.Error != nil {
+			return res2.Error
+		}
+		transactionsDeleted = res2.RowsAffected
+
+		return nil
+	})
+
+	return ticketsDeleted, transactionsDeleted, err
+}

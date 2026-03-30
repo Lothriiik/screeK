@@ -5,6 +5,8 @@ type MovieDTO struct {
 	TMDBID		int		`json:"tmdb_id"`
     Title      	string 	`json:"title"`
     PosterURL  	string 	`json:"poster_url"`
+	IsPremiere  bool    `json:"is_premiere"`
+	IsRescreening bool  `json:"is_rescreening"`
 }
 
 type ErrorResponse struct {

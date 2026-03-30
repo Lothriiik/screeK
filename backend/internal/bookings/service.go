@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"time"
 
@@ -46,8 +47,36 @@ func NewService(store BookingsRepository, redisClient *redisclient.Client, payme
 	}
 }
 
-func (s *BookingsService) GetMoviesPlaying(ctx context.Context, city, date string) ([]movies.Movie, error) {
-	return s.store.GetMoviesPlaying(ctx, city, date)
+func (s *BookingsService) GetMoviesPlaying(ctx context.Context, city, date string) ([]movies.MovieDTO, error) {
+	moviesList, err := s.store.GetMoviesPlaying(ctx, city, date)
+	if err != nil {
+		return nil, err
+	}
+
+	var movieIDs []int
+	for _, m := range moviesList {
+		movieIDs = append(movieIDs, m.ID)
+	}
+
+	statusMap, err := s.store.GetSpecialStatusForMovies(ctx, city, movieIDs)
+	if err != nil {
+		statusMap = make(map[int]map[string]bool)
+	}
+
+	var response []movies.MovieDTO
+	for _, m := range moviesList {
+		status := statusMap[m.ID]
+		response = append(response, movies.MovieDTO{
+			ID:            m.ID,
+			TMDBID:        m.TMDBID,
+			Title:         m.Title,
+			PosterURL:     m.PosterURL,
+			IsPremiere:    status["premiere"],
+			IsRescreening: status["rescreening"],
+		})
+	}
+
+	return response, nil
 }
 
 func (s *BookingsService) GetMovieSessionsGroupedByCinema(ctx context.Context, movieID int, city, date string) ([]CinemaSessionsResponseDTO, error) {
@@ -556,4 +585,37 @@ func (s *BookingsService) GetRevenueTrends(ctx context.Context, start, end time.
 	}
 
 	return response, nil
+}
+
+func (s *BookingsService) CleanupExpiredReservations(ctx context.Context) error {
+	tickets, txs, err := s.store.CleanupExpiredReservations(ctx)
+	if err != nil {
+		return err
+	}
+
+	if tickets+txs > 0 {
+		slog.Info("[Job] Limpeza de reservas concluída", "tickets", tickets, "transações", txs)
+	}
+
+	return nil
+}
+
+func (s *BookingsService) RunAnalyticsAggregation(ctx context.Context, date time.Time) error {
+	analyticsRepo, ok := s.store.(AnalyticsRepository)
+	if !ok {
+		return fmt.Errorf("repositório não suporta analytics")
+	}
+
+	cinemaStats, err := analyticsRepo.CalculateDailyStats(ctx, date)
+	if err == nil {
+		analyticsRepo.UpsertDailyStats(ctx, cinemaStats)
+	}
+
+	movieStats, err := analyticsRepo.CalculateDailyMovieStats(ctx, date)
+	if err == nil {
+		analyticsRepo.UpsertDailyMovieStats(ctx, movieStats)
+	}
+
+	slog.Info("[Job] Analytics consolidado", "cinemas", len(cinemaStats), "filmes", len(movieStats))
+	return nil
 }
