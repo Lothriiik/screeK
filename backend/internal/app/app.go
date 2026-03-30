@@ -101,6 +101,9 @@ func (app *Application) mount() {
 	managerHandler := bookings.NewManagerHandler(bookingService)
 	managerHandler.RegisterRoutes(app.router, authMiddleware)
 
+	analyticsHandler := bookings.NewAnalyticsHandler(bookingService)
+	analyticsHandler.RegisterRoutes(app.router, authMiddleware)
+
 	webhookHandler := bookings.NewWebhookHandler(bookingService, paymentSvc)
 	app.router.Post("/webhooks/stripe", webhookHandler.StripeWebhook)
 
@@ -130,7 +133,7 @@ func (app *Application) Run() error {
 	social.AutoMigrate(app.db)
 	notifications.AutoMigrate(app.db)
 
-	bookings.StartExpirationWorker(app.db)
+	bookings.StartWorkers(app.db)
 	
 	go app.hub.Run()
 

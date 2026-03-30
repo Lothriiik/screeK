@@ -301,8 +301,6 @@ func (s *BookingsService) ConfirmPaymentWebhook(ctx context.Context, transaction
 	return nil
 }
 
-// --- Funções de Gerenciamento (Backoffice) ---
-
 func (s *BookingsService) CreateCinema(ctx context.Context, req CreateCinemaRequest) error {
 	if err := req.Validate(); err != nil {
 		return err
@@ -331,7 +329,6 @@ func (s *BookingsService) CreateRoom(ctx context.Context, req CreateRoomRequest)
 		Type:     RoomType(req.Type),
 	}
 
-	// Geração automática de assentos (Grade aproximada)
 	var seats []Seat
 	cols := 10
 	rows := (req.Capacity + cols - 1) / cols
@@ -365,7 +362,6 @@ func (s *BookingsService) CreateSession(ctx context.Context, userID uuid.UUID, r
 		return errors.New("sala não encontrada")
 	}
 
-	// RBAC: Verifica se é gerente do cinema
 	isManager, err := s.store.IsManagerOfCinema(ctx, userID, room.CinemaID)
 	if err != nil {
 		return err
@@ -379,7 +375,6 @@ func (s *BookingsService) CreateSession(ctx context.Context, userID uuid.UUID, r
 		return errors.New("filme não encontrado na base ou TMDB")
 	}
 
-	// Validação de Overlap
 	existingSessions, err := s.store.GetSessionsByRoom(ctx, req.RoomID, req.StartTime)
 	if err != nil {
 		return err
@@ -444,5 +439,121 @@ func (s *BookingsService) ListSessions(ctx context.Context, cinemaID int, date s
 			SessionType: string(sess.SessionType),
 		})
 	}
+	return response, nil
+}
+func (s *BookingsService) GetAnalytics(ctx context.Context, start, end time.Time) (*AnalyticsSummaryResponseDTO, error) {
+	analyticsRepo, ok := s.store.(AnalyticsRepository)
+	if !ok {
+		return nil, fmt.Errorf(" repositorio nao suporta analytics")
+	}
+
+	stats, err := analyticsRepo.GetStatsByDateRange(ctx, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	var totalRev float64
+	var totalTickets int
+	var cinemaStats []DailyCinemaStatsResponseDTO
+
+	for _, s := range stats {
+		rev := float64(s.TotalRevenue) / 100.0
+		totalRev += rev
+		totalTickets += s.TicketsSold
+
+		cinemaStats = append(cinemaStats, DailyCinemaStatsResponseDTO{
+			Date: s.Date,
+			CinemaName: s.Cinema.Name,
+			TotalRevenue: rev,
+			TicketsSold: s.TicketsSold,
+			OccupancyRate: s.OccupancyRate,
+		})
+	}
+
+	return &AnalyticsSummaryResponseDTO{
+	StartDate: start,
+	EndDate: end,
+	GlobalRevenue: totalRev,
+	GlobalTickets: totalTickets,
+	StatsByCinema: cinemaStats,
+	}, nil
+}
+
+func (s *BookingsService) GetMovieAnalytics(ctx context.Context, start, end time.Time) ([]MovieStatsDTO, error) {
+	analyticsRepo, ok := s.store.(AnalyticsRepository)
+	if !ok {
+		return nil, fmt.Errorf("repositório não suporta analytics")
+	}
+
+	movieStats, err := analyticsRepo.GetTopMoviesByDateRange(ctx, start, end, 10)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []MovieStatsDTO
+	for _, ms := range movieStats {
+		movie, err := s.movieProvider.GetMovieDetails(ctx, ms.MovieID)
+		title := "Filme Desconhecido"
+		if err == nil {
+			title = movie.Title
+		}
+
+		response = append(response, MovieStatsDTO{
+			MovieID:      ms.MovieID,
+			MovieTitle:   title,
+			TotalRevenue: float64(ms.TotalRevenue) / 100.0,
+			TicketsSold:  ms.TicketsSold,
+		})
+	}
+
+	return response, nil
+}
+
+func (s *BookingsService) GetGenreAnalytics(ctx context.Context, start, end time.Time) ([]GenreStatsResponseDTO, error) {
+	analyticsRepo, ok := s.store.(AnalyticsRepository)
+	if !ok {
+		return nil, fmt.Errorf("repositório não suporta analytics")
+	}
+
+	genreMap, err := analyticsRepo.GetGenreStats(ctx, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []GenreStatsResponseDTO
+	for name, rev := range genreMap {
+		response = append(response, GenreStatsResponseDTO{
+			GenreName:    name,
+			TotalRevenue: rev,
+		})
+	}
+
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].TotalRevenue > response[j].TotalRevenue
+	})
+
+	return response, nil
+}
+
+func (s *BookingsService) GetRevenueTrends(ctx context.Context, start, end time.Time, period string) ([]DailyCinemaStatsResponseDTO, error) {
+	analyticsRepo, ok := s.store.(AnalyticsRepository)
+	if !ok {
+		return nil, fmt.Errorf("repositório não suporta analytics")
+	}
+
+	trends, err := analyticsRepo.GetRevenueTrends(ctx, start, end, period)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []DailyCinemaStatsResponseDTO
+	for _, t := range trends {
+		response = append(response, DailyCinemaStatsResponseDTO{
+			Date:         t.Date,
+			TotalRevenue: float64(t.TotalRevenue) / 100.0,
+			TicketsSold:  t.TicketsSold,
+		})
+	}
+
 	return response, nil
 }

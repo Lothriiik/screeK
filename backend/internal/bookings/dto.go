@@ -35,14 +35,6 @@ type PayRequestDTO struct {
 	PaymentMethod string `json:"payment_method" validate:"required"`
 }
 
-func (d *ReserveRequestDTO) Validate() error {
-	return validation.Validate.Struct(d)
-}
-
-func (d *PayRequestDTO) Validate() error {
-	return validation.Validate.Struct(d)
-}
-
 type TicketResponseDTO struct {
 	ID        uuid.UUID  `json:"ticket_id"`
 	MovieName string `json:"movie_name"`
@@ -89,19 +81,11 @@ type CreateCinemaRequest struct {
 	Email   string `json:"email" validate:"required,email"`
 }
 
-func (d *CreateCinemaRequest) Validate() error {
-	return validation.Validate.Struct(d)
-}
-
 type CreateRoomRequest struct {
 	CinemaID int    `json:"cinema_id" validate:"required"`
 	Name     string `json:"name" validate:"required"`
 	Capacity int    `json:"capacity" validate:"required,min=1"`
 	Type     string `json:"type" validate:"required,oneof=STANDARD IMAX VIP"`
-}
-
-func (d *CreateRoomRequest) Validate() error {
-	return validation.Validate.Struct(d)
 }
 
 type CreateSessionRequest struct {
@@ -112,6 +96,22 @@ type CreateSessionRequest struct {
 	SessionType string    `json:"session_type" validate:"required,oneof=REGULAR PREMIERE RESCREENING FESTIVAL UNIVERSITY SHOWCASE"`
 }
 
+func (d *CreateCinemaRequest) Validate() error {
+	return validation.Validate.Struct(d)
+}
+
+func (d *CreateRoomRequest) Validate() error {
+	return validation.Validate.Struct(d)
+}
+
 func (d *CreateSessionRequest) Validate() error {
+	return validation.Validate.Struct(d)
+}
+
+func (d *ReserveRequestDTO) Validate() error {
+	return validation.Validate.Struct(d)
+}
+
+func (d *PayRequestDTO) Validate() error {
 	return validation.Validate.Struct(d)
 }

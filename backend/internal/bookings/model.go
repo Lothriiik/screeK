@@ -116,9 +116,28 @@ type Ticket struct {
 	Seat          *Seat        `json:"seat" gorm:"foreignKey:SeatID"`
 }
 
+type DailyCinemaStats struct {
+	ID           uint      `json:"id" gorm:"primaryKey;autoIncrement"`
+	Date         time.Time `json:"date" gorm:"not null;index:idx_stats_date_cinema,unique,composite:date"`
+	CinemaID     int       `json:"cinema_id" gorm:"not null;index:idx_stats_date_cinema,unique,composite:cinema"`
+	TotalRevenue int       `json:"total_revenue" gorm:"not null;default:0"`
+	TicketsSold  int       `json:"tickets_sold" gorm:"not null;default:0"`
+	OccupancyRate float64  `json:"occupancy_rate" gorm:"not null;default:0"`
+	Cinema       Cinema    `json:"-" gorm:"foreignKey:CinemaID"`
+}
+
+type DailyMovieStats struct {
+	ID           uint      `json:"id" gorm:"primaryKey;autoIncrement"`
+	Date         time.Time `json:"date" gorm:"not null;index:idx_movie_stats_date_movie,unique,composite:date"`
+	MovieID      int       `json:"movie_id" gorm:"not null;index:idx_movie_stats_date_movie,unique,composite:movie"`
+	TotalRevenue int       `json:"total_revenue" gorm:"not null;default:0"`
+	TicketsSold  int       `json:"tickets_sold" gorm:"not null;default:0"`
+}
+
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&Cinema{}, &Room{}, &Seat{}, &Session{},
-		&Transaction{}, &Ticket{},
+		&Transaction{}, &Ticket{}, &DailyCinemaStats{},
+		&DailyMovieStats{},
 	)
 }
