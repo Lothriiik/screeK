@@ -14,7 +14,9 @@ import (
 func Test_deve_buscar_filmes_e_salvar_localmente(t *testing.T) {
 	tmdb := new(MockTMDBService)
 	repo := new(MockMoviesRepo)
-	svc := NewService(tmdb, repo)
+	uProv := new(MockUserSearchProvider)
+	lProv := new(MockListSearchProvider)
+	svc := NewService(tmdb, repo, uProv, lProv)
 
 	tmdb.On("SearchMovies", mock.Anything, "Batman").Return([]TMDBMovie{
 		{ID: 268, Title: "Batman", Overview: "Dark Knight", PosterPath: "/batman.jpg", ReleaseDate: "2008-07-18"},
@@ -36,7 +38,9 @@ func Test_deve_buscar_filmes_e_salvar_localmente(t *testing.T) {
 func Test_deve_retornar_erro_quando_tmdb_falha_na_busca(t *testing.T) {
 	tmdb := new(MockTMDBService)
 	repo := new(MockMoviesRepo)
-	svc := NewService(tmdb, repo)
+	uProv := new(MockUserSearchProvider)
+	lProv := new(MockListSearchProvider)
+	svc := NewService(tmdb, repo, uProv, lProv)
 
 	tmdb.On("SearchMovies", mock.Anything, "xyz").Return([]TMDBMovie{}, errors.New("TMDB offline"))
 
@@ -49,7 +53,9 @@ func Test_deve_retornar_erro_quando_tmdb_falha_na_busca(t *testing.T) {
 func Test_deve_retornar_filme_do_cache_local(t *testing.T) {
 	tmdb := new(MockTMDBService)
 	repo := new(MockMoviesRepo)
-	svc := NewService(tmdb, repo)
+	uProv := new(MockUserSearchProvider)
+	lProv := new(MockListSearchProvider)
+	svc := NewService(tmdb, repo, uProv, lProv)
 
 	cachedMovie := &Movie{
 		ID:     1,
@@ -68,7 +74,9 @@ func Test_deve_retornar_filme_do_cache_local(t *testing.T) {
 func Test_deve_buscar_detalhes_do_tmdb_quando_nao_ha_cache(t *testing.T) {
 	tmdb := new(MockTMDBService)
 	repo := new(MockMoviesRepo)
-	svc := NewService(tmdb, repo)
+	uProv := new(MockUserSearchProvider)
+	lProv := new(MockListSearchProvider)
+	svc := NewService(tmdb, repo, uProv, lProv)
 
 	repo.On("GetMovieByTMDBID", mock.Anything, 550).Return(nil, errors.New("not found"))
 	tmdb.On("GetMovieDetails", mock.Anything, 550).Return(&TMDBMovieDetails{
@@ -98,7 +106,9 @@ func Test_deve_buscar_detalhes_do_tmdb_quando_nao_ha_cache(t *testing.T) {
 func Test_deve_retornar_erro_quando_tmdb_falha_nos_detalhes(t *testing.T) {
 	tmdb := new(MockTMDBService)
 	repo := new(MockMoviesRepo)
-	svc := NewService(tmdb, repo)
+	uProv := new(MockUserSearchProvider)
+	lProv := new(MockListSearchProvider)
+	svc := NewService(tmdb, repo, uProv, lProv)
 
 	repo.On("GetMovieByTMDBID", mock.Anything, 999).Return(nil, errors.New("not found"))
 	tmdb.On("GetMovieDetails", mock.Anything, 999).Return(nil, errors.New("TMDB 404"))
@@ -112,7 +122,9 @@ func Test_deve_retornar_erro_quando_tmdb_falha_nos_detalhes(t *testing.T) {
 func Test_deve_retornar_pessoa_do_cache_local(t *testing.T) {
 	tmdb := new(MockTMDBService)
 	repo := new(MockMoviesRepo)
-	svc := NewService(tmdb, repo)
+	uProv := new(MockUserSearchProvider)
+	lProv := new(MockListSearchProvider)
+	svc := NewService(tmdb, repo, uProv, lProv)
 
 	repo.On("GetPersonByTMDBID", mock.Anything, 6193).Return(&Person{
 		ID:     1,
@@ -130,7 +142,9 @@ func Test_deve_retornar_pessoa_do_cache_local(t *testing.T) {
 func Test_deve_buscar_recomendacoes_do_tmdb(t *testing.T) {
 	tmdb := new(MockTMDBService)
 	repo := new(MockMoviesRepo)
-	svc := NewService(tmdb, repo)
+	uProv := new(MockUserSearchProvider)
+	lProv := new(MockListSearchProvider)
+	svc := NewService(tmdb, repo, uProv, lProv)
 
 	tmdb.On("GetMoviesRecommendations", mock.Anything, 550).Return([]TMDBMovie{
 		{ID: 680, Title: "Pulp Fiction"},
@@ -147,7 +161,9 @@ func Test_deve_buscar_recomendacoes_do_tmdb(t *testing.T) {
 func Test_deve_buscar_creditos_de_pessoa(t *testing.T) {
 	tmdb := new(MockTMDBService)
 	repo := new(MockMoviesRepo)
-	svc := NewService(tmdb, repo)
+	uProv := new(MockUserSearchProvider)
+	lProv := new(MockListSearchProvider)
+	svc := NewService(tmdb, repo, uProv, lProv)
 
 	tmdb.On("GetPersonCredits", mock.Anything, 6193).Return(&TMDBPersonCredits{
 		Cast: []TMDBPersonMovieCast{
@@ -166,7 +182,9 @@ func Test_deve_buscar_creditos_de_pessoa(t *testing.T) {
 func Test_deve_parsear_data_de_lancamento_corretamente(t *testing.T) {
 	tmdb := new(MockTMDBService)
 	repo := new(MockMoviesRepo)
-	svc := NewService(tmdb, repo)
+	uProv := new(MockUserSearchProvider)
+	lProv := new(MockListSearchProvider)
+	svc := NewService(tmdb, repo, uProv, lProv)
 
 	tmdb.On("SearchMovies", mock.Anything, "Inception").Return([]TMDBMovie{
 		{ID: 27205, Title: "Inception", ReleaseDate: "2010-07-16", PosterPath: "/inc.jpg"},

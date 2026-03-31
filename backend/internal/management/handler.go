@@ -1,4 +1,4 @@
-package bookings
+package management
 
 import (
 	"encoding/json"
@@ -11,10 +11,10 @@ import (
 )
 
 type ManagerHandler struct {
-	service Service
+	service *ManagementService
 }
 
-func NewManagerHandler(s Service) *ManagerHandler {
+func NewHandler(s *ManagementService) *ManagerHandler {
 	return &ManagerHandler{service: s}
 }
 
@@ -23,25 +23,22 @@ func (h *ManagerHandler) RegisterRoutes(r chi.Router, authMiddleware func(http.H
 		r.Use(authMiddleware)
 		r.Use(httputil.CheckRole(httputil.RoleAdmin, httputil.RoleManager))
 
-		// Consultas Admin/Manager
 		r.Get("/admin/cinemas", h.ListCinemas)
 		r.Get("/admin/cinemas/{id}", h.GetCinemaDetail)
 		r.Get("/admin/sessions", h.ListSessions)
 
-		// Ações de Escrita
 		r.Post("/cinemas", h.CreateCinema)
 		r.Post("/cinemas/{id}/rooms", h.CreateRoom)
 		r.Post("/sessions", h.CreateSession)
 	})
 }
 
-// ListCinemas godoc
-// @Summary Lista todos os cinemas (Admin/Manager)
-// @Description Retorna todos os cinemas cadastrados no sistema.
-// @Tags Management (Cinemas)
-// @Security BearerAuth
+// @Summary Listar cinemas (Admin)
+// @Description Retorna todos os cinemas cadastrados (Apenas Admin/Manager)
+// @Tags Management
 // @Produce json
 // @Success 200 {array} CinemaAdminResponseDTO
+// @Security BearerAuth
 // @Router /admin/cinemas [get]
 func (h *ManagerHandler) ListCinemas(w http.ResponseWriter, r *http.Request) {
 	cinemas, err := h.service.ListCinemas(r.Context())
@@ -52,14 +49,13 @@ func (h *ManagerHandler) ListCinemas(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, cinemas)
 }
 
-// GetCinemaDetail godoc
-// @Summary Detalhes de um cinema para administração
-// @Description Retorna dados do cinema e suas salas.
-// @Tags Management (Cinemas)
-// @Security BearerAuth
+// @Summary Detalhes do cinema (Admin)
+// @Description Retorna os dados completos de um cinema, incluindo salas
+// @Tags Management
 // @Param id path int true "ID do Cinema"
 // @Produce json
-// @Success 200 {object} Cinema
+// @Success 200 {object} domain.Cinema
+// @Security BearerAuth
 // @Router /admin/cinemas/{id} [get]
 func (h *ManagerHandler) GetCinemaDetail(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
@@ -71,15 +67,14 @@ func (h *ManagerHandler) GetCinemaDetail(w http.ResponseWriter, r *http.Request)
 	httputil.WriteJSON(w, http.StatusOK, cinema)
 }
 
-// ListSessions godoc
-// @Summary Lista sessões com filtros (Admin/Manager)
-// @Description Permite ao gerente visualizar as sessões de um cinema específico em uma data.
-// @Tags Management (Cinemas)
-// @Security BearerAuth
+// @Summary Listar sessões administrativas
+// @Description Consulta sessões de forma expandida para gestão
+// @Tags Management
 // @Param cinema_id query int true "ID do Cinema"
-// @Param date query string false "Data (YYYY-MM-DD)"
+// @Param date query string false "Data YYYY-MM-DD"
 // @Produce json
 // @Success 200 {array} SessionAdminResponseDTO
+// @Security BearerAuth
 // @Router /admin/sessions [get]
 func (h *ManagerHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
 	cinemaID, _ := strconv.Atoi(r.URL.Query().Get("cinema_id"))
@@ -97,15 +92,13 @@ func (h *ManagerHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, sessions)
 }
 
-// CreateCinema godoc
-// @Summary Cria um novo cinema
-// @Description Permite que administradores criem uma nova unidade de cinema.
-// @Tags Management (Cinemas)
-// @Security BearerAuth
+// @Summary Cadastrar cinema
+// @Description Cria um novo cinema no sistema (Apenas Admin)
+// @Tags Management
 // @Accept json
-// @Produce json
-// @Param cinema body CreateCinemaRequest true "Dados do cinema"
+// @Param request body CreateCinemaRequest true "Dados do cinema"
 // @Success 201 {object} httputil.MessageResponse
+// @Security BearerAuth
 // @Router /cinemas [post]
 func (h *ManagerHandler) CreateCinema(w http.ResponseWriter, r *http.Request) {
 	var req CreateCinemaRequest
@@ -122,16 +115,14 @@ func (h *ManagerHandler) CreateCinema(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusCreated, httputil.MessageResponse{Message: "Cinema cadastrado com sucesso!"})
 }
 
-// CreateRoom godoc
-// @Summary Adiciona uma sala a um cinema
-// @Description Cria uma nova sala e gera os assentos automaticamente baseados na capacidade.
-// @Tags Management (Cinemas)
-// @Security BearerAuth
+// @Summary Criar sala e assentos
+// @Description Adiciona uma sala a um cinema e gera o mapa de assentos automaticamente
+// @Tags Management
 // @Accept json
-// @Produce json
 // @Param id path int true "ID do Cinema"
-// @Param room body CreateRoomRequest true "Dados da sala"
+// @Param request body CreateRoomRequest true "Configuração da sala"
 // @Success 201 {object} httputil.MessageResponse
+// @Security BearerAuth
 // @Router /cinemas/{id}/rooms [post]
 func (h *ManagerHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	cinemaID, _ := strconv.Atoi(chi.URLParam(r, "id"))
@@ -155,16 +146,13 @@ func (h *ManagerHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusCreated, httputil.MessageResponse{Message: "Sala vinculada e assentos gerados com sucesso!"})
 }
 
-// CreateSession godoc
-// @Summary Agenda uma nova sessão
-// @Description Cria uma sessão de filme em uma sala específica, validando conflitos de horário.
-// @Tags Management (Cinemas)
-// @Security BearerAuth
+// @Summary Agendar sessão
+// @Description Cria uma nova sessão de filme em uma sala específica
+// @Tags Management
 // @Accept json
-// @Produce json
-// @Param session body CreateSessionRequest true "Dados da sessão"
+// @Param request body CreateSessionRequest true "Dados da sessão"
 // @Success 201 {object} httputil.MessageResponse
-// @Failure 409 {object} httputil.ErrorResponse "Conflito de horário"
+// @Security BearerAuth
 // @Router /sessions [post]
 func (h *ManagerHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)

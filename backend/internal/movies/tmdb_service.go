@@ -59,6 +59,18 @@ type TMDBMovie struct {
 	VoteAverage      float64 `json:"vote_average"`
 }
 
+type TMDBPerson struct {
+	ID                 int         `json:"id"`
+	Name               string      `json:"name"`
+	ProfilePath        string      `json:"profile_path"`
+	KnownForDepartment string      `json:"known_for_department"`
+	KnownFor           []TMDBMovie `json:"known_for"`
+}
+
+type TMDBPeopleResponse struct {
+	Results []TMDBPerson `json:"results"`
+}
+
 type TMDBMovieDetails struct {
 	ID          int              `json:"id"`
 	Title       string           `json:"title"`
@@ -266,4 +278,43 @@ func (c *TMDBClient) GetMoviesRecommendations(ctx context.Context, movieid int) 
 	}
 
 	return parsedRes.Results, nil
+}
+
+func (c *TMDBClient) DiscoverMovies(ctx context.Context, genreID int, year int) ([]TMDBMovie, error) {
+	endpoint := fmt.Sprintf("%s/discover/movie?language=pt-BR&sort_by=popularity.desc", c.BaseURL)
+	if genreID > 0 {
+		endpoint += fmt.Sprintf("&with_genres=%d", genreID)
+	}
+	if year > 0 {
+		endpoint += fmt.Sprintf("&primary_release_year=%d", year)
+	}
+
+	res, err := c.doRequest(ctx, endpoint)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	var tmdbRes TMDBResponse
+	if err := json.NewDecoder(res.Body).Decode(&tmdbRes); err != nil {
+		return nil, err
+	}
+	return tmdbRes.Results, nil
+}
+
+func (c *TMDBClient) SearchPeople(ctx context.Context, query string) ([]TMDBPerson, error) {
+	safeQuery := url.QueryEscape(query)
+	endpoint := fmt.Sprintf("%s/search/person?query=%s&language=pt-BR", c.BaseURL, safeQuery)
+
+	res, err := c.doRequest(ctx, endpoint)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	var tmdbRes TMDBPeopleResponse
+	if err := json.NewDecoder(res.Body).Decode(&tmdbRes); err != nil {
+		return nil, err
+	}
+	return tmdbRes.Results, nil
 }

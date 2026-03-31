@@ -3,7 +3,6 @@ package users
 import (
 	"context"
 
-	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/google/uuid"
 )
 
@@ -17,9 +16,11 @@ type UserRepository interface {
 	RemoveFavorite(ctx context.Context, userID uuid.UUID, movieID int) error
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
 	EmailExists(ctx context.Context, email string) (bool, error)
-	UsernameExists(ctx context.Context, username string) (bool, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	UsernameExists(ctx context.Context, username string) (bool, error)
 
-	// Admin (Novo)
-	UpdateUserRole(ctx context.Context, userID uuid.UUID, role httputil.Role) error
+	GetUserStats(ctx context.Context, userID uuid.UUID) (*UserStats, error)
+	UpdateUserStats(ctx context.Context, stats *UserStats) error
+	IncrementUserStats(ctx context.Context, userID uuid.UUID, movies int, minutes int) error
+	GetTopGenreByUsage(ctx context.Context, userID uuid.UUID) (*int, error)
 }

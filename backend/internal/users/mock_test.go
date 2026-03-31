@@ -82,6 +82,32 @@ func (m *MockUserRepo) UpdateUserRole(ctx context.Context, userID uuid.UUID, rol
 	return args.Error(0)
 }
 
+func (m *MockUserRepo) GetUserStats(ctx context.Context, userID uuid.UUID) (*UserStats, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*UserStats), args.Error(1)
+}
+
+func (m *MockUserRepo) UpdateUserStats(ctx context.Context, stats *UserStats) error {
+	args := m.Called(ctx, stats)
+	return args.Error(0)
+}
+
+func (m *MockUserRepo) IncrementUserStats(ctx context.Context, userID uuid.UUID, movies int, minutes int) error {
+	args := m.Called(ctx, userID, movies, minutes)
+	return args.Error(0)
+}
+
+func (m *MockUserRepo) GetTopGenreByUsage(ctx context.Context, userID uuid.UUID) (*int, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*int), args.Error(1)
+}
+
 type MockMovieRepo struct {
 	mock.Mock
 }

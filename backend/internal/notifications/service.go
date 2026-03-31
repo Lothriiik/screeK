@@ -54,13 +54,6 @@ func (s *NotificationService) MarkAllAsRead(ctx context.Context, userID uuid.UUI
 	return s.repo.MarkAllAsRead(ctx, userID)
 }
 
-type WatchlistMatchDTO struct {
-	UserID     uuid.UUID
-	MovieID    int
-	MovieTitle string
-	City       string
-	Type       string
-}
 
 func (s *NotificationService) ProcessWatchlistMatches(ctx context.Context, matches []WatchlistMatchDTO) error {
 	for _, m := range matches {

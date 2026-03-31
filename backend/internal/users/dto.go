@@ -62,6 +62,10 @@ type ChangePasswordDTO struct {
 	PasswordConfirmation string `json:"password_confirmation" validate:"eqfield=Password"`
 }
 
+type UpdateRoleDTO struct {
+	Role httputil.Role `json:"role" validate:"required,oneof=USER MANAGER ADMIN"`
+}
+
 func (dto *CreateUserDTO) Validate(ctx context.Context, svc *UserService) error {
 	if err := validation.Validate.Struct(dto); err != nil {
 		return errors.New("Erro de validação: verifique os campos fornecidos")
@@ -86,10 +90,6 @@ func (dto *UpdateUserDTO) Validate() error {
 
 func (dto *ChangePasswordDTO) Validate() error {
 	return validation.Validate.Struct(dto)
-}
-
-type UpdateRoleDTO struct {
-	Role httputil.Role `json:"role" validate:"required,oneof=USER MANAGER ADMIN"`
 }
 
 func (dto *UpdateRoleDTO) Validate() error {

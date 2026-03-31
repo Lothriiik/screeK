@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/platform/testutil"
 	"github.com/StartLivin/screek/backend/internal/users"
@@ -34,22 +35,23 @@ func Test_Bookings_Concurrency_SeatSelection_RealRedis(t *testing.T) {
 	mockMovieSvc := new(MockMovieProvider)
 
 	svc := NewService(NewStore(db), rdb, mockPayment, mockMailer, mockMovieSvc)
+	require.NoError(t, domain.AutoMigrate(db))
 
-	cinema := Cinema{Name: "Concurrency Cinema", City: "Test City", Address: "123 Street", Phone: "123", Email: "c@test.com"}
+	cinema := domain.Cinema{Name: "Concurrency Cinema", City: "Test City", Address: "123 Street", Phone: "123", Email: "c@test.com"}
 	require.NoError(t, db.Create(&cinema).Error)
 	require.NotZero(t, cinema.ID)
 	
-	room := Room{CinemaID: cinema.ID, Name: "Room 1", Capacity: 100, Type: RoomTypeStandard}
+	room := domain.Room{CinemaID: cinema.ID, Name: "Room 1", Capacity: 100, Type: domain.RoomTypeStandard}
 	require.NoError(t, db.Create(&room).Error)
 	require.NotZero(t, room.ID)
 	
 	movie := movies.Movie{TMDBID: 12345, Title: "Concurrency Movie", Runtime: 120, ReleaseDate: time.Now()}
 	require.NoError(t, db.Create(&movie).Error)
 	
-	session := Session{MovieID: movie.ID, RoomID: room.ID, StartTime: time.Now().Add(2 * time.Hour), Price: 5000}
+	session := domain.Session{MovieID: movie.ID, RoomID: room.ID, StartTime: time.Now().Add(2 * time.Hour), Price: 5000}
 	require.NoError(t, db.Create(&session).Error)
 	
-	seat := Seat{RoomID: room.ID, Row: "A", Number: 1, Type: "STANDARD"}
+	seat := domain.Seat{RoomID: room.ID, Row: "A", Number: 1, Type: "STANDARD"}
 	require.NoError(t, db.Create(&seat).Error)
 
 	const numConsumers = 50

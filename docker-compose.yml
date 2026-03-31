@@ -47,15 +47,12 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "8003:8080"
+      - "8003:8003"
+    env_file:
+      - ./backend/.env
     environment:
       - DATABASE_URL=host=db user=postgres password=password dbname=screek port=5432 sslmode=disable TimeZone=America/Sao_Paulo
       - REDIS_URL=redis:6379
-      - JWT_SECRET=${JWT_SECRET}
-      - TMDB_TOKEN=${TMDB_TOKEN}
-      - STRIPE_KEY=${STRIPE_KEY}
-      - RESEND_KEY=${RESEND_KEY}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
     networks:
       - screek-network
 

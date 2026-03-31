@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/sony/gobreaker"
 )
 
 func Test_TMDBClient_SearchMovies(t *testing.T) {
@@ -26,6 +27,7 @@ func Test_TMDBClient_SearchMovies(t *testing.T) {
 		token:      "valid_token",
 		httpClient: server.Client(), 
 		BaseURL:    server.URL,
+		cb:         gobreaker.NewCircuitBreaker(gobreaker.Settings{Name: "TMDB-Test"}),
 	}
 
 	movies, err := client.SearchMovies(context.Background(), "Matrix")
@@ -44,6 +46,7 @@ func Test_TMDBClient_GetMovieDetails(t *testing.T) {
 		token:      "token",
 		httpClient: server.Client(),
 		BaseURL:    server.URL,
+		cb:         gobreaker.NewCircuitBreaker(gobreaker.Settings{Name: "TMDB-Test-Details"}),
 	}
 
 	details, err := client.GetMovieDetails(context.Background(), 1)

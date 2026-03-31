@@ -8,6 +8,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/payment"
 	"github.com/google/uuid"
@@ -17,8 +18,6 @@ import (
 var (
 	ErrSeatLockFailed      = errors.New("uma ou mais cadeiras foram compradas por outro usuário")
 	ErrInvalidTicketStatus = errors.New("query param 'status' inválido")
-	ErrSessionOverlap     = errors.New("conflito de horário: a sala já possui uma sessão neste período")
-	ErrNotCinemaManager   = errors.New("acesso negado: você não é gerente deste cinema")
 )
 
 type Mailer interface {
@@ -29,12 +28,6 @@ type MovieProvider interface {
 	GetMovieDetails(ctx context.Context, tmdbID int) (*movies.Movie, error)
 }
 
-type RedisClient interface {
-	SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) *redisclient.BoolCmd
-	Del(ctx context.Context, keys ...string) *redisclient.IntCmd
-	Val() bool 
-}
-
 type SimpleRedisClient interface {
 	SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) *redisclient.BoolCmd
 	Del(ctx context.Context, keys ...string) *redisclient.IntCmd
@@ -43,28 +36,17 @@ type SimpleRedisClient interface {
 type Service interface {
 	GetMoviesPlaying(ctx context.Context, city, date string) ([]movies.MovieDTO, error)
 	GetMovieSessionsGroupedByCinema(ctx context.Context, movieID int, city, date string) ([]CinemaSessionsResponseDTO, error)
-	GetSeatsBySession(ctx context.Context, sessionID int) ([]Seat, error)
-	GetSessionByID(ctx context.Context, sessionID int) (*Session, error)
+	GetSeatsBySession(ctx context.Context, sessionID int) ([]domain.Seat, error)
+	GetSessionByID(ctx context.Context, sessionID int) (*domain.Session, error)
 	ReserveSeats(ctx context.Context, userID uuid.UUID, sessionID int, ticketsReq []TicketRequest) (*Transaction, error)
 	PayReservation(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, idempotencyKey string) (string, error)
 	CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) error
 	GetUserTickets(ctx context.Context, userID uuid.UUID, status string) ([]TicketResponseDTO, error)
 	GetTicketDetail(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) (TicketResponseDTO, error)
 	ConfirmPaymentWebhook(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string) error
-	CreateCinema(ctx context.Context, req CreateCinemaRequest) error
-	CreateRoom(ctx context.Context, req CreateRoomRequest) error
-	CreateSession(ctx context.Context, userID uuid.UUID, req CreateSessionRequest) error
-	GetCinemaByID(ctx context.Context, id int) (*Cinema, error)
 	SetPaymentProcessedNX(ctx context.Context, paymentID string) (bool, error)
 	DeletePaymentLock(ctx context.Context, paymentID string) error
-	ListCinemas(ctx context.Context) ([]CinemaAdminResponseDTO, error)
-	ListSessions(ctx context.Context, cinemaID int, date string) ([]SessionAdminResponseDTO, error)
-	GetAnalytics(ctx context.Context, start, end time.Time) (*AnalyticsSummaryResponseDTO, error)
-	GetMovieAnalytics(ctx context.Context, start, end time.Time) ([]MovieStatsDTO, error)
-	GetGenreAnalytics(ctx context.Context, start, end time.Time) ([]GenreStatsResponseDTO, error)
-	GetRevenueTrends(ctx context.Context, start, end time.Time, period string) ([]DailyCinemaStatsResponseDTO, error)
 	CleanupExpiredReservations(ctx context.Context) error
-	RunAnalyticsAggregation(ctx context.Context, date time.Time) error
 }
 
 type bookingsService struct {
@@ -142,8 +124,8 @@ func (s *bookingsService) GetMovieSessionsGroupedByCinema(ctx context.Context, m
 			ID:          session.ID,
 			StartTime:   session.StartTime,
 			Price:       session.Price,
-			RoomType:    session.Room.Type,
-			SessionType: session.SessionType,
+			RoomType:    string(session.Room.Type),
+			SessionType: string(session.SessionType),
 		})
 	}
 
@@ -159,12 +141,12 @@ func (s *bookingsService) GetMovieSessionsGroupedByCinema(ctx context.Context, m
 	return response, nil
 }
 
-func (s *bookingsService) GetSeatsBySession(ctx context.Context, sessionID int) ([]Seat, error) {
+func (s *bookingsService) GetSeatsBySession(ctx context.Context, sessionID int) ([]domain.Seat, error) {
 	return s.store.GetSeatsBySession(ctx, sessionID)
 }
 
-func (s *bookingsService) GetSessionByID(ctx context.Context, sessionID int) (*Session, error) {
-    return s.store.GetSessionByID(ctx, sessionID)
+func (s *bookingsService) GetSessionByID(ctx context.Context, sessionID int) (*domain.Session, error) {
+	return s.store.GetSessionByID(ctx, sessionID)
 }
 
 func (s *bookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, sessionID int, ticketsReq []TicketRequest) (*Transaction, error) {
@@ -172,9 +154,12 @@ func (s *bookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, se
 
 	for _, tReq := range ticketsReq {
 		seat := fmt.Sprintf("seat:%d:%d", sessionID, tReq.SeatID)
-		resultado := s.redisClient.SetNX(ctx, seat, userID, 10*time.Minute).Val()
+		res := s.redisClient.SetNX(ctx, seat, userID, 10*time.Minute)
+		if err := res.Err(); err != nil {
+			return nil, err
+		}
 
-		if !resultado {
+		if !res.Val() {
 			for _, lockedAsset := range lockedAssets {
 				s.redisClient.Del(ctx, lockedAsset)
 			}
@@ -194,9 +179,9 @@ func (s *bookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, se
 
 	basePrice := session.Price
 	
-	if session.Room.Type == RoomTypeVIP {
+	if session.Room.Type == domain.RoomTypeVIP {
 		basePrice = int(float64(basePrice) * 1.5)
-	} else if session.Room.Type == RoomTypeIMAX {
+	} else if session.Room.Type == domain.RoomTypeIMAX {
 		basePrice = int(float64(basePrice) * 1.3)
 	}
 
@@ -277,14 +262,11 @@ func (s *bookingsService) PayReservation(ctx context.Context, transactionID uuid
 	return result.ClientSecret, nil
 }
 
-
 func (s *bookingsService) CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) error {
 	return s.store.CancelTicket(ctx, ticketID, userID)
 }
 
-
 func (s *bookingsService) GetUserTickets(ctx context.Context, userID uuid.UUID, status string) ([]TicketResponseDTO, error) {
-	
 	if status != "" && status != string(TicketStatusPaid) && status != string(TicketStatusPending) && status != string(TicketStatusCancelled) {
 		return nil, ErrInvalidTicketStatus
 	}
@@ -368,266 +350,6 @@ func (s *bookingsService) ConfirmPaymentWebhook(ctx context.Context, transaction
 	return nil
 }
 
-func (s *bookingsService) CreateCinema(ctx context.Context, req CreateCinemaRequest) error {
-	if err := req.Validate(); err != nil {
-		return err
-	}
-
-	cinema := &Cinema{
-		Name:    req.Name,
-		Address: req.Address,
-		City:    req.City,
-		Phone:   req.Phone,
-		Email:   req.Email,
-	}
-
-	return s.store.CreateCinema(ctx, cinema)
-}
-
-func (s *bookingsService) CreateRoom(ctx context.Context, req CreateRoomRequest) error {
-	if err := req.Validate(); err != nil {
-		return err
-	}
-
-	room := &Room{
-		CinemaID: req.CinemaID,
-		Name:     req.Name,
-		Capacity: req.Capacity,
-		Type:     RoomType(req.Type),
-	}
-
-	var seats []Seat
-	cols := 10
-	rows := (req.Capacity + cols - 1) / cols
-
-	for r := 0; r < rows; r++ {
-		rowLabel := string(rune('A' + r))
-		for c := 1; c <= cols; c++ {
-			if len(seats) >= req.Capacity {
-				break
-			}
-			seats = append(seats, Seat{
-				Row:    rowLabel,
-				Number: c,
-				PosX:   c * 40,
-				PosY:   r * 40,
-				Type:   "STANDARD",
-			})
-		}
-	}
-
-	return s.store.CreateRoom(ctx, room, seats)
-}
-
-func (s *bookingsService) CreateSession(ctx context.Context, userID uuid.UUID, req CreateSessionRequest) error {
-	if err := req.Validate(); err != nil {
-		return err
-	}
-	if req.StartTime.Before(time.Now()) {
-		return errors.New("não é possível criar uma sessão no passado")
-	}
-
-	room, err := s.store.GetRoomByID(ctx, req.RoomID)
-	if err != nil {
-		return errors.New("sala não encontrada")
-	}
-
-	isManager, err := s.store.IsManagerOfCinema(ctx, userID, room.CinemaID)
-	if err != nil {
-		return err
-	}
-	if !isManager {
-		return ErrNotCinemaManager
-	}
-
-	movie, err := s.movieProvider.GetMovieDetails(ctx, req.MovieID)
-	if err != nil {
-		return errors.New("filme não encontrado na base ou TMDB")
-	}
-
-	existingSessions, err := s.store.GetSessionsByRoom(ctx, req.RoomID, req.StartTime)
-	if err != nil {
-		return err
-	}
-
-	newStart := req.StartTime
-	newEnd := newStart.Add(time.Duration(movie.Runtime+15) * time.Minute)
-
-	for _, es := range existingSessions {
-		esStart := es.StartTime
-		esEnd := esStart.Add(time.Duration(es.Movie.Runtime+15) * time.Minute)
-
-		if newStart.Before(esEnd) && esStart.Before(newEnd) {
-			return ErrSessionOverlap
-		}
-	}
-
-	session := &Session{
-		MovieID:     req.MovieID,
-		RoomID:      req.RoomID,
-		StartTime:   req.StartTime,
-		Price:       req.Price,
-		SessionType: SessionType(req.SessionType),
-		IsFree:      req.Price == 0,
-	}
-
-	return s.store.CreateSession(ctx, session)
-}
-
-func (s *bookingsService) ListCinemas(ctx context.Context) ([]CinemaAdminResponseDTO, error) {
-	cinemas, err := s.store.ListCinemas(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []CinemaAdminResponseDTO
-	for _, c := range cinemas {
-		response = append(response, CinemaAdminResponseDTO{
-			ID:      c.ID,
-			Name:    c.Name,
-			City:    c.City,
-			Address: c.Address,
-		})
-	}
-	return response, nil
-}
-
-func (s *bookingsService) ListSessions(ctx context.Context, cinemaID int, date string) ([]SessionAdminResponseDTO, error) {
-	sessions, err := s.store.ListSessions(ctx, cinemaID, date)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []SessionAdminResponseDTO
-	for _, sess := range sessions {
-		response = append(response, SessionAdminResponseDTO{
-			ID:          sess.ID,
-			MovieTitle:  sess.Movie.Title,
-			RoomName:    sess.Room.Name,
-			StartTime:   sess.StartTime,
-			Price:       sess.Price,
-			SessionType: string(sess.SessionType),
-		})
-	}
-	return response, nil
-}
-func (s *bookingsService) GetAnalytics(ctx context.Context, start, end time.Time) (*AnalyticsSummaryResponseDTO, error) {
-	analyticsRepo, ok := s.store.(AnalyticsRepository)
-	if !ok {
-		return nil, fmt.Errorf(" repositorio nao suporta analytics")
-	}
-
-	stats, err := analyticsRepo.GetStatsByDateRange(ctx, start, end)
-	if err != nil {
-		return nil, err
-	}
-
-	var totalRev float64
-	var totalTickets int
-	var cinemaStats []DailyCinemaStatsResponseDTO
-
-	for _, s := range stats {
-		rev := float64(s.TotalRevenue) / 100.0
-		totalRev += rev
-		totalTickets += s.TicketsSold
-
-		cinemaStats = append(cinemaStats, DailyCinemaStatsResponseDTO{
-			Date: s.Date,
-			CinemaName: s.Cinema.Name,
-			TotalRevenue: rev,
-			TicketsSold: s.TicketsSold,
-			OccupancyRate: s.OccupancyRate,
-		})
-	}
-
-	return &AnalyticsSummaryResponseDTO{
-	StartDate: start,
-	EndDate: end,
-	GlobalRevenue: totalRev,
-	GlobalTickets: totalTickets,
-	StatsByCinema: cinemaStats,
-	}, nil
-}
-
-func (s *bookingsService) GetMovieAnalytics(ctx context.Context, start, end time.Time) ([]MovieStatsDTO, error) {
-	analyticsRepo, ok := s.store.(AnalyticsRepository)
-	if !ok {
-		return nil, fmt.Errorf("repositório não suporta analytics")
-	}
-
-	movieStats, err := analyticsRepo.GetTopMoviesByDateRange(ctx, start, end, 10)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []MovieStatsDTO
-	for _, ms := range movieStats {
-		movie, err := s.movieProvider.GetMovieDetails(ctx, ms.MovieID)
-		title := "Filme Desconhecido"
-		if err == nil {
-			title = movie.Title
-		}
-
-		response = append(response, MovieStatsDTO{
-			MovieID:      ms.MovieID,
-			MovieTitle:   title,
-			TotalRevenue: float64(ms.TotalRevenue) / 100.0,
-			TicketsSold:  ms.TicketsSold,
-		})
-	}
-
-	return response, nil
-}
-
-func (s *bookingsService) GetGenreAnalytics(ctx context.Context, start, end time.Time) ([]GenreStatsResponseDTO, error) {
-	analyticsRepo, ok := s.store.(AnalyticsRepository)
-	if !ok {
-		return nil, fmt.Errorf("repositório não suporta analytics")
-	}
-
-	genreMap, err := analyticsRepo.GetGenreStats(ctx, start, end)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []GenreStatsResponseDTO
-	for name, rev := range genreMap {
-		response = append(response, GenreStatsResponseDTO{
-			GenreName:    name,
-			TotalRevenue: rev,
-		})
-	}
-
-	sort.Slice(response, func(i, j int) bool {
-		return response[i].TotalRevenue > response[j].TotalRevenue
-	})
-
-	return response, nil
-}
-
-func (s *bookingsService) GetRevenueTrends(ctx context.Context, start, end time.Time, period string) ([]DailyCinemaStatsResponseDTO, error) {
-	analyticsRepo, ok := s.store.(AnalyticsRepository)
-	if !ok {
-		return nil, fmt.Errorf("repositório não suporta analytics")
-	}
-
-	trends, err := analyticsRepo.GetRevenueTrends(ctx, start, end, period)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []DailyCinemaStatsResponseDTO
-	for _, t := range trends {
-		response = append(response, DailyCinemaStatsResponseDTO{
-			Date:         t.Date,
-			TotalRevenue: float64(t.TotalRevenue) / 100.0,
-			TicketsSold:  t.TicketsSold,
-		})
-	}
-
-	return response, nil
-}
-
 func (s *bookingsService) CleanupExpiredReservations(ctx context.Context) error {
 	tickets, txs, err := s.store.CleanupExpiredReservations(ctx)
 	if err != nil {
@@ -641,36 +363,14 @@ func (s *bookingsService) CleanupExpiredReservations(ctx context.Context) error 
 	return nil
 }
 
-func (s *bookingsService) GetCinemaByID(ctx context.Context, id int) (*Cinema, error) {
-	return s.store.GetCinemaByID(ctx, id)
-}
-
 func (s *bookingsService) SetPaymentProcessedNX(ctx context.Context, paymentID string) (bool, error) {
 	lockKey := "payment_processed:" + paymentID
-	return s.redisClient.SetNX(ctx, lockKey, "processed", 24*time.Hour).Result()
+	res := s.redisClient.SetNX(ctx, lockKey, "processed", 24*time.Hour)
+	return res.Result()
 }
 
 func (s *bookingsService) DeletePaymentLock(ctx context.Context, paymentID string) error {
 	lockKey := "payment_processed:" + paymentID
-	return s.redisClient.Del(ctx, lockKey).Err()
-}
-
-func (s *bookingsService) RunAnalyticsAggregation(ctx context.Context, date time.Time) error {
-	analyticsRepo, ok := s.store.(AnalyticsRepository)
-	if !ok {
-		return fmt.Errorf("repositório não suporta analytics")
-	}
-
-	cinemaStats, err := analyticsRepo.CalculateDailyStats(ctx, date)
-	if err == nil {
-		analyticsRepo.UpsertDailyStats(ctx, cinemaStats)
-	}
-
-	movieStats, err := analyticsRepo.CalculateDailyMovieStats(ctx, date)
-	if err == nil {
-		analyticsRepo.UpsertDailyMovieStats(ctx, movieStats)
-	}
-
-	slog.Info("[Job] Analytics consolidado", "cinemas", len(cinemaStats), "filmes", len(movieStats))
-	return nil
+	res := s.redisClient.Del(ctx, lockKey)
+	return res.Err()
 }

@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/google/uuid"
@@ -92,4 +93,70 @@ func (s *Store) UsernameExists(ctx context.Context, username string) (bool, erro
 
 func (s *Store) UpdateUserRole(ctx context.Context, userID uuid.UUID, role httputil.Role) error {
 	return s.db.WithContext(ctx).Model(&User{}).Where("id = ?", userID).Update("role", role).Error
+}
+
+func (s *Store) GetUserStats(ctx context.Context, userID uuid.UUID) (*UserStats, error) {
+	var stats UserStats
+	err := s.db.WithContext(ctx).Preload("Genre").Where("user_id = ?", userID).First(&stats).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &stats, nil
+}
+
+func (s *Store) UpdateUserStats(ctx context.Context, stats *UserStats) error {
+	return s.db.WithContext(ctx).Save(stats).Error
+}
+
+func (s *Store) IncrementUserStats(ctx context.Context, userID uuid.UUID, movies int, minutes int) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var stats UserStats
+		if err := tx.Where("user_id = ?", userID).First(&stats).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				stats = UserStats{
+					UserID:       userID,
+					TotalMovies:  movies,
+					TotalMinutes: minutes,
+					LastRecalcAt: time.Now().Add(-1 * time.Hour),
+				}
+				return tx.Create(&stats).Error
+			}
+			return err
+		}
+
+		return tx.Model(&stats).Updates(map[string]interface{}{
+			"total_movies":  gorm.Expr("total_movies + ?", movies),
+			"total_minutes": gorm.Expr("total_minutes + ?", minutes),
+			"updated_at":    time.Now(),
+		}).Error
+	})
+}
+
+func (s *Store) GetTopGenreByUsage(ctx context.Context, userID uuid.UUID) (*int, error) {
+	var result struct {
+		GenreID int
+	}
+
+	err := s.db.WithContext(ctx).Raw(`
+		SELECT mg.genre_id
+		FROM movie_logs ml
+		JOIN movie_genres mg ON ml.movie_id = mg.movie_id
+		WHERE ml.user_id = ?
+		GROUP BY mg.genre_id
+		ORDER BY COUNT(*) DESC
+		LIMIT 1
+	`, userID).Scan(&result).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	if result.GenreID == 0 {
+		return nil, nil
+	}
+
+	return &result.GenreID, nil
 }

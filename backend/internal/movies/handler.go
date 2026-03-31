@@ -20,6 +20,7 @@ func NewHandler(svc *MovieService) *Handler {
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/movies/search", h.Search)
+	r.Get("/movies/discover", h.Discover)
 	r.Get("/movies/{id}", h.GetDetails)
 	r.Get("/movies/{id}/recommendations", h.GetRecommendationsProxy)
 	r.Get("/people/{id}", h.GetPersonDetails)
@@ -33,25 +34,44 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 // @Accept json
 // @Produce json
 // @Param q query string true "Termo de busca (ex: Batman)"
-// @Success 200 {array} MovieDTO
+// @Param type query string false "Tipo de busca (MOVIE, PERSON, USER, LIST)" default(MOVIE)
+// @Success 200 {array} Movie
 // @Failure 400 {object} ErrorResponse
 // @Router /movies/search [get]
 func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
+	searchType := r.URL.Query().Get("type")
+	if searchType == "" {
+		searchType = "MOVIE"
+	}
+
 	if query == "" {
 		httputil.WriteJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "Forneça o parâmetro 'q'. Exemplo: /movies/search?q=Vingadores",
+			Error: "Forneça o parâmetro 'q'.",
 		})
 		return
 	}
 
-	localMovies, err := h.svc.SearchMovies(r.Context(), query)
+	var results interface{}
+	var err error
+
+	switch searchType {
+	case "PERSON":
+		results, err = h.svc.SearchPeople(r.Context(), query)
+	case "USER":
+		results, err = h.svc.SearchUsers(r.Context(), query)
+	case "LIST":
+		results, err = h.svc.SearchLists(r.Context(), query)
+	default:
+		results, err = h.svc.SearchMovies(r.Context(), query)
+	}
+
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	httputil.WriteJSON(w, http.StatusOK, localMovies)
+	httputil.WriteJSON(w, http.StatusOK, results)
 }
 
 // GetDetails godoc
@@ -146,4 +166,28 @@ func (h *Handler) GetRecommendationsProxy(w http.ResponseWriter, r *http.Request
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, recommendations)
+}
+
+// Discover godoc
+// @Summary Descoberta de filmes com filtros
+// @Description Filtra filmes por gênero e/ou ano de lançamento.
+// @Tags Movies
+// @Accept json
+// @Produce json
+// @Param genre_id query int false "ID do Gênero (TMDB ID)"
+// @Param year query int false "Ano de Lançamento"
+// @Success 200 {array} Movie
+// @Failure 500 {object} ErrorResponse
+// @Router /movies/discover [get]
+func (h *Handler) Discover(w http.ResponseWriter, r *http.Request) {
+	genreID, _ := strconv.Atoi(r.URL.Query().Get("genre_id"))
+	year, _ := strconv.Atoi(r.URL.Query().Get("year"))
+
+	movies, err := h.svc.DiscoverMovies(r.Context(), genreID, year)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, movies)
 }

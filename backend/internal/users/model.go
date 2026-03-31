@@ -24,6 +24,18 @@ type User struct {
 	CreatedAt      time.Time      `json:"created_at" gorm:"not null;default:now()"`
 }
 
+type UserStats struct {
+	UserID         uuid.UUID  `json:"user_id" gorm:"type:uuid;primaryKey"`
+	TotalMovies    int        `json:"total_movies" gorm:"not null;default:0"`
+	TotalMinutes   int        `json:"total_minutes" gorm:"not null;default:0"`
+	TopGenreID     *int       `json:"top_genre_id" gorm:"index"`
+	LastRecalcAt   time.Time  `json:"last_recalc_at" gorm:"not null;default:now()"`
+	UpdatedAt      time.Time  `json:"updated_at" gorm:"not null;default:now()"`
+
+	User  User          `json:"-" gorm:"foreignKey:UserID"`
+	Genre *movies.Genre `json:"genre,omitempty" gorm:"foreignKey:TopGenreID"`
+}
+
 func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(&User{})
+	return db.AutoMigrate(&User{}, &UserStats{})
 }

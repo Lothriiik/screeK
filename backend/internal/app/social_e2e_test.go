@@ -46,6 +46,6 @@ func Test_E2E_Social_Follow_Notification(t *testing.T) {
 	require.NotNil(t, followNotif, "Notificação do tipo FOLLOW não encontrada")
 	assert.Equal(t, "Novo Seguidor", followNotif.Title)
 	assert.Contains(t, followNotif.Message, "follower_user")
-	assert.Contains(t, followNotif.Message, "agora segue você")
-	assert.Equal(t, "/users/follower_user", followNotif.Link)
+	assert.Contains(t, followNotif.Message, "começou a seguir você!")
+	assert.Equal(t, "/profile/follower_user", followNotif.Link)
 }

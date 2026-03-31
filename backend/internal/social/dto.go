@@ -19,20 +19,24 @@ type UpdatePostRequest struct {
 }
 
 type PostResponseDTO struct {
-	ID           uint   `json:"id"`
-	Author       string `json:"author"`
-	PostType     string `json:"post_type"`
-	Content      string `json:"content"`
-	IsSpoiler    bool   `json:"is_spoiler"`
-	LikesCount   int    `json:"likes_count"`
-	RepliesCount int    `json:"replies_count"`
-	CreatedAt    string `json:"created_at"`
+	ID           uint             `json:"id"`
+	Author       string           `json:"author"`
+	PostType     string           `json:"post_type"`
+	Content      string           `json:"content"`
+	IsSpoiler    bool             `json:"is_spoiler"`
+	LikesCount   int              `json:"likes_count"`
+	RepliesCount int              `json:"replies_count"`
+	CreatedAt    string           `json:"created_at"`
+	SessionData  *PostSessionData `json:"session_data,omitempty"`
 }
 
-type LogMovieRequest struct {
-	Watched bool    `json:"watched"`
-	Rating  float64 `json:"rating" validate:"min=0,max=5"`
-	Liked   bool    `json:"liked"`
+type PostSessionData struct {
+	SessionID int    `json:"session_id"`
+	MovieTitle string `json:"movie_title"`
+	PosterURL  string `json:"poster_url"`
+	StartTime  string `json:"start_time"`
+	RoomName   string `json:"room_name"`
+	CinemaName string `json:"cinema_name"`
 }
 
 type FeedResponse struct {
@@ -42,6 +46,16 @@ type FeedResponse struct {
 
 type ReplyRequest struct {
 	Content string `json:"content" validate:"required,max=280"`
+}
+
+type ToggleLikeResponse struct {
+	Message string `json:"message"`
+	Liked   bool   `json:"liked"`
+}
+
+type ToggleFollowResponse struct {
+	Message     string `json:"message"`
+	IsFollowing bool   `json:"is_following"`
 }
 
 func (dto *ReplyRequest) Validate() error {
@@ -76,44 +90,3 @@ func (dto *UpdatePostRequest) Validate() error {
 	return nil
 }
 
-func (dto *LogMovieRequest) Validate() error {
-	if err := validation.Validate.Struct(dto); err != nil {
-		return errors.New("erro de validação: a nota (rating) deve estar entre 0 e 5")
-	}
-	return nil
-}
-
-type ToggleLikeResponse struct {
-	Message string `json:"message"`
-	Liked   bool   `json:"liked"`
-}
-
-type ToggleFollowResponse struct {
-	Message     string `json:"message"`
-	IsFollowing bool   `json:"is_following"`
-}
-
-// --- Watchlist & MovieList DTOs ---
-
-type AddWatchlistRequest struct {
-	MovieID uint `json:"movie_id" validate:"required"`
-}
-
-type MovieListResponseDTO struct {
-	ID          uint   `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	IsPublic    bool   `json:"is_public"`
-	ItemCount   int    `json:"item_count"`
-	CreatedAt   string `json:"created_at"`
-}
-
-type CreateMovieListRequest struct {
-	Title       string `json:"title" validate:"required,max=100"`
-	Description string `json:"description" validate:"max=500"`
-	IsPublic    bool   `json:"is_public"`
-}
-
-type AddMovieToListRequest struct {
-	MovieID uint `json:"movie_id" validate:"required"`
-}

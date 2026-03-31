@@ -209,3 +209,12 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, oldP
 
 	return nil
 }
+
+func (s *AuthService) UpdateUserRole(ctx context.Context, userID uuid.UUID, role httputil.Role) error {
+	user, err := s.userRepo.GetUserByID(ctx, userID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+	user.Role = role
+	return s.userRepo.UpdateUser(ctx, user)
+}

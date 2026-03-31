@@ -24,6 +24,7 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 	r.Post("/users/register", h.CreateUser)
 	r.Get("/users/search", h.SearchUsers)
 	r.Get("/users/{id}", h.GetByID)
+	r.Get("/users/{id}/stats", h.GetStats)
 
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
@@ -217,7 +218,7 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param user body User true "Dados para atualização (ID é ignorado, usa-se o do Token)"
-// @Success 200 {object} MessageResponse
+// @Success 200 {object} httputil.MessageResponse
 // @Failure 401 {string} string "Não autorizado"
 // @Router /users/me [put]
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -275,7 +276,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param body body object true "JSON com a senha"
-// @Success 200 {object} MessageResponse
+// @Success 200 {object} httputil.MessageResponse
 // @Failure 401 {string} string "Senha incorreta ou não autorizado"
 // @Router /users/me [delete]
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -363,4 +364,35 @@ func (h *Handler) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Filme removido dos favoritos"})
+}
+
+// GetStats godoc
+// @Summary Retorna estatísticas do usuário
+// @Description Retorna contadores de filmes, minutos assistidos e gênero favorito.
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param id path string true "ID do Usuário (UUID)"
+// @Success 200 {object} UserStats
+// @Failure 404 {string} string "Estatísticas não encontradas"
+// @Router /users/{id}/stats [get]
+func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "ID inválido"})
+		return
+	}
+
+	stats, err := h.svc.GetUserStats(r.Context(), id)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, httputil.ErrorResponse{Error: "Erro ao buscar estatísticas"})
+		return
+	}
+
+	if stats == nil {
+		// Retornar objeto vazio/padrão em vez de 404 para melhor UX
+		stats = &UserStats{UserID: id}
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, stats)
 }

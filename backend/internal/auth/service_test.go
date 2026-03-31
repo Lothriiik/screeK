@@ -16,8 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// --- helpers -----------------------------------------------------------------
-
 func newAuthServiceWithMock(t *testing.T) (*AuthService, *MockUserRepo, *MockMailer, *MockRedisClient) {
 	t.Helper()
 	cfg := &config.Config{JWTSecret: "test-secret-key-muito-segura-32chars"}
@@ -52,8 +50,6 @@ func userWithHashedPassword(t *testing.T, password string) *users.User {
 		Role:     httputil.RoleUser,
 	}
 }
-
-// ----------------- login -----------------
 
 func Test_login_deve_retornar_access_e_refresh_token(t *testing.T) {
 	svc, repo, _, _ := newAuthServiceWithFakeRedis(t)
@@ -106,7 +102,6 @@ func Test_login_deve_propagar_role_do_usuario_no_token(t *testing.T) {
 	assert.Equal(t, httputil.RoleAdmin, claims.Role)
 }
 
-// ----------------- logout -----------------
 
 func Test_logout_deve_rejeitar_token_invalido(t *testing.T) {
 	svc, _, _, _ := newAuthServiceWithFakeRedis(t)
@@ -128,7 +123,6 @@ func Test_logout_deve_rejeitar_token_do_tipo_errado(t *testing.T) {
 	assert.ErrorIs(t, err, ErrInvalidToken)
 }
 
-// ----------------- recover -----------------
 
 func Test_forgot_password_deve_enviar_email_quando_usuario_existe(t *testing.T) {
 	svc, repo, mailer, _ := newAuthServiceWithFakeRedis(t)
@@ -144,7 +138,6 @@ func Test_forgot_password_deve_enviar_email_quando_usuario_existe(t *testing.T) 
 }
 
 func Test_forgot_password_deve_retornar_nil_quando_email_nao_existe(t *testing.T) {
-	// Comportamento intencional: não revela se e-mail existe (anti-enumeração)
 	svc, repo, mailer, _ := newAuthServiceWithFakeRedis(t)
 	repo.On("GetUserByEmail", mock.Anything, "naoexiste@screek.com").Return(nil, errors.New("not found"))
 
@@ -154,7 +147,6 @@ func Test_forgot_password_deve_retornar_nil_quando_email_nao_existe(t *testing.T
 	mailer.AssertNotCalled(t, "SendPasswordReset")
 }
 
-// --- ResetPassword -----------------------------------------------------------
 
 func Test_reset_password_deve_atualizar_senha_com_token_valido(t *testing.T) {
 	svc, repo, _, _ := newAuthServiceWithFakeRedis(t)
@@ -212,8 +204,6 @@ func Test_reset_password_deve_rejeitar_access_token_no_lugar_de_reset_token(t *t
 	assert.ErrorIs(t, err, ErrInvalidToken, "access token não deve ser aceito em ResetPassword")
 }
 
-// --- ChangePassword ----------------------------------------------------------
-
 func Test_change_password_deve_alterar_com_senha_antiga_correta(t *testing.T) {
 	svc, repo, _, _ := newAuthServiceWithFakeRedis(t)
 	user := userWithHashedPassword(t, "senha_antiga")
@@ -236,8 +226,6 @@ func Test_change_password_deve_rejeitar_senha_antiga_incorreta(t *testing.T) {
 	assert.ErrorIs(t, err, ErrOldPasswordInvalid)
 	repo.AssertNotCalled(t, "UpdateUser")
 }
-
-// ----------------- audit -----------------
 
 func Test_RefreshToken_Reuso_Proibido(t *testing.T) {
 	svc, repo, _, redis := newAuthServiceWithMock(t)

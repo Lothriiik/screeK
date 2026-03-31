@@ -5,15 +5,41 @@ import (
 	"time"
 )
 
-type MovieService struct {
-	tmdb  TMDBService
-	store MoviesRepository
+type UserSearchProvider interface {
+	SearchUsers(ctx context.Context, query string) ([]UserSearchResult, error)
 }
 
-func NewService(tmdb TMDBService, store MoviesRepository) *MovieService {
+type ListSearchProvider interface {
+	SearchLists(ctx context.Context, query string) ([]ListSearchResult, error)
+}
+
+type UserSearchResult struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	PhotoURL string `json:"photo_url"`
+}
+
+type ListSearchResult struct {
+	ID          uint   `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Username    string `json:"username"`
+}
+
+type MovieService struct {
+	tmdb         TMDBService
+	store        MoviesRepository
+	userSearch   UserSearchProvider
+	listSearch   ListSearchProvider
+}
+
+func NewService(tmdb TMDBService, store MoviesRepository, userSearch UserSearchProvider, listSearch ListSearchProvider) *MovieService {
 	return &MovieService{
-		tmdb:  tmdb,
-		store: store,
+		tmdb:       tmdb,
+		store:      store,
+		userSearch: userSearch,
+		listSearch: listSearch,
 	}
 }
 
@@ -89,4 +115,49 @@ func (s *MovieService) GetPersonCredits(ctx context.Context, tmdbID int) ([]TMDB
 
 func (s *MovieService) GetMovieRecommendations(ctx context.Context, tmdbID int) ([]TMDBMovie, error) {
 	return s.tmdb.GetMoviesRecommendations(ctx, tmdbID)
+}
+
+func (s *MovieService) DiscoverMovies(ctx context.Context, genreID int, year int) ([]Movie, error) {
+	tmdbMovies, err := s.tmdb.DiscoverMovies(ctx, genreID, year)
+	if err != nil {
+		return nil, err
+	}
+
+	var localMovies []Movie
+	for _, tm := range tmdbMovies {
+		parsedDate, _ := time.Parse("2006-01-02", tm.ReleaseDate)
+		movie := Movie{
+			TMDBID:      tm.ID,
+			Title:       tm.Title,
+			Overview:    tm.Overview,
+			PosterURL:   "https://image.tmdb.org/t/p/w500" + tm.PosterPath,
+			ReleaseDate: parsedDate,
+		}
+		_ = s.store.SaveMovie(ctx, &movie)
+		localMovies = append(localMovies, movie)
+	}
+
+	return localMovies, nil
+}
+
+func (s *MovieService) SearchPeople(ctx context.Context, query string) ([]TMDBPerson, error) {
+	return s.tmdb.SearchPeople(ctx, query)
+}
+
+func (s *MovieService) SearchUsers(ctx context.Context, query string) ([]UserSearchResult, error) {
+	if s.userSearch == nil {
+		return nil, nil
+	}
+	return s.userSearch.SearchUsers(ctx, query)
+}
+
+func (s *MovieService) SearchLists(ctx context.Context, query string) ([]ListSearchResult, error) {
+	if s.listSearch == nil {
+		return nil, nil
+	}
+	return s.listSearch.SearchLists(ctx, query)
+}
+
+func (s *MovieService) GetGenreName(ctx context.Context, genreID int) (string, error) {
+	return s.store.GetGenreName(ctx, genreID)
 }

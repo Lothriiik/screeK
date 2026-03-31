@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/platform/testutil"
 	"github.com/StartLivin/screek/backend/internal/users"
@@ -16,6 +17,7 @@ import (
 
 func Test_Store_CreateReservation_Transaction(t *testing.T) {
 	db := testutil.SetupTestDB(t)
+	require.NoError(t, domain.AutoMigrate(db))
 	require.NoError(t, movies.AutoMigrate(db))
 	require.NoError(t, users.AutoMigrate(db))
 	require.NoError(t, AutoMigrate(db))
@@ -25,18 +27,18 @@ func Test_Store_CreateReservation_Transaction(t *testing.T) {
 	ctx := context.Background()
 
 	
-	movie := movies.Movie{Title: "Store Test", Runtime: 120}
+	movie := movies.Movie{TMDBID: 101, Title: "Store Test", Runtime: 120}
 	db.Create(&movie)
-	cinema := Cinema{Name: "Cine Store", City: "Maceió"}
+	cinema := domain.Cinema{Name: "Cine Store", City: "Maceió"}
 	db.Create(&cinema)
-	room := Room{CinemaID: cinema.ID, Name: "Sala 1", Capacity: 50}
+	room := domain.Room{CinemaID: cinema.ID, Name: "Sala 1", Capacity: 50}
 	db.Create(&room)
-	session := Session{MovieID: movie.ID, RoomID: room.ID, StartTime: time.Now().Add(1 * time.Hour), Price: 3000}
+	session := domain.Session{MovieID: movie.ID, RoomID: room.ID, StartTime: time.Now().Add(1 * time.Hour), Price: 3000}
 	db.Create(&session)
 	user := users.User{ID: uuid.New(), Username: "tester", Email: "t@t.com"}
 	db.Create(&user)
 
-	seat := Seat{RoomID: room.ID, Row: "A", Number: 1, Type: "STANDARD"}
+	seat := domain.Seat{RoomID: room.ID, Row: "A", Number: 1, Type: "STANDARD"}
 	require.NoError(t, db.Create(&seat).Error)
 
 	tickets := []Ticket{
@@ -56,6 +58,7 @@ func Test_Store_CreateReservation_Transaction(t *testing.T) {
 
 func Test_Store_CleanupExpired(t *testing.T) {
 	db := testutil.SetupTestDB(t)
+	domain.AutoMigrate(db)
 	AutoMigrate(db)
 	testutil.CleanupDB(t, db)
 	store := NewStore(db)

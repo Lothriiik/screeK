@@ -3,10 +3,11 @@ package users
 import (
 	"context"
 	"errors"
+	"log/slog"
+	"time"
 
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/platform/crypto"
-	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/google/uuid"
 )
 
@@ -32,7 +33,6 @@ func NewService(repo UserRepository, movieRepo MovieRepository) *UserService {
 }
 
 func (s *UserService) CreateUser(ctx context.Context, user *User) error {
-	// 1. Validar unicidade (importante para UX e para evitar erro 500 do DB)
 	exists, _ := s.repo.EmailExists(ctx, user.Email)
 	if exists {
 		return ErrUserAlreadyExists
@@ -115,10 +115,49 @@ func (s *UserService) UsernameExists(ctx context.Context, username string) (bool
 	return s.repo.UsernameExists(ctx, username)
 }
 
-func (s *UserService) UpdateUserRole(ctx context.Context, userID uuid.UUID, role httputil.Role) error {
-	_, err := s.repo.GetUserByID(ctx, userID)
+func (s *UserService) GetUserStats(ctx context.Context, userID uuid.UUID) (*UserStats, error) {
+	return s.repo.GetUserStats(ctx, userID)
+}
+
+func (s *UserService) IncrementStats(ctx context.Context, userID uuid.UUID, movies int, minutes int) error {
+	err := s.repo.IncrementUserStats(ctx, userID, movies, minutes)
 	if err != nil {
 		return err
 	}
-	return s.repo.UpdateUserRole(ctx, userID, role)
+
+	go func() {
+		_ = s.RecalculateTopGenre(context.Background(), userID)
+	}()
+
+	return nil
+}
+
+func (s *UserService) RecalculateTopGenre(ctx context.Context, userID uuid.UUID) error {
+	stats, err := s.repo.GetUserStats(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if stats != nil && time.Since(stats.LastRecalcAt) < 30*time.Second {
+		return nil 
+	}
+
+	genreID, err := s.repo.GetTopGenreByUsage(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if stats == nil {
+		return nil
+	}
+
+	stats.TopGenreID = genreID
+	stats.LastRecalcAt = time.Now()
+	stats.UpdatedAt = time.Now()
+
+	err = s.repo.UpdateUserStats(ctx, stats)
+	if err == nil {
+		slog.Debug("User top genre recalculated", "user_id", userID, "genre_id", genreID)
+	}
+	return err
 }

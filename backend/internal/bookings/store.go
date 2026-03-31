@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 var _ BookingsRepository = (*Store)(nil)
-var _ AnalyticsRepository = (*Store)(nil)
 
 var (
 	ErrSeatAlreadyTaken    = errors.New("uma ou mais cadeiras já foram compradas ou estão no carrinho de outra pessoa")
@@ -30,8 +30,8 @@ func NewStore(db *gorm.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetCinemaByID(ctx context.Context, id int) (*Cinema, error) {
-	var cinema Cinema
+func (s *Store) GetCinemaByID(ctx context.Context, id int) (*domain.Cinema, error) {
+	var cinema domain.Cinema
 	if err := s.db.WithContext(ctx).Preload("Rooms.Seats").First(&cinema, id).Error; err != nil {
 		return nil, err
 	}
@@ -65,8 +65,8 @@ func (s *Store) GetMoviesPlaying(ctx context.Context, city string, date string) 
 	return moviesList, nil
 }
 
-func (s *Store) GetSessionsByMovie(ctx context.Context, movieID int, city string, date string) ([]Session, error) {
-	var sessions []Session
+func (s *Store) GetSessionsByMovie(ctx context.Context, movieID int, city string, date string) ([]domain.Session, error) {
+	var sessions []domain.Session
 
 	parsedDate, err := time.Parse("2006-01-02", date)
 	if err != nil {
@@ -91,11 +91,11 @@ func (s *Store) GetSessionsByMovie(ctx context.Context, movieID int, city string
 	return sessions, nil
 }
 
-func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]Seat, error) {
-	var seats []Seat
+func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]domain.Seat, error) {
+	var seats []domain.Seat
 	var roomID int
 
-	if err := s.db.WithContext(ctx).Model(&Session{}).Select("room_id").Where("id = ?", sessionID).Scan(&roomID).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&domain.Session{}).Select("room_id").Where("id = ?", sessionID).Scan(&roomID).Error; err != nil {
 		return nil, err
 	}
 
@@ -119,9 +119,9 @@ func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]Seat, e
 	return seats, nil
 }
 
-func (s *Store) GetSessionByID(ctx context.Context, sessionID int) (*Session, error) {
-	var session Session
-	if err := s.db.WithContext(ctx).Preload("Room").Preload("Movie").First(&session, sessionID).Error; err != nil {
+func (s *Store) GetSessionByID(ctx context.Context, sessionID int) (*domain.Session, error) {
+	var session domain.Session
+	if err := s.db.WithContext(ctx).Preload("Room").Preload("Room.Cinema").Preload("Movie").First(&session, sessionID).Error; err != nil {
 		return nil, err
 	}
 	return &session, nil
@@ -259,220 +259,6 @@ func (s *Store) GetTicketDetail(ctx context.Context, ticketID uuid.UUID, userID 
 	return &ticket, err
 }
 
-func (s *Store) CreateCinema(ctx context.Context, cinema *Cinema) error {
-	return s.db.WithContext(ctx).Create(cinema).Error
-}
-
-func (s *Store) CreateRoom(ctx context.Context, room *Room, seats []Seat) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(room).Error; err != nil {
-			return err
-		}
-
-		if len(seats) > 0 {
-			for i := range seats {
-				seats[i].RoomID = room.ID
-			}
-			if err := tx.Create(&seats).Error; err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-}
-
-func (s *Store) CreateSession(ctx context.Context, session *Session) error {
-	return s.db.WithContext(ctx).Create(session).Error
-}
-
-func (s *Store) DeleteSession(ctx context.Context, sessionID int) error {
-	return s.db.WithContext(ctx).Delete(&Session{}, sessionID).Error
-}
-
-func (s *Store) GetSessionsByRoom(ctx context.Context, roomID int, startTime time.Time) ([]Session, error) {
-	var sessions []Session
-	date := startTime.Format("2006-01-02")
-	
-	err := s.db.WithContext(ctx).
-		Where("room_id = ? AND DATE(start_time) = ?", roomID, date).
-		Preload("Movie").
-		Find(&sessions).Error
-	return sessions, err
-}
-
-func (s *Store) GetRoomByID(ctx context.Context, roomID int) (*Room, error) {
-	var room Room
-	err := s.db.WithContext(ctx).Preload("Cinema").First(&room, roomID).Error
-	return &room, err
-}
-
-func (s *Store) IsManagerOfCinema(ctx context.Context, userID uuid.UUID, cinemaID int) (bool, error) {
-	var count int64
-	err := s.db.WithContext(ctx).
-		Table("cinema_managers").
-		Where("user_id = ? AND cinema_id = ?", userID, cinemaID).
-		Count(&count).Error
-	return count > 0, err
-}
-
-func (s *Store) ListCinemas(ctx context.Context) ([]Cinema, error) {
-	var cinemas []Cinema
-	err := s.db.WithContext(ctx).Order("name asc").Find(&cinemas).Error
-	return cinemas, err
-}
-
-func (s *Store) ListSessions(ctx context.Context, cinemaID int, date string) ([]Session, error) {
-	var sessions []Session
-	query := s.db.WithContext(ctx).
-		Joins("JOIN rooms r ON r.id = sessions.room_id").
-		Where("r.cinema_id = ?", cinemaID)
-
-	if date != "" {
-		query = query.Where("sessions.start_time::date = ?", date)
-	}
-
-	err := query.Preload("Movie").Preload("Room").Order("sessions.start_time asc").Find(&sessions).Error
-	return sessions, err
-}
-
-func (s *Store) CalculateDailyStats(ctx context.Context, date time.Time) ([]DailyCinemaStats, error) {
-	var stats []DailyCinemaStats
-
-	query := `
-		WITH session_occupancy AS (
-			SELECT 
-				s.id as session_id,
-				r.cinema_id,
-				r.capacity,
-				COUNT(t.id) as tickets_count,
-				COALESCE(SUM(t.price_paid), 0) as session_revenue
-			FROM sessions s
-			JOIN rooms r ON s.room_id = r.id
-			LEFT JOIN tickets t ON t.session_id = s.id AND t.status = 'PAID'
-			WHERE date(s.start_time) = date(?)
-			GROUP BY s.id, r.cinema_id, r.capacity
-		)
-		SELECT 
-			date(?) as date,
-			cinema_id,
-			SUM(session_revenue) as total_revenue,
-			SUM(tickets_count) as tickets_sold,
-			AVG(CAST(tickets_count AS FLOAT) / capacity) as occupancy_rate
-		FROM session_occupancy
-		GROUP BY cinema_id
-	`
-
-	err := s.db.WithContext(ctx).Raw(query, date, date).Scan(&stats).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return stats, nil
-}
-
-func (s *Store) UpsertDailyStats(ctx context.Context, stats []DailyCinemaStats) error {
-	if len(stats) == 0 {
-		return nil
-	}
-	return s.db.WithContext(ctx).Save(&stats).Error
-}
-
-func (s *Store) GetStatsByDateRange(ctx context.Context, start, end time.Time) ([]DailyCinemaStats, error) {
-	var stats []DailyCinemaStats
-	err := s.db.WithContext(ctx).
-		Preload("Cinema").
-		Where("date BETWEEN ? AND ?", start, end).
-		Order("date DESC, total_revenue DESC").
-		Find(&stats).Error
-	return stats, err
-}
-
-func (s *Store) CalculateDailyMovieStats(ctx context.Context, date time.Time) ([]DailyMovieStats, error) {
-	var stats []DailyMovieStats
-	query := `
-		SELECT 
-			date(?) as date,
-			movie_id,
-			SUM(price_paid) as total_revenue,
-			COUNT(id) as tickets_sold
-		FROM tickets t
-		JOIN sessions s ON t.session_id = s.id
-		WHERE t.status = 'PAID' AND date(t.created_at) = date(?)
-		GROUP BY movie_id
-	`
-	err := s.db.WithContext(ctx).Raw(query, date, date).Scan(&stats).Error
-	return stats, err
-}
-
-func (s *Store) UpsertDailyMovieStats(ctx context.Context, stats []DailyMovieStats) error {
-	if len(stats) == 0 {
-		return nil
-	}
-	return s.db.WithContext(ctx).Save(&stats).Error
-}
-
-func (s *Store) GetTopMoviesByDateRange(ctx context.Context, start, end time.Time, limit int) ([]DailyMovieStats, error) {
-	var stats []DailyMovieStats
-	err := s.db.WithContext(ctx).
-		Table("daily_movie_stats").
-		Select("movie_id, SUM(total_revenue) as total_revenue, SUM(tickets_sold) as tickets_sold").
-		Where("date BETWEEN ? AND ?", start, end).
-		Group("movie_id").
-		Order("total_revenue DESC").
-		Limit(limit).
-		Scan(&stats).Error
-	return stats, err
-}
-
-func (s *Store) GetGenreStats(ctx context.Context, start, end time.Time) (map[string]float64, error) {
-	type Result struct {
-		Name    string
-		Revenue int
-	}
-	var results []Result
-
-	query := `
-		SELECT g.name, SUM(ms.total_revenue) as revenue
-		FROM daily_movie_stats ms
-		JOIN movie_genres mg ON mg.movie_id = ms.movie_id
-		JOIN genres g ON g.id = mg.genre_id
-		WHERE ms.date BETWEEN ? AND ?
-		GROUP BY g.name
-	`
-	err := s.db.WithContext(ctx).Raw(query, start, end).Scan(&results).Error
-	if err != nil {
-		return nil, err
-	}
-
-	stats := make(map[string]float64)
-	for _, r := range results {
-		stats[r.Name] = float64(r.Revenue) / 100.0
-	}
-	return stats, nil
-}
-
-func (s *Store) GetRevenueTrends(ctx context.Context, start, end time.Time, period string) ([]DailyCinemaStats, error) {
-	var stats []DailyCinemaStats
-	trunc := "day"
-	if period == "month" {
-		trunc = "month"
-	} else if period == "year" {
-		trunc = "year"
-	}
-
-	query := fmt.Sprintf(`
-		SELECT date_trunc('%s', date) as date, SUM(total_revenue) as total_revenue, SUM(tickets_sold) as tickets_sold
-		FROM daily_cinema_stats
-		WHERE date BETWEEN ? AND ?
-		GROUP BY 1
-		ORDER BY 1 ASC
-	`, trunc)
-
-	err := s.db.WithContext(ctx).Raw(query, start, end).Scan(&stats).Error
-	return stats, err
-}
-
 func (s *Store) GetSpecialStatusForMovies(ctx context.Context, city string, movieIDs []int) (map[int]map[string]bool, error) {
 	if len(movieIDs) == 0 {
 		return make(map[int]map[string]bool), nil
@@ -480,7 +266,7 @@ func (s *Store) GetSpecialStatusForMovies(ctx context.Context, city string, movi
 
 	type Result struct {
 		MovieID     int
-		SessionType SessionType
+		SessionType domain.SessionType
 	}
 	var results []Result
 
@@ -503,47 +289,14 @@ func (s *Store) GetSpecialStatusForMovies(ctx context.Context, city string, movi
 	}
 
 	for _, r := range results {
-		if r.SessionType == SessionTypePremiere {
+		if r.SessionType == domain.SessionTypePremiere {
 			statusMap[r.MovieID]["premiere"] = true
-		} else if r.SessionType == SessionTypeRescreen {
+		} else if r.SessionType == domain.SessionTypeRescreen {
 			statusMap[r.MovieID]["rescreening"] = true
 		}
 	}
 
 	return statusMap, nil
-}
-
-type WatchlistMatch struct {
-	UserID     uuid.UUID
-	MovieID    int
-	MovieTitle string
-	City       string
-	Type       string 
-}
-
-func (s *Store) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error) {
-	var matches []WatchlistMatch
-	query := `
-		SELECT 
-			wi.user_id, 
-			wi.movie_id, 
-			m.title as movie_title, 
-			u.default_city as city,
-			s.session_type as type
-		FROM watchlist_items wi
-		JOIN users u ON wi.user_id = u.id
-		JOIN movies m ON wi.movie_id = m.id
-		JOIN sessions s ON s.movie_id = m.id
-		JOIN rooms r ON s.room_id = r.id
-		JOIN cinemas c ON r.cinema_id = c.id
-		WHERE u.default_city = c.city 
-		AND s.session_type IN ('PREMIERE', 'RESCREENING')
-		AND s.start_time >= now()
-		AND s.start_time <= (now() + interval '48 hours')
-		GROUP BY 1, 2, 3, 4, 5
-	`
-	err := s.db.WithContext(ctx).Raw(query).Scan(&matches).Error
-	return matches, err
 }
 
 func (s *Store) CleanupExpiredReservations(ctx context.Context) (int64, int64, error) {

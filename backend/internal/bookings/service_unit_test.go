@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/google/uuid"
 	redisclient "github.com/redis/go-redis/v9"
@@ -108,9 +109,9 @@ func Test_PriceCalculation_Exactness(t *testing.T) {
 	sessionID := 10
 	roomID := 101
 
-	repo.On("GetSessionByID", mock.Anything, sessionID).Return(&Session{
+	repo.On("GetSessionByID", mock.Anything, sessionID).Return(&domain.Session{
 		ID: sessionID, RoomID: roomID, Price: 2999, 
-		Room: Room{Type: RoomTypeVIP},
+		Room: domain.Room{Type: domain.RoomTypeVIP},
 	}, nil)
 
 	ticketsReq := []TicketRequest{
@@ -126,21 +127,3 @@ func Test_PriceCalculation_Exactness(t *testing.T) {
 	assert.Equal(t, 2249, tx.TotalAmount) 
 }
 
-func Test_CreateSession_Isolamento_Gerente(t *testing.T) {
-	svc, repo, _, _, _ := newTestbookingsService()
-	adminID := uuid.New()
-	req := CreateSessionRequest{
-		MovieID: 101,
-		RoomID: 50,
-		StartTime: time.Now().Add(24 * time.Hour),
-		Price: 3000,
-		SessionType: "REGULAR",
-	}
-
-	repo.On("GetRoomByID", mock.Anything, 50).Return(&Room{ID: 50, CinemaID: 99}, nil)
-	repo.On("IsManagerOfCinema", mock.Anything, adminID, 99).Return(false, nil) 
-
-	err := svc.CreateSession(context.Background(), adminID, req)
-
-	assert.ErrorIs(t, err, ErrNotCinemaManager)
-}

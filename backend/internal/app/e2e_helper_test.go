@@ -9,8 +9,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/StartLivin/screek/backend/internal/analytics"
 	"github.com/StartLivin/screek/backend/internal/auth"
 	"github.com/StartLivin/screek/backend/internal/bookings"
+	"github.com/StartLivin/screek/backend/internal/catalog"
+	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/notifications"
 	"github.com/StartLivin/screek/backend/internal/platform/config"
@@ -26,10 +29,13 @@ func SetupTestApp(t *testing.T) (*Application, *gorm.DB, *goredis.Client) {
 	t.Helper()
 
 	db := testutil.SetupTestDB(t)
+	require.NoError(t, domain.AutoMigrate(db))
 	require.NoError(t, movies.AutoMigrate(db))
 	require.NoError(t, users.AutoMigrate(db))
 	require.NoError(t, bookings.AutoMigrate(db))
 	require.NoError(t, social.AutoMigrate(db))
+	require.NoError(t, catalog.AutoMigrate(db))
+	require.NoError(t, analytics.AutoMigrate(db))
 	require.NoError(t, notifications.AutoMigrate(db))
 	testutil.CleanupDB(t, db)
 
@@ -88,7 +94,7 @@ func loginHelper(t *testing.T, app *Application, username, password string) stri
 	}
 	executeRequest(app.router, "POST", "/users/register", regReq, "")
 
-	logReq := auth.LoginDTO{
+	logReq := auth.LoginRequest{
 		Username: username,
 		Password: password,
 	}

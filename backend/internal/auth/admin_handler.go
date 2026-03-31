@@ -1,4 +1,4 @@
-package users
+package auth
 
 import (
 	"encoding/json"
@@ -10,10 +10,10 @@ import (
 )
 
 type AdminHandler struct {
-	service *UserService
+	service *AuthService
 }
 
-func NewAdminHandler(s *UserService) *AdminHandler {
+func NewAdminHandler(s *AuthService) *AdminHandler {
 	return &AdminHandler{service: s}
 }
 
@@ -26,17 +26,13 @@ func (h *AdminHandler) RegisterRoutes(r chi.Router, authMiddleware func(http.Han
 	})
 }
 
-// UpdateUserRole godoc
-// @Summary Altera o cargo (role) de um usuário
-// @Description Permite que um administrador mude o papel de um usuário (ex: para MANAGER).
-// @Tags Admin (Users)
-// @Security BearerAuth
+// @Summary Atualizar papel do usuário
+// @Description Altera o nível de acesso (Role) de um usuário (Apenas Admin)
+// @Tags Auth (Admin)
 // @Accept json
-// @Produce json
-// @Param id path string true "User UUID"
-// @Param role body UpdateRoleDTO true "Novo cargo"
+// @Param id path string true "ID do Usuário (UUID)"
+// @Param request body UpdateRoleDTO true "Novo Papel"
 // @Success 200 {object} httputil.MessageResponse
-// @Failure 403 {object} httputil.ErrorResponse "Acesso Negado"
 // @Router /admin/users/{id}/role [patch]
 func (h *AdminHandler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	userID, err := uuid.Parse(chi.URLParam(r, "id"))

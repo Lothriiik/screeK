@@ -47,6 +47,11 @@ func (m *MockMoviesRepo) SavePersonDetails(ctx context.Context, tmdbData *TMDBPe
 	return args.Get(0).(*Person), args.Error(1)
 }
 
+func (m *MockMoviesRepo) GetGenreName(ctx context.Context, genreID int) (string, error) {
+	args := m.Called(ctx, genreID)
+	return args.String(0), args.Error(1)
+}
+
 type MockTMDBService struct {
 	mock.Mock
 }
@@ -83,4 +88,38 @@ func (m *MockTMDBService) GetPersonCredits(ctx context.Context, id int) (*TMDBPe
 func (m *MockTMDBService) GetMoviesRecommendations(ctx context.Context, movieID int) ([]TMDBMovie, error) {
 	args := m.Called(ctx, movieID)
 	return args.Get(0).([]TMDBMovie), args.Error(1)
+}
+
+func (m *MockTMDBService) DiscoverMovies(ctx context.Context, genreID int, year int) ([]TMDBMovie, error) {
+	args := m.Called(ctx, genreID, year)
+	return args.Get(0).([]TMDBMovie), args.Error(1)
+}
+
+func (m *MockTMDBService) SearchPeople(ctx context.Context, query string) ([]TMDBPerson, error) {
+	args := m.Called(ctx, query)
+	return args.Get(0).([]TMDBPerson), args.Error(1)
+}
+
+type MockUserSearchProvider struct {
+	mock.Mock
+}
+
+func (m *MockUserSearchProvider) SearchUsers(ctx context.Context, query string) ([]UserSearchResult, error) {
+	args := m.Called(ctx, query)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]UserSearchResult), args.Error(1)
+}
+
+type MockListSearchProvider struct {
+	mock.Mock
+}
+
+func (m *MockListSearchProvider) SearchLists(ctx context.Context, query string) ([]ListSearchResult, error) {
+	args := m.Called(ctx, query)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]ListSearchResult), args.Error(1)
 }

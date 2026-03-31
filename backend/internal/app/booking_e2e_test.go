@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/bookings"
+	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/management"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/platform/crypto"
 	"github.com/StartLivin/screek/backend/internal/platform/httputil"
@@ -36,27 +38,29 @@ func Test_E2E_Fluxo_Venda_Gratuita(t *testing.T) {
 
 	adminToken := loginHelper(t, app, "super_admin", "super_password")
 
-	cineReq := bookings.CreateCinemaRequest{
+	cineReq := management.CreateCinemaRequest{
 		Name: "E2E Cinema Center", City: "Maceió", Address: "Av E2E", Phone: "123", Email: "e2e@cine.com",
 	}
 	rr := executeRequest(app.router, "POST", "/cinemas", cineReq, adminToken)
 	require.Equal(t, http.StatusCreated, rr.Code)
 
-	var cinemas []bookings.CinemaAdminResponseDTO
+	var cinemas []management.CinemaAdminResponseDTO
 	rr = executeRequest(app.router, "GET", "/admin/cinemas", nil, adminToken)
+	require.Equal(t, http.StatusOK, rr.Code)
 	json.Unmarshal(rr.Body.Bytes(), &cinemas)
 	cineID := cinemas[0].ID
 
 	db.Exec("INSERT INTO cinema_managers (cinema_id, user_id) VALUES (?, ?)", cineID, adminID)
 
-	roomReq := bookings.CreateRoomRequest{
+	roomReq := management.CreateRoomRequest{
 		CinemaID: cineID, Name: "Sala 1", Capacity: 10, Type: "STANDARD",
 	}
 	rr = executeRequest(app.router, "POST", fmt.Sprintf("/cinemas/%d/rooms", cineID), roomReq, adminToken)
 	require.Equal(t, http.StatusCreated, rr.Code)
 
-	var cinemaDetail bookings.Cinema
+	var cinemaDetail domain.Cinema
 	rr = executeRequest(app.router, "GET", fmt.Sprintf("/admin/cinemas/%d", cineID), nil, adminToken)
+	require.Equal(t, http.StatusOK, rr.Code)
 	json.Unmarshal(rr.Body.Bytes(), &cinemaDetail)
 	roomID := cinemaDetail.Rooms[0].ID
 	seatID := cinemaDetail.Rooms[0].Seats[0].ID
@@ -73,14 +77,15 @@ func Test_E2E_Fluxo_Venda_Gratuita(t *testing.T) {
 	}
 	db.Create(movie)
 
-	sessReq := bookings.CreateSessionRequest{
+	sessReq := management.CreateSessionRequest{
 		MovieID: 550, RoomID: roomID, StartTime: time.Now().Add(24 * time.Hour), Price: 1000, SessionType: "REGULAR",
 	}
 	rr = executeRequest(app.router, "POST", "/sessions", sessReq, adminToken)
 	require.Equal(t, http.StatusCreated, rr.Code)
 
-	var sessions []bookings.SessionAdminResponseDTO
+	var sessions []management.SessionAdminResponseDTO
 	rr = executeRequest(app.router, "GET", fmt.Sprintf("/admin/sessions?cinema_id=%d", cineID), nil, adminToken)
+	require.Equal(t, http.StatusOK, rr.Code)
 	json.Unmarshal(rr.Body.Bytes(), &sessions)
 	sessionID := sessions[0].ID
 

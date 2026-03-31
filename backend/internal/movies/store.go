@@ -172,3 +172,12 @@ func (s *Store) SavePersonDetails(ctx context.Context, tmdbData *TMDBPersonDetai
 	}).FirstOrCreate(&person)
 	return &person, result.Error
 }
+
+func (s *Store) GetGenreName(ctx context.Context, genreID int) (string, error) {
+	var genre Genre
+	err := s.db.WithContext(ctx).Where("tmdb_id = ?", genreID).First(&genre).Error
+	if err != nil {
+		return "", err
+	}
+	return genre.Name, nil
+}

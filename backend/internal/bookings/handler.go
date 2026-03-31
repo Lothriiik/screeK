@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-
-	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -17,7 +15,6 @@ type Handler struct {
 }
 
 func NewHandler(s Service) *Handler {
-	_ = movies.Movie{}
 	return &Handler{
 		service: s,
 	}
@@ -38,17 +35,14 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 	})
 }
 
-// GetMoviesPlaying godoc
-// @Summary Retorna os filmes em cartaz por cidade e data
-// @Description Filtra filmes que possuem sessões ativas na cidade e data especificadas.
+// @Summary Listar filmes em cartaz
+// @Description Retorna todos os filmes que possuem sessões ativas na cidade e data informada
 // @Tags Bookings
-// @Accept json
+// @Param city query string true "Cidade do cinema"
+// @Param date query string true "Data (format: YYYY-MM-DD)"
 // @Produce json
-// @Param city query string true "Cidade (ex: Sorocaba)"
-// @Param date query string true "Data (ex: 2024-10-25)"
 // @Success 200 {array} movies.MovieDTO
-// @Failure 400 {object} httputil.ErrorResponse "Parâmetros city e date são obrigatórios"
-// @Router /playing [get]
+// @Router /bookings/playing [get]
 func (h *Handler) GetMoviesPlaying(w http.ResponseWriter, r *http.Request) {
 	city := r.URL.Query().Get("city")
 	date := r.URL.Query().Get("date")
@@ -67,18 +61,15 @@ func (h *Handler) GetMoviesPlaying(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, moviesPlaying)
 }
 
-// GetMovieSessions godoc
-// @Summary Busca sessões de um filme agrupadas por cinema
-// @Description Filtra as sessões de um filme específico por cidade e data.
+// @Summary Consultar sessões de um filme
+// @Description Retorna as sessões de um filme agrupadas por cinema
 // @Tags Bookings
-// @Accept json
-// @Produce json
-// @Param id path int true "ID do Filme (TMDB ID)"
+// @Param id path int true "ID do filme (TMDB)"
 // @Param city query string true "Cidade"
 // @Param date query string true "Data"
+// @Produce json
 // @Success 200 {array} CinemaSessionsResponseDTO
-// @Failure 400 {object} httputil.ErrorResponse "ID do filme ou parâmetros de busca inválidos"
-// @Router /{id}/sessions [get]
+// @Router /bookings/{id}/sessions [get]
 func (h *Handler) GetMovieSessions(w http.ResponseWriter, r *http.Request) {
 	movieIDStr := chi.URLParam(r, "id")
 	movieID, err := strconv.Atoi(movieIDStr)
@@ -104,16 +95,13 @@ func (h *Handler) GetMovieSessions(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, response)
 }
 
-// GetSeatsBySession godoc
-// @Summary Retorna o mapa de assentos de uma sessão
-// @Description Lista todas as poltronas e indica quais estão ocupadas.
+// @Summary Mapa de assentos
+// @Description Retorna todos os assentos de uma sessão e seu status de ocupação
 // @Tags Bookings
-// @Accept json
+// @Param id path int true "ID da sessão"
 // @Produce json
-// @Param id path int true "ID da Sessão"
-// @Success 200 {array} Seat
-// @Failure 400 {object} httputil.ErrorResponse "ID da sessão inválido"
-// @Router /sessions/{id}/seats [get]
+// @Success 200 {array} domain.Seat
+// @Router /bookings/sessions/{id}/seats [get]
 func (h *Handler) GetSeatsBySession(w http.ResponseWriter, r *http.Request) {
 	sessionIDStr := chi.URLParam(r, "id")
 	sessionID, err := strconv.Atoi(sessionIDStr)
@@ -131,18 +119,15 @@ func (h *Handler) GetSeatsBySession(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, seats)
 }
 
-// ReserveTickets godoc
-// @Summary Reserva assentos para uma sessão
-// @Description Cria uma transação pendente e reserva as poltronas por 10 minutos via Redis Lock.
+// @Summary Reservar assentos
+// @Description Cria uma reserva temporária de 10 minutos para os assentos selecionados
 // @Tags Bookings
-// @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param reserve body ReserveRequestDTO true "Detalhes da reserva"
+// @Param request body ReserveRequestDTO true "Dados da reserva"
 // @Success 201 {object} ReserveResponseDTO
-// @Failure 401 {object} httputil.ErrorResponse "Não autorizado"
-// @Failure 409 {object} httputil.ErrorResponse "Conflito: assentos já ocupados ou expirados"
-// @Router /tickets/reserve [post]
+// @Security BearerAuth
+// @Router /bookings/tickets/reserve [post]
 func (h *Handler) ReserveTickets(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	if !ok {
@@ -174,20 +159,17 @@ func (h *Handler) ReserveTickets(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PayReservation godoc
-// @Summary Processa o pagamento de uma reserva
-// @Description Gera um PaymentIntent no Stripe. Exige Idempotency-Key.
+// @Summary Pagar reserva
+// @Description Processa o pagamento de uma reserva pendente via Stripe
 // @Tags Bookings
-// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "ID da Transação (UUID)"
-// @Param pay body PayRequestDTO true "Método de pagamento"
-// @Header 200 {string} Idempotency-Key "Chave de Idempotência"
+// @Param idempotency-key header string true "Chave de Idempotência"
+// @Param request body PayRequestDTO true "Método de pagamento"
 // @Success 200 {object} PayResponseDTO
-// @Failure 401 {object} httputil.ErrorResponse "Não autorizado"
-// @Failure 400 {object} httputil.ErrorResponse "Erro na transação ou idempotência"
-// @Router /transactions/{id}/pay [post]
+// @Security BearerAuth
+// @Router /bookings/transactions/{id}/pay [post]
 func (h *Handler) PayReservation(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	if !ok {
@@ -230,15 +212,13 @@ func (h *Handler) PayReservation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// CancelTicket godoc
-// @Summary Cancela um ingresso e solicita estorno
-// @Description Libera a poltrona e altera o status do ticket para CANCELLED.
+// @Summary Cancelar ingresso
+// @Description Cancela um ingresso e processa estorno se aplicável
 // @Tags Bookings
-// @Security BearerAuth
-// @Param id path int true "ID do Ticket"
+// @Param id path string true "ID do Ticket (UUID)"
 // @Success 200 {object} httputil.MessageResponse
-// @Failure 401 {object} httputil.ErrorResponse "Não autorizado"
-// @Router /tickets/{id}/cancel [post]
+// @Security BearerAuth
+// @Router /bookings/tickets/{id}/cancel [post]
 func (h *Handler) CancelTicket(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	if !ok {
@@ -261,15 +241,14 @@ func (h *Handler) CancelTicket(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Pedido de cancelamento processado com sucesso"})
 }
 
-// GetUserTickets godoc
-// @Summary Lista ingressos do usuário logado
-// @Description Retorna o histórico de compras do usuário. Filtro opcional por status.
+// @Summary Meus ingressos
+// @Description Retorna o histórico de ingressos do usuário autenticado
 // @Tags Bookings
-// @Security BearerAuth
-// @Param status query string false "Status (PAID, CANCELLED, etc)"
+// @Param status query string false "Filtrar por status (PAID, PENDING, CANCELLED)"
+// @Produce json
 // @Success 200 {array} TicketResponseDTO
-// @Failure 401 {object} httputil.ErrorResponse "Não autorizado"
-// @Router /users/me/tickets [get]
+// @Security BearerAuth
+// @Router /bookings/users/me/tickets [get]
 func (h *Handler) GetUserTickets(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	if !ok {
@@ -288,15 +267,14 @@ func (h *Handler) GetUserTickets(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, tickets)
 }
 
-// GetTicketDetail godoc
-// @Summary Detalhes de um ingresso específico
-// @Description Retorna informações completas do ticket, incluindo o QR Code para entrada.
+// @Summary Detalhe do ingresso
+// @Description Retorna informações detalhadas de um ingresso específico
 // @Tags Bookings
-// @Security BearerAuth
-// @Param id path int true "ID do Ticket"
+// @Param id path string true "ID do Ticket (UUID)"
+// @Produce json
 // @Success 200 {object} TicketResponseDTO
-// @Failure 401 {object} httputil.ErrorResponse "Não autorizado"
-// @Router /tickets/{id} [get]
+// @Security BearerAuth
+// @Router /bookings/tickets/{id} [get]
 func (h *Handler) GetTicketDetail(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	if !ok {

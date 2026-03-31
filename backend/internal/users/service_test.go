@@ -13,8 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ----------------- registration -----------------
-
 func Test_deve_criar_usuario_com_senha_hasheada(t *testing.T) {
 	repo := new(MockUserRepo)
 	movieRepo := new(MockMovieRepo)
@@ -38,8 +36,6 @@ func Test_deve_criar_usuario_com_senha_hasheada(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
-// ----------------- retrieval -----------------
-
 func Test_deve_retornar_erro_quando_usuario_nao_existe(t *testing.T) {
 	repo := new(MockUserRepo)
 	movieRepo := new(MockMovieRepo)
@@ -52,8 +48,6 @@ func Test_deve_retornar_erro_quando_usuario_nao_existe(t *testing.T) {
 	assert.Error(t, err)
 	repo.AssertExpectations(t)
 }
-
-// ----------------- management -----------------
 
 func Test_deve_deletar_usuario_com_senha_correta(t *testing.T) {
 	repo := new(MockUserRepo)
@@ -93,8 +87,6 @@ func Test_deve_rejeitar_delecao_com_senha_errada(t *testing.T) {
 	assert.ErrorIs(t, err, ErrInvalidPassword)
 	repo.AssertNotCalled(t, "DeleteUser")
 }
-
-// ----------------- favorites -----------------
 
 func Test_deve_adicionar_favorito_quando_filme_existe(t *testing.T) {
 	repo := new(MockUserRepo)
@@ -180,8 +172,6 @@ func Test_deve_rejeitar_usuario_com_email_duplicado(t *testing.T) {
 	assert.ErrorIs(t, err, ErrUserAlreadyExists)
 	repo.AssertNotCalled(t, "CreateUser")
 }
-
-// ----------------- audit -----------------
 
 func Test_User_Registration_Collision(t *testing.T) {
 	repo := new(MockUserRepo)
