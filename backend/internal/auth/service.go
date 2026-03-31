@@ -26,14 +26,22 @@ var (
 	ErrRefreshRevoked     = errors.New("token de atualização revogado ou expirado")
 )
 
+type RedisClient interface {
+	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+	Get(ctx context.Context, key string) *redis.StringCmd
+	Del(ctx context.Context, keys ...string) *redis.IntCmd
+	Exists(ctx context.Context, keys ...string) *redis.IntCmd
+	Scan(ctx context.Context, cursor uint64, match string, count int64) *redis.ScanCmd
+}
+
 type AuthService struct {
 	userRepo users.UserRepository
 	jwt      *JWTService
-	redis    *redis.Client
+	redis    RedisClient
 	mailer   email.Mailer
 }
 
-func NewAuthService(userRepo users.UserRepository, jwt *JWTService, redisClient *redis.Client, mailer email.Mailer) *AuthService {
+func NewAuthService(userRepo users.UserRepository, jwt *JWTService, redisClient RedisClient, mailer email.Mailer) *AuthService {
 	return &AuthService{userRepo: userRepo, jwt: jwt, redis: redisClient, mailer: mailer}
 }
 
@@ -76,6 +84,10 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshTokenString strin
 
 	exists, err := s.redis.Exists(ctx, "refresh:"+claims.UserID.String()+":"+refreshTokenString).Result()
 	if err != nil || exists == 0 {
+		iter := s.redis.Scan(ctx, 0, "refresh:"+claims.UserID.String()+":*", 0).Iterator()
+		for iter.Next(ctx) {
+			s.redis.Del(ctx, iter.Val())
+		}
 		return nil, ErrRefreshRevoked
 	}
 

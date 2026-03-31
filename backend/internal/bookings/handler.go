@@ -13,10 +13,10 @@ import (
 )
 
 type Handler struct {
-	service *BookingsService
+	service Service
 }
 
-func NewHandler(s *BookingsService) *Handler {
+func NewHandler(s Service) *Handler {
 	_ = movies.Movie{}
 	return &Handler{
 		service: s,

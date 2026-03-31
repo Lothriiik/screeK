@@ -1,0 +1,79 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: screek_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache-dependency-path: backend/go.sum
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        go mod download
+
+    - name: Run Unit Tests
+      run: |
+        cd backend
+        # -short pula os testes que precisam de banco real
+        go test ./internal/... -v -short
+
+    - name: Run Integration Tests
+      env:
+        DATABASE_URL: "host=localhost user=postgres password=password dbname=screek_test port=5432 sslmode=disable"
+        REDIS_URL: "localhost:6379"
+        JWT_SECRET: "ci-test-secret"
+      run: |
+        cd backend
+        # Roda apenas os testes que contém "Test_integ" ou que dependem de infra
+        go test ./internal/... -v -run "Test_integ"
+
+    - name: Build Backend Image
+      run: |
+        cd backend
+        docker build -t screek-backend:latest .

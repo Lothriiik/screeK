@@ -51,8 +51,12 @@ func NewApplication(cfg config.Config) *Application {
 	}
 }
 
+func (app *Application) Router() *chi.Mux {
+	return app.router
+}
+
 func (app *Application) mount() {
-	app.router.Use(httputil.Logger) 
+	app.router.Use(httputil.Logger)
 	app.router.Use(middleware.Recoverer)
 	app.router.Use(httputil.RateLimit(10, 15))
 

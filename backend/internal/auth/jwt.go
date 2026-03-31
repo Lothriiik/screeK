@@ -41,6 +41,7 @@ func (s *JWTService) GenerateAccessToken(userID uuid.UUID, username string, role
 		Role:      role,
 		TokenType: TokenTypeAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -55,6 +56,7 @@ func (s *JWTService) GenerateRefreshToken(userID uuid.UUID) (string, error) {
 		UserID:    userID,
 		TokenType: TokenTypeRefresh,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -69,6 +71,7 @@ func (s *JWTService) GeneratePasswordResetToken(userID uuid.UUID) (string, error
 		UserID:    userID,
 		TokenType: TokenTypeReset,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},

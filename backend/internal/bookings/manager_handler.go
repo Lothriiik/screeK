@@ -11,10 +11,10 @@ import (
 )
 
 type ManagerHandler struct {
-	service *BookingsService
+	service Service
 }
 
-func NewManagerHandler(s *BookingsService) *ManagerHandler {
+func NewManagerHandler(s Service) *ManagerHandler {
 	return &ManagerHandler{service: s}
 }
 
@@ -63,7 +63,7 @@ func (h *ManagerHandler) ListCinemas(w http.ResponseWriter, r *http.Request) {
 // @Router /admin/cinemas/{id} [get]
 func (h *ManagerHandler) GetCinemaDetail(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	cinema, err := h.service.store.GetCinemaByID(r.Context(), id)
+	cinema, err := h.service.GetCinemaByID(r.Context(), id)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusNotFound, httputil.ErrorResponse{Error: "Cinema não encontrado"})
 		return

@@ -3,18 +3,17 @@ package bookings
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/StartLivin/screek/backend/internal/payment"
 	"github.com/google/uuid"
 )
 
 type WebhookHandler struct {
-	svc        *BookingsService
+	svc        Service
 	paymentSvc payment.Service
 }
 
-func NewWebhookHandler(svc *BookingsService, paymentSvc payment.Service) *WebhookHandler {
+func NewWebhookHandler(svc Service, paymentSvc payment.Service) *WebhookHandler {
 	return &WebhookHandler{
 		svc:        svc,
 		paymentSvc: paymentSvc,
@@ -29,10 +28,9 @@ func (h *WebhookHandler) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lockKey := "payment_processed:" + event.PaymentID
-	isNew := h.svc.redisClient.SetNX(r.Context(), lockKey, "processed", 24*time.Hour).Val()
-	if !isNew {
-		log.Printf("Webhook Ignorado: Pagamento %s já processado (Idempotência)\n", event.PaymentID)
+	isNew, err := h.svc.SetPaymentProcessedNX(r.Context(), event.PaymentID)
+	if err != nil || !isNew {
+		log.Printf("Webhook Ignorado ou Erro: Pagamento %s já processado ou erro Redis: %v\n", event.PaymentID, err)
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -59,7 +57,7 @@ func (h *WebhookHandler) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 		err = h.svc.ConfirmPaymentWebhook(r.Context(), txID, userID, method)
 		if err != nil {
 			log.Printf("Webhook [ERRO CRÍTICO]: Erro ao processar pagamento %v\n", err)
-			h.svc.redisClient.Del(r.Context(), lockKey)
+			h.svc.DeletePaymentLock(r.Context(), event.PaymentID)
 			http.Error(w, "Erro interno de pagamento", http.StatusInternalServerError)
 			return
 		}

@@ -9,10 +9,10 @@ import (
 )
 
 type AnalyticsHandler struct {
-	service *BookingsService
+	service Service
 }
 
-func NewAnalyticsHandler(s *BookingsService) *AnalyticsHandler {
+func NewAnalyticsHandler(s Service) *AnalyticsHandler {
 	return &AnalyticsHandler{service: s}
 }
 

@@ -32,7 +32,7 @@ func NewStore(db *gorm.DB) *Store {
 
 func (s *Store) GetCinemaByID(ctx context.Context, id int) (*Cinema, error) {
 	var cinema Cinema
-	if err := s.db.WithContext(ctx).Preload("Rooms").First(&cinema, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("Rooms.Seats").First(&cinema, id).Error; err != nil {
 		return nil, err
 	}
 	return &cinema, nil
@@ -121,7 +121,7 @@ func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]Seat, e
 
 func (s *Store) GetSessionByID(ctx context.Context, sessionID int) (*Session, error) {
 	var session Session
-	if err := s.db.WithContext(ctx).First(&session, sessionID).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("Room").Preload("Movie").First(&session, sessionID).Error; err != nil {
 		return nil, err
 	}
 	return &session, nil

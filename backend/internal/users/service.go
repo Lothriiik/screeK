@@ -12,6 +12,7 @@ import (
 
 var (
 	ErrUserNotFound       = errors.New("user not found")
+	ErrUserAlreadyExists  = errors.New("usuário com este e-mail ou username já existe")
 	ErrInvalidPassword    = errors.New("senha incorreta")
 	ErrOldPasswordInvalid = errors.New("senha antiga incorreta")
 	ErrMovieNotFound      = errors.New("filme não encontrado na base local")
@@ -31,6 +32,16 @@ func NewService(repo UserRepository, movieRepo MovieRepository) *UserService {
 }
 
 func (s *UserService) CreateUser(ctx context.Context, user *User) error {
+	// 1. Validar unicidade (importante para UX e para evitar erro 500 do DB)
+	exists, _ := s.repo.EmailExists(ctx, user.Email)
+	if exists {
+		return ErrUserAlreadyExists
+	}
+	existsU, _ := s.repo.UsernameExists(ctx, user.Username)
+	if existsU {
+		return ErrUserAlreadyExists
+	}
+
 	hashedPassword, err := crypto.HashPassword(user.Password)
 	if err != nil {
 		return errors.New("erro ao processar senha")
@@ -38,6 +49,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *User) error {
 	user.Password = hashedPassword
 	return s.repo.CreateUser(ctx, user)
 }
+
 
 func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	return s.repo.GetUserByID(ctx, id)
