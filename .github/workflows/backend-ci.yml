@@ -70,7 +70,7 @@ jobs:
       run: |
         cd backend
         # -short pula os testes que precisam de banco real
-        go test ./internal/... -v -short
+        go test ./internal/... -v -short -p 1
 
     - name: Run Integration Tests
       env:
@@ -80,7 +80,7 @@ jobs:
       run: |
         cd backend
         # Roda apenas os testes que contém "Test_integ" ou que dependem de infra
-        go test ./internal/... -v -run "Test_integ"
+        go test ./internal/... -v -run "Test_integ" -p 1
 
     - name: Build Backend Image
       run: |

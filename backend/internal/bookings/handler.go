@@ -2,6 +2,7 @@ package bookings
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -148,7 +149,11 @@ func (h *Handler) ReserveTickets(w http.ResponseWriter, r *http.Request) {
 
 	transaction, err := h.service.ReserveSeats(r.Context(), userID, dto.SessionID, dto.TicketsRequested)
 	if err != nil {
-		httputil.WriteJSON(w, http.StatusConflict, httputil.ErrorResponse{Error: err.Error()})
+		if errors.Is(err, ErrSeatLockFailed) {
+			httputil.WriteJSON(w, http.StatusConflict, httputil.ErrorResponse{Error: err.Error()})
+			return
+		}
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
 		return
 	}
 

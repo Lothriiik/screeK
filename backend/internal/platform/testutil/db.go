@@ -48,11 +48,13 @@ func CleanupDB(t *testing.T, db *gorm.DB) {
 		"follows",
 		"notifications",
 		"user_favorite_movies",
+		"user_stats",
 		"users",
 		"movie_genres",
 		"genres",
 		"movies",
 		"people",
+		"movie_credits",
 	}
 
 	for _, table := range tables {

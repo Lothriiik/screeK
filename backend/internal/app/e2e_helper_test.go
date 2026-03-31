@@ -45,7 +45,7 @@ func SetupTestApp(t *testing.T) (*Application, *gorm.DB, *goredis.Client) {
 	}
 	rct := goredis.NewClient(&goredis.Options{Addr: redisURL})
 	require.NoError(t, rct.Ping(context.Background()).Err())
-	rct.FlushAll(context.Background())
+	rct.FlushDB(context.Background())
 
 	cfg := config.Config{
 		DatabaseURL: os.Getenv("DATABASE_URL"),

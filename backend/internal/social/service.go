@@ -196,7 +196,9 @@ func (s *socialService) ToggleFollow(ctx context.Context, followerID uuid.UUID, 
 	isFollowing, err := s.store.ToggleFollow(ctx, followerID, targetUser.ID)
 	if err == nil && isFollowing {
 		follower, _ := s.userProvider.GetUserByID(ctx, followerID)
-		s.notifications.Notify(ctx, targetUser.ID, "FOLLOW", "Novo Seguidor", follower.Username+" começou a seguir você!", "/profile/"+follower.Username)
+		if follower != nil {
+			s.notifications.Notify(ctx, targetUser.ID, "FOLLOW", "Novo Seguidor", follower.Username+" começou a seguir você!", "/profile/"+follower.Username)
+		}
 	}
 
 	return isFollowing, err
