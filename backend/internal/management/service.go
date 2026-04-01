@@ -30,6 +30,9 @@ type ManagementRepository interface {
 	CreateSession(ctx context.Context, session *domain.Session) error
 	ListSessions(ctx context.Context, cinemaID int, date string) ([]domain.Session, error)
 	GetSessionsByRoom(ctx context.Context, roomID int, date time.Time) ([]domain.Session, error)
+	GetSession(ctx context.Context, sessionID int) (*domain.Session, error)
+	DeleteSession(ctx context.Context, sessionID int) error
+	GetSessionBookingsCount(ctx context.Context, sessionID int) (int, error)
 	
 	IsManagerOfCinema(ctx context.Context, userID uuid.UUID, cinemaID int) (bool, error)
 }
@@ -150,6 +153,36 @@ func (s *ManagementService) CreateSession(ctx context.Context, userID uuid.UUID,
 	}
 
 	return s.repo.CreateSession(ctx, session)
+}
+
+func (s *ManagementService) DeleteSession(ctx context.Context, userID uuid.UUID, sessionID int) error {
+	session, err := s.repo.GetSession(ctx, sessionID)
+	if err != nil {
+		return errors.New("sessão não encontrada")
+	}
+
+	room, err := s.repo.GetRoomByID(ctx, session.RoomID)
+	if err != nil {
+		return errors.New("sala associada não encontrada")
+	}
+
+	isManager, err := s.repo.IsManagerOfCinema(ctx, userID, room.CinemaID)
+	if err != nil {
+		return err
+	}
+	if !isManager {
+		return ErrNotCinemaManager
+	}
+
+	count, err := s.repo.GetSessionBookingsCount(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("não é possível excluir uma sessão que já possui ingressos vendidos")
+	}
+
+	return s.repo.DeleteSession(ctx, sessionID)
 }
 
 func (s *ManagementService) GetCinemaByID(ctx context.Context, id int) (*domain.Cinema, error) {

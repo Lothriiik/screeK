@@ -3,6 +3,7 @@ package social
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/StartLivin/screek/backend/internal/users"
@@ -184,7 +185,17 @@ func (s *socialService) ReplyToPost(ctx context.Context, userID uuid.UUID, paren
 }
 
 func (s *socialService) ToggleLike(ctx context.Context, userID uuid.UUID, postID uint) (bool, error) {
-	return s.store.ToggleLike(ctx, userID, postID)
+	liked, err := s.store.ToggleLike(ctx, userID, postID)
+	if err == nil && liked {
+		post, err := s.store.GetPostByID(ctx, postID)
+		if err == nil && post.UserID != userID {
+			liker, _ := s.userProvider.GetUserByID(ctx, userID)
+			if liker != nil {
+				s.notifications.Notify(ctx, post.UserID, "LIKE", "Novo Like", liker.Username+" curtiu seu post!", fmt.Sprintf("/posts/%d", postID))
+			}
+		}
+	}
+	return liked, err
 }
 
 func (s *socialService) ToggleFollow(ctx context.Context, followerID uuid.UUID, targetUsername string) (bool, error) {

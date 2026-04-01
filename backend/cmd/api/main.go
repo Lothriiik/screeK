@@ -28,7 +28,10 @@ import (
 
 func main() {
 	// 1. Carregar Configurações
-	cfg := config.LoadConfig()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal("Erro ao carregar configurações: ", err)
+	}
 
 	// 2. Instanciar a Aplicação (internal/app)
 	application := app.NewApplication(cfg)

@@ -26,6 +26,7 @@ func (h *ManagerHandler) RegisterRoutes(r chi.Router, authMiddleware func(http.H
 		r.Get("/admin/cinemas", h.ListCinemas)
 		r.Get("/admin/cinemas/{id}", h.GetCinemaDetail)
 		r.Get("/admin/sessions", h.ListSessions)
+		r.Delete("/admin/sessions/{id}", h.DeleteSession)
 
 		r.Post("/cinemas", h.CreateCinema)
 		r.Post("/cinemas/{id}/rooms", h.CreateRoom)
@@ -173,4 +174,23 @@ func (h *ManagerHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusCreated, httputil.MessageResponse{Message: "Sessão agendada com sucesso!"})
+}
+
+// @Summary Excluir sessão
+// @Description Remove uma sessão do sistema, desde que não existam ingressos vendidos
+// @Tags Management
+// @Param id path int true "ID da Sessão"
+// @Success 200 {object} httputil.MessageResponse
+// @Security BearerAuth
+// @Router /admin/sessions/{id} [delete]
+func (h *ManagerHandler) DeleteSession(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
+	sessionID, _ := strconv.Atoi(chi.URLParam(r, "id"))
+
+	if err := h.service.DeleteSession(r.Context(), userID, sessionID); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Sessão excluída com sucesso"})
 }

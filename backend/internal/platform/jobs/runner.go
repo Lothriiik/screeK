@@ -18,6 +18,11 @@ func NewRunner() *JobRunner {
 
 func (r *JobRunner) Register(spec string, name string, task func()) {
 	_, err := r.cron.AddFunc(spec, func() {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("[Job] Panic capturado na execução", "name", name, "panic", r)
+			}
+		}()
 		slog.Info("[Job] Iniciando execução", "name", name)
 		task()
 		slog.Info("[Job] Execução finalizada", "name", name)

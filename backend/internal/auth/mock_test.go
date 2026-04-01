@@ -143,6 +143,16 @@ func (m *MockRedisClient) Scan(ctx context.Context, cursor uint64, match string,
 	return cmd
 }
 
+func (m *MockRedisClient) Incr(ctx context.Context, key string) *goredis.IntCmd {
+	args := m.Called(ctx, key)
+	return goredis.NewIntResult(int64(args.Int(0)), args.Error(1))
+}
+
+func (m *MockRedisClient) Expire(ctx context.Context, key string, expiration time.Duration) *goredis.BoolCmd {
+	args := m.Called(ctx, key, expiration)
+	return goredis.NewBoolResult(args.Bool(0), args.Error(1))
+}
+
 type MockMailer struct {
 	mock.Mock
 }

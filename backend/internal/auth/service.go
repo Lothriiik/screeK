@@ -24,6 +24,7 @@ var (
 	ErrPasswordUpdate     = errors.New("erro ao atualizar senha")
 	ErrOldPasswordInvalid = errors.New("senha antiga incorreta")
 	ErrRefreshRevoked     = errors.New("token de atualização revogado ou expirado")
+	ErrTooManyAttempts    = errors.New("muitas tentativas de login. tente novamente mais tarde")
 )
 
 type RedisClient interface {
@@ -32,6 +33,8 @@ type RedisClient interface {
 	Del(ctx context.Context, keys ...string) *redis.IntCmd
 	Exists(ctx context.Context, keys ...string) *redis.IntCmd
 	Scan(ctx context.Context, cursor uint64, match string, count int64) *redis.ScanCmd
+	Incr(ctx context.Context, key string) *redis.IntCmd
+	Expire(ctx context.Context, key string, expiration time.Duration) *redis.BoolCmd
 }
 
 type AuthService struct {
@@ -46,14 +49,25 @@ func NewAuthService(userRepo users.UserRepository, jwt *JWTService, redisClient 
 }
 
 func (s *AuthService) Login(ctx context.Context, username, password string) (*AuthTokenResponse, error) {
+
+	lockKey := "brute_force:" + username
+	attempts, _ := s.redis.Get(ctx, lockKey).Int()
+	if attempts >= 10 {
+		return nil, ErrTooManyAttempts
+	}
+
 	user, err := s.userRepo.GetUserByUsername(ctx, username)
 	if err != nil {
+		s.handleFailedLogin(ctx, username)
 		return nil, ErrInvalidCredentials
 	}
 
 	if !crypto.VerifyPassword(password, user.Password) {
+		s.handleFailedLogin(ctx, username)
 		return nil, ErrInvalidCredentials
 	}
+
+	s.redis.Del(ctx, lockKey)
 
 	accessToken, err := s.jwt.GenerateAccessToken(user.ID, user.Username, httputil.Role(user.Role))
 	if err != nil {
@@ -217,4 +231,15 @@ func (s *AuthService) UpdateUserRole(ctx context.Context, userID uuid.UUID, role
 	}
 	user.Role = role
 	return s.userRepo.UpdateUser(ctx, user)
+}
+
+func (s *AuthService) handleFailedLogin(ctx context.Context, username string) {
+	lockKey := "brute_force:" + username
+	attempts, _ := s.redis.Incr(ctx, lockKey).Result()
+	if attempts == 1 {
+		s.redis.Expire(ctx, lockKey, 5*time.Minute)
+	}
+	if attempts >= 5 {
+		s.redis.Expire(ctx, lockKey, 15*time.Minute)
+	}
 }

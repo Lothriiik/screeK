@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -48,6 +49,10 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.svc.Login(r.Context(), req.Username, req.Password)
 	if err != nil {
+		if errors.Is(err, ErrTooManyAttempts) {
+			httputil.WriteJSON(w, http.StatusTooManyRequests, httputil.ErrorResponse{Error: err.Error()})
+			return
+		}
 		httputil.WriteJSON(w, http.StatusUnauthorized, httputil.ErrorResponse{Error: "Usuário ou senha inválidos"})
 		return
 	}

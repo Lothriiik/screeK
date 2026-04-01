@@ -89,11 +89,30 @@ func (s *Store) GetSessionsByRoom(ctx context.Context, roomID int, startTime tim
 	return sessions, err
 }
 
+func (s *Store) GetSession(ctx context.Context, sessionID int) (*domain.Session, error) {
+	var session domain.Session
+	err := s.db.WithContext(ctx).First(&session, sessionID).Error
+	return &session, err
+}
+
+func (s *Store) DeleteSession(ctx context.Context, sessionID int) error {
+	return s.db.WithContext(ctx).Delete(&domain.Session{}, sessionID).Error
+}
+
+func (s *Store) GetSessionBookingsCount(ctx context.Context, sessionID int) (int, error) {
+	var count int64
+	err := s.db.WithContext(ctx).
+		Table("tickets").
+		Where("session_id = ?", sessionID).
+		Count(&count).Error
+	return int(count), err
+}
+
 func (s *Store) IsManagerOfCinema(ctx context.Context, userID uuid.UUID, cinemaID int) (bool, error) {
 	var count int64
 	err := s.db.WithContext(ctx).
-		Table("cinema_managers").
-		Where("user_id = ? AND cinema_id = ?", userID, cinemaID).
+		Model(&domain.CinemaManager{}).
+		Where(&domain.CinemaManager{UserID: userID, CinemaID: cinemaID}).
 		Count(&count).Error
 	return count > 0, err
 }

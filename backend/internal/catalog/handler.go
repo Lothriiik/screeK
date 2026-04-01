@@ -181,10 +181,11 @@ func (h *CatalogHandler) GetMyMovieLists(w http.ResponseWriter, r *http.Request)
 // @Security BearerAuth
 // @Router /lists/{id} [get]
 func (h *CatalogHandler) GetMovieListDetail(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
 	listID, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	list, err := h.svc.GetMovieListDetail(r.Context(), uint(listID))
+	list, err := h.svc.GetMovieListDetail(r.Context(), uint(listID), userID)
 	if err != nil {
-		httputil.WriteJSON(w, http.StatusNotFound, httputil.ErrorResponse{Error: "Lista não encontrada"})
+		httputil.WriteJSON(w, http.StatusNotFound, httputil.ErrorResponse{Error: err.Error()})
 		return
 	}
 	httputil.WriteJSON(w, http.StatusOK, list)

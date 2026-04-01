@@ -132,8 +132,17 @@ func (s *CatalogService) GetMyMovieLists(ctx context.Context, userID uuid.UUID) 
 	return dtos, nil
 }
 
-func (s *CatalogService) GetMovieListDetail(ctx context.Context, listID uint) (*MovieList, error) {
-	return s.repo.GetMovieListByID(ctx, listID)
+func (s *CatalogService) GetMovieListDetail(ctx context.Context, listID uint, requesterID uuid.UUID) (*MovieList, error) {
+	list, err := s.repo.GetMovieListByID(ctx, listID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !list.IsPublic && list.UserID != requesterID {
+		return nil, errors.New("Esta lista é privada")
+	}
+
+	return list, nil
 }
 
 func (s *CatalogService) AddMovieToList(ctx context.Context, userID uuid.UUID, listID uint, movieID uint) error {

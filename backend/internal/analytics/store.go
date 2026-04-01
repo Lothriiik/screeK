@@ -69,13 +69,13 @@ func (s *Store) CalculateDailyMovieStats(ctx context.Context, date time.Time) ([
 	query := `
 		SELECT 
 			date(?) as date,
-			movie_id,
+			s.movie_id,
 			SUM(price_paid) as total_revenue,
-			COUNT(id) as tickets_sold
+			COUNT(t.id) as tickets_sold
 		FROM tickets t
 		JOIN sessions s ON t.session_id = s.id
-		WHERE t.status = 'PAID' AND date(t.created_at) = date(?)
-		GROUP BY movie_id
+		WHERE t.status = 'PAID' AND date(s.start_time) = date(?)
+		GROUP BY s.movie_id
 	`
 	err := s.db.WithContext(ctx).Raw(query, date, date).Scan(&stats).Error
 	return stats, err
