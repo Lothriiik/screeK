@@ -182,18 +182,23 @@ func (s *Store) GetTransactionByID(ctx context.Context, transactionID uuid.UUID,
 	return &transaction, nil
 }
 
-func (s *Store) PayTransaction(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string) error {
+func (s *Store) PayTransaction(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, paymentID string) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var transaction Transaction
-		if err := tx.Where("id = ? AND user_id = ? AND status = ?", transactionID, userID, TicketStatusPending).First(&transaction).Error; err != nil {
+		res := tx.Model(&Transaction{}).
+			Where("id = ? AND user_id = ? AND status = ?", transactionID, userID, TicketStatusPending).
+			Updates(map[string]interface{}{
+				"status":         TicketStatusPaid,
+				"payment_method": method,
+				"payment_id":     paymentID,
+			})
+
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
 			return ErrTransactionNotFound
 		}
 
-		transaction.Status = TicketStatusPaid
-		transaction.PaymentMethod = method
-		if err := tx.Save(&transaction).Error; err != nil {
-			return err
-		}
 
 		var tickets []Ticket
 		if err := tx.Where("transaction_id = ?", transactionID).Find(&tickets).Error; err != nil {
@@ -230,6 +235,13 @@ func (s *Store) CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uui
 			return ErrNotTicketOwner
 		}
 
+		var session domain.Session
+		if err := tx.First(&session, ticket.SessionID).Error; err == nil {
+			if time.Now().After(session.StartTime.Add(-2 * time.Hour)) {
+				return errors.New("não é possível cancelar um ingresso menos de 2 horas antes da sessão ou após o início")
+			}
+		}
+
 		ticket.Status = TicketStatusCancelled
 		return tx.Save(&ticket).Error
 	})
@@ -254,7 +266,7 @@ func (s *Store) GetTicketDetail(ctx context.Context, ticketID uuid.UUID, userID 
 		Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").
 		Where("tickets.id = ? AND trx.user_id = ?", ticketID, userID)
 
-	err := query.Preload("Seat").Preload("Session.Movie").Preload("Session.Room.Cinema").First(&ticket).Error
+	err := query.Preload("Seat").Preload("Session.Movie").Preload("Session.Room.Cinema").Preload("Transaction").First(&ticket).Error
 
 	return &ticket, err
 }

@@ -15,7 +15,7 @@ type BookingsRepository interface {
 	GetSeatsBySession(ctx context.Context, sessionID int) ([]domain.Seat, error)
 	CreateReservation(ctx context.Context, userID uuid.UUID, sessionID int, tickets []Ticket, totalAmount int) (*Transaction, error)
 	GetTransactionByID(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID) (*Transaction, error)
-	PayTransaction(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string) error
+	PayTransaction(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, paymentID string) error
 	CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) error
 	GetSessionByID(ctx context.Context, sessionID int) (*domain.Session, error)
 	GetUserTickets(ctx context.Context, userID uuid.UUID, status string) ([]Ticket, error)

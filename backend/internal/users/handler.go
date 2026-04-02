@@ -109,9 +109,10 @@ func (h *Handler) SearchUsers(w http.ResponseWriter, r *http.Request) {
 
 	for _, user := range users {
 		dtos = append(dtos, UserDTO{
-			ID:       user.ID,
-			Username: user.Username,
-			Name:     user.Name,
+			ID:        user.ID,
+			Username:  user.Username,
+			Name:      user.Name,
+			AvatarURL: user.AvatarURL,
 		})
 	}
 
@@ -154,7 +155,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		Username:       user.Username,
 		Name:           user.Name,
 		Bio:            user.Bio,
-		PhotoURL:       user.PhotoURL,
+		AvatarURL:      user.AvatarURL,
 		Pronouns:       user.Pronouns,
 		DefaultCity:    user.DefaultCity,
 		FavoriteMovies: favoriteMovies,
@@ -201,7 +202,7 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		Name:           user.Name,
 		Email:          user.Email,
 		Bio:            user.Bio,
-		PhotoURL:       user.PhotoURL,
+		AvatarURL:      user.AvatarURL,
 		Pronouns:       user.Pronouns,
 		DefaultCity:    user.DefaultCity,
 		FavoriteMovies: favoriteMovies,
@@ -251,8 +252,8 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if dto.Bio != "" {
 		user.Bio = dto.Bio
 	}
-	if dto.PhotoURL != "" {
-		user.PhotoURL = dto.PhotoURL
+	if dto.AvatarURL != "" {
+		user.AvatarURL = dto.AvatarURL
 	}
 	if dto.Pronouns != "" {
 		user.Pronouns = dto.Pronouns

@@ -15,7 +15,6 @@ import (
 	"github.com/StartLivin/screek/backend/internal/auth"
 	"github.com/StartLivin/screek/backend/internal/bookings"
 	"github.com/StartLivin/screek/backend/internal/catalog"
-	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/management"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/notifications"
@@ -26,10 +25,12 @@ import (
 	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/StartLivin/screek/backend/internal/platform/jobs"
 	"github.com/StartLivin/screek/backend/internal/platform/redis"
+	"github.com/StartLivin/screek/backend/internal/platform/events"
 	"github.com/StartLivin/screek/backend/internal/social"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/cors"
 	redisclient "github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
@@ -44,6 +45,7 @@ type Application struct {
 	router *chi.Mux
 	hub    *notifications.Hub
 	jobs   *jobs.JobRunner
+	events *events.EventBus
 }
 
 func NewApplication(cfg config.Config) *Application {
@@ -52,6 +54,7 @@ func NewApplication(cfg config.Config) *Application {
 		router: chi.NewRouter(),
 		hub:    notifications.NewHub(),
 		jobs:   jobs.NewRunner(),
+		events: events.NewEventBus(),
 	}
 }
 
@@ -60,6 +63,16 @@ func (app *Application) Router() *chi.Mux {
 }
 
 func (app *Application) mount() {
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "https://screek.app"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	})
+	app.router.Use(c.Handler)
+
 	app.router.Use(httputil.Logger)
 	app.router.Use(middleware.Recoverer)
 	app.router.Use(httputil.RateLimit(10, 15))
@@ -68,12 +81,29 @@ func (app *Application) mount() {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
 			"message": "Bem-vindo à API do screeK! 🎬",
+			"version": "1.0.0",
+		})
+	})
+
+	app.router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		status := "OK"
+		dbStatus := "UP"
+		sqlDB, err := app.db.DB()
+		if err != nil || sqlDB.Ping() != nil {
+			dbStatus = "DOWN"
+			status = "ERROR"
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
+
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":   status,
+			"database": dbStatus,
+			"time":     time.Now().Format(time.RFC3339),
 		})
 	})
 
 	app.router.Get("/swagger/*", httpSwagger.WrapHandler)
 
-	// Repositories
 	userStore := users.NewStore(app.db)
 	movieStore := movies.NewStore(app.db)
 	bookingStore := bookings.NewStore(app.db)
@@ -83,14 +113,12 @@ func (app *Application) mount() {
 	socialStore := social.NewStore(app.db)
 	notifStore := notifications.NewStore(app.db)
 
-	// Platform Services
 	jwtService := auth.NewJWTService(&app.config)
 	authMiddleware := auth.AuthMiddleware(jwtService, app.redis)
 	tmdbClient := movies.NewTMDBClient(app.config.TMDBToken)
 	resendClient := email.NewResendClient(app.config.ResendKey)
 	paymentSvc := payment.NewStripeService(app.config.StripeKey, app.config.StripeWebhookSecret)
 
-	// Business Services (with Late Binding for Circular Dependencies)
 	userAdapter := &userSearchAdapter{}
 	listAdapter := &listSearchAdapter{}
 	sessionAdapter := &sessionSearchAdapter{}
@@ -112,12 +140,10 @@ func (app *Application) mount() {
 	socialSvc := social.NewService(socialStore, userService, notifService, sessionAdapter)
 	bookingSvc := bookings.NewService(bookingStore, app.redis, paymentSvc, resendClient, movieService)
 
-	// Set adapters dependencies
 	userAdapter.svc = userService
 	listAdapter.svc = catalogSvc
 	sessionAdapter.svc = bookingSvc
 
-	// Handlers Registration
 	authHandler := auth.NewHandler(authSvc)
 	authHandler.RegisterRoutes(app.router, authMiddleware)
 
@@ -151,7 +177,6 @@ func (app *Application) mount() {
 	webhookHandler := bookings.NewWebhookHandler(bookingSvc, paymentSvc)
 	app.router.Post("/webhooks/stripe", webhookHandler.StripeWebhook)
 
-	// Background Jobs
 	app.jobs.Register("@every 1m", "Reserva Cleanup", func() {
 		bookingSvc.CleanupExpiredReservations(context.Background())
 	})
@@ -161,7 +186,7 @@ func (app *Application) mount() {
 	})
 
 	app.jobs.Register("@daily", "Watchlist Matches", func() {
-		matches, err := mgmtStore.GetWatchlistMatches(context.Background())
+		matches, err := mgmtSvc.GetWatchlistMatches(context.Background())
 		if err != nil {
 			return
 		}
@@ -192,14 +217,6 @@ func (app *Application) Run() error {
 	app.redis = redis.InitRedis(app.config.RedisURL)
 	
 	slog.Info("Sistema iniciado - Rodando migrações...", "db", "postgres")
-	domain.AutoMigrate(app.db)
-	movies.AutoMigrate(app.db)
-	users.AutoMigrate(app.db)
-	bookings.AutoMigrate(app.db)
-	social.AutoMigrate(app.db)
-	catalog.AutoMigrate(app.db)
-	analytics.AutoMigrate(app.db)
-	notifications.AutoMigrate(app.db)
 	
 	go app.hub.Run()
 
@@ -255,8 +272,6 @@ func (app *Application) Run() error {
 	return nil
 }
 
-// Search Adapters to avoid direct circular dependencies between modules
-
 type userSearchAdapter struct {
 	svc *users.UserService
 }
@@ -272,7 +287,7 @@ func (a *userSearchAdapter) SearchUsers(ctx context.Context, query string) ([]mo
 			ID:       u.ID.String(),
 			Username: u.Username,
 			Name:     u.Name,
-			PhotoURL: u.PhotoURL,
+			PhotoURL: u.AvatarURL,
 		})
 	}
 	return results, nil

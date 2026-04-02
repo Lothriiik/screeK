@@ -31,6 +31,7 @@ type Transaction struct {
 	TotalAmount   int            `json:"total_amount" gorm:"not null"`
 	Status        TicketStatus   `json:"status" gorm:"type:varchar(20);not null;index:idx_tx_user_status,composite:status"`
 	PaymentMethod string         `json:"payment_method" gorm:"not null"`
+	PaymentID     string         `json:"payment_id" gorm:"index"`
 	User          users.User     `json:"user" gorm:"foreignKey:UserID"`
 	Tickets       []Ticket       `json:"tickets" gorm:"foreignKey:TransactionID"`
 	CreatedAt     time.Time      `json:"created_at" gorm:"not null;default:now()"`

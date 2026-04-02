@@ -39,7 +39,7 @@ func NewTMDBClient(token string) *TMDBClient {
 
 	return &TMDBClient{
 		token:      token,
-		httpClient: &http.Client{},
+		httpClient: &http.Client{Timeout: 10 * time.Second},
 		cb:         gobreaker.NewCircuitBreaker(st),
 		BaseURL:    "https://api.themoviedb.org/3",
 	}

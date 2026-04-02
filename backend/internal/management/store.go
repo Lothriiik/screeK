@@ -61,7 +61,9 @@ func (s *Store) GetRoomByID(ctx context.Context, roomID int) (*domain.Room, erro
 }
 
 func (s *Store) CreateSession(ctx context.Context, session *domain.Session) error {
-	return s.db.WithContext(ctx).Create(session).Error
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Create(session).Error
+	})
 }
 
 func (s *Store) ListSessions(ctx context.Context, cinemaID int, date string) ([]domain.Session, error) {
@@ -80,10 +82,12 @@ func (s *Store) ListSessions(ctx context.Context, cinemaID int, date string) ([]
 
 func (s *Store) GetSessionsByRoom(ctx context.Context, roomID int, startTime time.Time) ([]domain.Session, error) {
 	var sessions []domain.Session
-	date := startTime.Format("2006-01-02")
+	
+	startRange := startTime.Truncate(24 * time.Hour)
+	endRange := startRange.Add(24 * time.Hour)
 	
 	err := s.db.WithContext(ctx).
-		Where("room_id = ? AND DATE(start_time) = ?", roomID, date).
+		Where("room_id = ? AND start_time >= ? AND start_time < ?", roomID, startRange, endRange).
 		Preload("Movie").
 		Find(&sessions).Error
 	return sessions, err
@@ -103,7 +107,7 @@ func (s *Store) GetSessionBookingsCount(ctx context.Context, sessionID int) (int
 	var count int64
 	err := s.db.WithContext(ctx).
 		Table("tickets").
-		Where("session_id = ?", sessionID).
+		Where("session_id = ? AND status != ?", sessionID, "CANCELLED").
 		Count(&count).Error
 	return int(count), err
 }

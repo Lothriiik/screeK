@@ -7,6 +7,7 @@ import (
 
 	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -82,6 +83,14 @@ func (m *MockManagementRepo) GetSessionBookingsCount(ctx context.Context, sessio
 	return args.Int(0), args.Error(1)
 }
 
+func (m *MockManagementRepo) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]WatchlistMatch), args.Error(1)
+}
+
 type MockMovieProvider struct {
 	mock.Mock
 }
@@ -111,7 +120,7 @@ func TestCreateRoom_SeatMapGeneration(t *testing.T) {
 		return len(seats) == 25 && seats[0].Row == "A" && seats[10].Row == "B" 
 	})).Return(nil)
 
-	err := svc.CreateRoom(context.Background(), req)
+	err := svc.CreateRoom(context.Background(), uuid.New(), httputil.RoleManager, req)
 	assert.NoError(t, err)
 }
 
@@ -146,7 +155,7 @@ func TestCreateSession_OverlapDetection(t *testing.T) {
 		SessionType: "REGULAR",
 	}
 
-	err := svc.CreateSession(context.Background(), userID, req)
+	err := svc.CreateSession(context.Background(), userID, httputil.RoleManager, req)
 
 	assert.Error(t, err)
 	assert.Equal(t, ErrSessionOverlap, err)
@@ -167,7 +176,7 @@ func TestCreateSession_ManagerCheck(t *testing.T) {
 		Price:       1000,
 		SessionType: "REGULAR",
 	}
-	err := svc.CreateSession(context.Background(), userID, req)
+	err := svc.CreateSession(context.Background(), userID, httputil.RoleManager, req)
 
 	assert.Error(t, err)
 	assert.Equal(t, ErrNotCinemaManager, err)
@@ -186,7 +195,7 @@ func TestDeleteSession_Integrity(t *testing.T) {
 	t.Run("Erro se houver reservas", func(t *testing.T) {
 		repo.On("GetSessionBookingsCount", mock.Anything, sessionID).Return(5, nil).Once()
 		
-		err := svc.DeleteSession(context.Background(), userID, sessionID)
+		err := svc.DeleteSession(context.Background(), userID, httputil.RoleManager, sessionID)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "ingressos vendidos")
 	})
@@ -195,7 +204,7 @@ func TestDeleteSession_Integrity(t *testing.T) {
 		repo.On("GetSessionBookingsCount", mock.Anything, sessionID).Return(0, nil).Once()
 		repo.On("DeleteSession", mock.Anything, sessionID).Return(nil)
 
-		err := svc.DeleteSession(context.Background(), userID, sessionID)
+		err := svc.DeleteSession(context.Background(), userID, httputil.RoleManager, sessionID)
 		assert.NoError(t, err)
 	})
 }

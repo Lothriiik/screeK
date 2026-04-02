@@ -21,7 +21,7 @@ var (
 )
 
 type Mailer interface {
-	SendTicketEmail(to, userName, qrCode string) error
+	SendTicketEmail(ctx context.Context, to, userName, qrCode string) error
 }
 
 type MovieProvider interface {
@@ -43,7 +43,7 @@ type Service interface {
 	CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) error
 	GetUserTickets(ctx context.Context, userID uuid.UUID, status string) ([]TicketResponseDTO, error)
 	GetTicketDetail(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) (TicketResponseDTO, error)
-	ConfirmPaymentWebhook(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string) error
+	ConfirmPaymentWebhook(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, paymentID string) error
 	SetPaymentProcessedNX(ctx context.Context, paymentID string) (bool, error)
 	DeletePaymentLock(ctx context.Context, paymentID string) error
 	CleanupExpiredReservations(ctx context.Context) error
@@ -131,6 +131,9 @@ func (s *bookingsService) GetMovieSessionsGroupedByCinema(ctx context.Context, m
 
 	var response []CinemaSessionsResponseDTO
 	for _, v := range groupedMap {
+		sort.Slice(v.Sessions, func(i, j int) bool {
+			return v.Sessions[i].StartTime.Before(v.Sessions[j].StartTime)
+		})
 		response = append(response, *v)
 	}
 
@@ -153,6 +156,9 @@ func (s *bookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, se
 	var lockedAssets []string
 
 	for _, tReq := range ticketsReq {
+		if tReq.SeatID <= 0 {
+			return nil, errors.New("SeatID deve ser um número positivo")
+		}
 		seat := fmt.Sprintf("seat:%d:%d", sessionID, tReq.SeatID)
 		res := s.redisClient.SetNX(ctx, seat, userID, 10*time.Minute)
 		if err := res.Err(); err != nil {
@@ -237,18 +243,18 @@ func (s *bookingsService) PayReservation(ctx context.Context, transactionID uuid
 	}
 
 	if transaction.TotalAmount == 0 {
-		if err := s.store.PayTransaction(ctx, transactionID, userID, "FREE"); err != nil {
+		if err := s.store.PayTransaction(ctx, transactionID, userID, "FREE", "FREE"); err != nil {
 			return "", errors.New("erro ao processar reserva gratuita")
 		}
 		
 		if s.mailer != nil {
 			go func() {
-				fullTransaction, err := s.store.GetTransactionByID(ctx, transactionID, userID)
-				if err == nil {
-					for _, t := range fullTransaction.Tickets {
-						s.mailer.SendTicketEmail(fullTransaction.User.Email, fullTransaction.User.Name, t.QRCode)
-					}
+				bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				for _, t := range transaction.Tickets {
+					s.mailer.SendTicketEmail(bgCtx, transaction.User.Email, transaction.User.Name, t.QRCode)
 				}
+				slog.Info("E-mails de confirmação enviados para reserva gratuita", "tx_id", transaction.ID)
 			}()
 		}
 		return "FREE", nil
@@ -263,6 +269,20 @@ func (s *bookingsService) PayReservation(ctx context.Context, transactionID uuid
 }
 
 func (s *bookingsService) CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) error {
+	ticket, err := s.store.GetTicketDetail(ctx, ticketID, userID)
+	if err != nil {
+		return err
+	}
+
+	if ticket.Status == TicketStatusPaid && ticket.Transaction.PaymentID != "" {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := s.payment.RefundPayment(bgCtx, ticket.Transaction.PaymentID); err != nil {
+			slog.Error("Falha ao processar estorno automático", "ticket_id", ticketID, "error", err)
+
+		}
+	}
+
 	return s.store.CancelTicket(ctx, ticketID, userID)
 }
 
@@ -297,7 +317,9 @@ func (s *bookingsService) GetUserTickets(ctx context.Context, userID uuid.UUID, 
 	}
 
 	sort.Slice(response, func(i, j int) bool {
-		return response[i].Date > response[j].Date
+		ti, _ := time.Parse("02/01/2006 15:04", response[i].Date)
+		tj, _ := time.Parse("02/01/2006 15:04", response[j].Date)
+		return ti.After(tj)
 	})
 
     return response, nil
@@ -328,22 +350,25 @@ func (s *bookingsService) GetTicketDetail(ctx context.Context, ticketID uuid.UUI
 	return dto, err
 }
 
-func (s *bookingsService) ConfirmPaymentWebhook(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string) error {
-	err := s.store.PayTransaction(ctx, transactionID, userID, method)
+func (s *bookingsService) ConfirmPaymentWebhook(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, paymentID string) error {
+	err := s.store.PayTransaction(ctx, transactionID, userID, method, paymentID)
 	if err != nil {
 		return err
 	}
 
 	transaction, err := s.store.GetTransactionByID(ctx, transactionID, userID)
 	if err != nil {
-		return nil
+		return fmt.Errorf("erro ao recuperar transação paga: %w", err)
 	}
 	
 	if s.mailer != nil {
 		go func() {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
 			for _, t := range transaction.Tickets {
-				s.mailer.SendTicketEmail(transaction.User.Email, transaction.User.Name, t.QRCode)
+				s.mailer.SendTicketEmail(bgCtx, transaction.User.Email, transaction.User.Name, t.QRCode)
 			}
+			slog.Info("E-mails de confirmação enviados via background", "tx_id", transactionID)
 		}()
 	}
 

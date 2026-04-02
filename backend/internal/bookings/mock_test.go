@@ -54,8 +54,8 @@ func (m *MockBookingsRepo) GetTransactionByID(ctx context.Context, transactionID
 	return args.Get(0).(*Transaction), args.Error(1)
 }
 
-func (m *MockBookingsRepo) PayTransaction(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string) error {
-	args := m.Called(ctx, transactionID, userID, method)
+func (m *MockBookingsRepo) PayTransaction(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, paymentID string) error {
+	args := m.Called(ctx, transactionID, userID, method, paymentID)
 	return args.Error(0)
 }
 
@@ -107,6 +107,11 @@ func (m *MockPayment) CreatePayment(ctx context.Context, amount int, currency st
 	return args.Get(0).(*payment.PaymentResponse), args.Error(1)
 }
 
+func (m *MockPayment) RefundPayment(ctx context.Context, paymentID string) error {
+	args := m.Called(ctx, paymentID)
+	return args.Error(0)
+}
+
 func (m *MockPayment) ParseWebhook(r *http.Request) (*payment.Event, error) {
 	args := m.Called(r)
 	if args.Get(0) == nil {
@@ -119,13 +124,13 @@ type MockMailer struct {
 	mock.Mock
 }
 
-func (m *MockMailer) SendTicketEmail(to, userName, qrCode string) error {
-	args := m.Called(to, userName, qrCode)
+func (m *MockMailer) SendTicketEmail(ctx context.Context, to, userName, qrCode string) error {
+	args := m.Called(ctx, to, userName, qrCode)
 	return args.Error(0)
 }
 
-func (m *MockMailer) SendPasswordReset(to, token string) error {
-	args := m.Called(to, token)
+func (m *MockMailer) SendPasswordReset(ctx context.Context, to, token string) error {
+	args := m.Called(ctx, to, token)
 	return args.Error(0)
 }
 

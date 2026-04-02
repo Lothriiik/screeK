@@ -99,9 +99,9 @@ func Test_integ_fluxo_completo_de_recuperacao_de_senha(t *testing.T) {
 	})
 
 	var capturedToken string
-	mailer.On("SendPasswordReset", "integ@screek.com", mock.AnythingOfType("string")).
+	mailer.On("SendPasswordReset", mock.Anything, "integ@screek.com", mock.AnythingOfType("string")).
 		Run(func(args mock.Arguments) {
-			capturedToken = args.String(1)
+			capturedToken = args.String(2)
 		}).Return(nil)
 
 	err := svc.ForgotPassword(context.Background(), "integ@screek.com")

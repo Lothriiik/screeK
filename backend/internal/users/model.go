@@ -15,7 +15,7 @@ type User struct {
 	Email          string         `json:"email" gorm:"not null;uniqueIndex"`
 	Password       string         `json:"-" gorm:"not null"`
 	Bio            string         `json:"bio"`
-	PhotoURL       string         `json:"photo_url"`
+	AvatarURL      string         `json:"avatar_url"`
 	Pronouns       string         `json:"pronouns"`
 	Role           httputil.Role  `json:"role" gorm:"type:varchar(20);default:'USER'"`
 	DefaultCity    string         `json:"default_city"`

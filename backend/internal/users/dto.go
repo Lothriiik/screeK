@@ -19,17 +19,18 @@ type CreateUserDTO struct {
 }
 
 type UserDTO struct {
-	ID       uuid.UUID    `json:"id"`
-	Name     string `json:"name"`
-	Username string `json:"username"`
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Username  string    `json:"username"`
+	AvatarURL string    `json:"avatar_url"`
 }
 
 type UserDetailsDTO struct {
-	ID             uuid.UUID               `json:"id"`
+	ID             uuid.UUID         `json:"id"`
 	Name           string            `json:"name"`
 	Username       string            `json:"username"`
 	Bio            string            `json:"bio"`
-	PhotoURL       string            `json:"photo_url"`
+	AvatarURL      string            `json:"avatar_url"`
 	Pronouns       string            `json:"pronouns"`
 	DefaultCity    string            `json:"default_city"`
 	FavoriteMovies []movies.MovieDTO `json:"favorite_movies"`
@@ -41,18 +42,18 @@ type UserMeDetailsDTO struct {
 	Username       string            `json:"username"`
 	Email          string            `json:"email"`
 	Bio            string            `json:"bio"`
-	PhotoURL       string            `json:"photo_url"`
+	AvatarURL      string            `json:"avatar_url"`
 	Pronouns       string            `json:"pronouns"`
 	DefaultCity    string            `json:"default_city"`
 	FavoriteMovies []movies.MovieDTO `json:"favorite_movies"`
 }
 
 type UpdateUserDTO struct {
-	Name        string   `json:"name" validate:"omitempty"`
-	Bio         string   `json:"bio" validate:"omitempty"`
-	PhotoURL    string   `json:"photo_url" validate:"omitempty,url"`
-	Pronouns    string   `json:"pronouns" validate:"omitempty"`
-	DefaultCity string   `json:"default_city" validate:"omitempty"`
+	Name        string `json:"name" validate:"omitempty"`
+	Bio         string `json:"bio" validate:"omitempty"`
+	AvatarURL   string `json:"avatar_url" validate:"omitempty,url"`
+	Pronouns    string `json:"pronouns" validate:"omitempty"`
+	DefaultCity string `json:"default_city" validate:"omitempty"`
 }
 
 

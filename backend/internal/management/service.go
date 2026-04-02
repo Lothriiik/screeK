@@ -7,6 +7,7 @@ import (
 
 	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/google/uuid"
 )
 
@@ -33,6 +34,7 @@ type ManagementRepository interface {
 	GetSession(ctx context.Context, sessionID int) (*domain.Session, error)
 	DeleteSession(ctx context.Context, sessionID int) error
 	GetSessionBookingsCount(ctx context.Context, sessionID int) (int, error)
+	GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error)
 	
 	IsManagerOfCinema(ctx context.Context, userID uuid.UUID, cinemaID int) (bool, error)
 }
@@ -49,7 +51,10 @@ func NewService(repo ManagementRepository, movieProvider MovieProvider) *Managem
 	}
 }
 
-func (s *ManagementService) CreateCinema(ctx context.Context, req CreateCinemaRequest) error {
+func (s *ManagementService) CreateCinema(ctx context.Context, role httputil.Role, req CreateCinemaRequest) error {
+	if role != httputil.RoleAdmin {
+		return errors.New("apenas administradores podem cadastrar novos cinemas")
+	}
 	if err := req.Validate(); err != nil {
 		return err
 	}
@@ -65,7 +70,13 @@ func (s *ManagementService) CreateCinema(ctx context.Context, req CreateCinemaRe
 	return s.repo.CreateCinema(ctx, cinema)
 }
 
-func (s *ManagementService) CreateRoom(ctx context.Context, req CreateRoomRequest) error {
+func (s *ManagementService) CreateRoom(ctx context.Context, userID uuid.UUID, role httputil.Role, req CreateRoomRequest) error {
+	if role != httputil.RoleAdmin {
+		isManager, err := s.repo.IsManagerOfCinema(ctx, userID, req.CinemaID)
+		if err != nil || !isManager {
+			return ErrNotCinemaManager
+		}
+	}
 	if err := req.Validate(); err != nil {
 		return err
 	}
@@ -79,28 +90,34 @@ func (s *ManagementService) CreateRoom(ctx context.Context, req CreateRoomReques
 
 	var seats []domain.Seat
 	cols := 10
-	rows := (req.Capacity + cols - 1) / cols
 
-	for r := 0; r < rows; r++ {
-		rowLabel := string(rune('A' + r))
-		for c := 1; c <= cols; c++ {
-			if len(seats) >= req.Capacity {
+	for i := 0; i < req.Capacity; i++ {
+		rowIdx := i / cols
+		num := (i % cols) + 1
+		rowLabel := ""
+
+		tempIdx := rowIdx
+		for {
+			rowLabel = string(rune('A'+(tempIdx%26))) + rowLabel
+			if tempIdx < 26 {
 				break
 			}
-			seats = append(seats, domain.Seat{
-				Row:    rowLabel,
-				Number: c,
-				PosX:   c * 40,
-				PosY:   r * 40,
-				Type:   "STANDARD",
-			})
+			tempIdx = (tempIdx / 26) - 1
 		}
+
+		seats = append(seats, domain.Seat{
+			Row:    rowLabel,
+			Number: num,
+			PosX:   num * 40,
+			PosY:   rowIdx * 40,
+			Type:   "STANDARD",
+		})
 	}
 
 	return s.repo.CreateRoom(ctx, room, seats)
 }
 
-func (s *ManagementService) CreateSession(ctx context.Context, userID uuid.UUID, req CreateSessionRequest) error {
+func (s *ManagementService) CreateSession(ctx context.Context, userID uuid.UUID, role httputil.Role, req CreateSessionRequest) error {
 	if err := req.Validate(); err != nil {
 		return err
 	}
@@ -113,7 +130,12 @@ func (s *ManagementService) CreateSession(ctx context.Context, userID uuid.UUID,
 		return errors.New("sala não encontrada")
 	}
 
-	isManager, err := s.repo.IsManagerOfCinema(ctx, userID, room.CinemaID)
+	isManager, err := func() (bool, error) {
+		if role == httputil.RoleAdmin {
+			return true, nil
+		}
+		return s.repo.IsManagerOfCinema(ctx, userID, room.CinemaID)
+	}()
 	if err != nil {
 		return err
 	}
@@ -155,7 +177,7 @@ func (s *ManagementService) CreateSession(ctx context.Context, userID uuid.UUID,
 	return s.repo.CreateSession(ctx, session)
 }
 
-func (s *ManagementService) DeleteSession(ctx context.Context, userID uuid.UUID, sessionID int) error {
+func (s *ManagementService) DeleteSession(ctx context.Context, userID uuid.UUID, role httputil.Role, sessionID int) error {
 	session, err := s.repo.GetSession(ctx, sessionID)
 	if err != nil {
 		return errors.New("sessão não encontrada")
@@ -166,7 +188,12 @@ func (s *ManagementService) DeleteSession(ctx context.Context, userID uuid.UUID,
 		return errors.New("sala associada não encontrada")
 	}
 
-	isManager, err := s.repo.IsManagerOfCinema(ctx, userID, room.CinemaID)
+	isManager, err := func() (bool, error) {
+		if role == httputil.RoleAdmin {
+			return true, nil
+		}
+		return s.repo.IsManagerOfCinema(ctx, userID, room.CinemaID)
+	}()
 	if err != nil {
 		return err
 	}
@@ -225,4 +252,22 @@ func (s *ManagementService) ListSessions(ctx context.Context, cinemaID int, date
 		})
 	}
 	return response, nil
+}
+
+func (s *ManagementService) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatchDTO, error) {
+	matches, err := s.repo.GetWatchlistMatches(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var dtos []WatchlistMatchDTO
+	for _, m := range matches {
+		dtos = append(dtos, WatchlistMatchDTO{
+			UserID:     m.UserID,
+			MovieID:    m.MovieID,
+			MovieTitle: m.MovieTitle,
+			City:       m.City,
+			Type:       m.Type,
+		})
+	}
+	return dtos, nil
 }

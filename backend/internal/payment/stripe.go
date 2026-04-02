@@ -10,6 +10,7 @@ import (
 
 	"github.com/stripe/stripe-go/v78"
 	"github.com/stripe/stripe-go/v78/paymentintent"
+	"github.com/stripe/stripe-go/v78/refund"
 	"github.com/stripe/stripe-go/v78/webhook"
 )
 
@@ -52,6 +53,17 @@ func (s *StripeService) CreatePayment(ctx context.Context, amount int, currency 
 		ID:           pi.ID,
 		ClientSecret: pi.ClientSecret,
 	}, nil
+}
+
+func (s *StripeService) RefundPayment(ctx context.Context, paymentID string) error {
+	params := &stripe.RefundParams{
+		PaymentIntent: stripe.String(paymentID),
+	}
+	_, err := refund.New(params)
+	if err != nil {
+		return fmt.Errorf("erro ao processar estorno na Stripe: %w", err)
+	}
+	return nil
 }
 
 func (s *StripeService) ParseWebhook(r *http.Request) (*Event, error) {

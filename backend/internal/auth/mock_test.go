@@ -157,12 +157,12 @@ type MockMailer struct {
 	mock.Mock
 }
 
-func (m *MockMailer) SendPasswordReset(to, token string) error {
-	args := m.Called(to, token)
+func (m *MockMailer) SendPasswordReset(ctx context.Context, to, token string) error {
+	args := m.Called(ctx, to, token)
 	return args.Error(0)
 }
 
-func (m *MockMailer) SendTicketEmail(to, userName, qrCode string) error {
-	args := m.Called(to, userName, qrCode)
+func (m *MockMailer) SendTicketEmail(ctx context.Context, to, userName, qrCode string) error {
+	args := m.Called(ctx, to, userName, qrCode)
 	return args.Error(0)
 }

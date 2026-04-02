@@ -23,14 +23,17 @@ func (h *ManagerHandler) RegisterRoutes(r chi.Router, authMiddleware func(http.H
 		r.Use(authMiddleware)
 		r.Use(httputil.CheckRole(httputil.RoleAdmin, httputil.RoleManager))
 
-		r.Get("/admin/cinemas", h.ListCinemas)
-		r.Get("/admin/cinemas/{id}", h.GetCinemaDetail)
-		r.Get("/admin/sessions", h.ListSessions)
-		r.Delete("/admin/sessions/{id}", h.DeleteSession)
+		// Todas as rotas administrativas padronizadas
+		r.Route("/admin/management", func(r chi.Router) {
+			r.Get("/cinemas", h.ListCinemas)
+			r.Get("/cinemas/{id}", h.GetCinemaDetail)
+			r.Get("/sessions", h.ListSessions)
+			r.Delete("/sessions/{id}", h.DeleteSession)
 
-		r.Post("/cinemas", h.CreateCinema)
-		r.Post("/cinemas/{id}/rooms", h.CreateRoom)
-		r.Post("/sessions", h.CreateSession)
+			r.Post("/cinemas", h.CreateCinema)
+			r.Post("/cinemas/{id}/rooms", h.CreateRoom)
+			r.Post("/sessions", h.CreateSession)
+		})
 	})
 }
 
@@ -102,13 +105,14 @@ func (h *ManagerHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /cinemas [post]
 func (h *ManagerHandler) CreateCinema(w http.ResponseWriter, r *http.Request) {
+	role, _ := r.Context().Value(httputil.UserRoleKey).(httputil.Role)
 	var req CreateCinemaRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "Payload inválido"})
 		return
 	}
 
-	if err := h.service.CreateCinema(r.Context(), req); err != nil {
+	if err := h.service.CreateCinema(r.Context(), role, req); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -126,6 +130,8 @@ func (h *ManagerHandler) CreateCinema(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /cinemas/{id}/rooms [post]
 func (h *ManagerHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
+	role, _ := r.Context().Value(httputil.UserRoleKey).(httputil.Role)
 	cinemaID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	if cinemaID == 0 {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "ID de cinema inválido"})
@@ -139,7 +145,7 @@ func (h *ManagerHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	}
 	req.CinemaID = cinemaID
 
-	if err := h.service.CreateRoom(r.Context(), req); err != nil {
+	if err := h.service.CreateRoom(r.Context(), userID, role, req); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -157,6 +163,7 @@ func (h *ManagerHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 // @Router /sessions [post]
 func (h *ManagerHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
+	role, _ := r.Context().Value(httputil.UserRoleKey).(httputil.Role)
 	if !ok {
 		httputil.WriteJSON(w, http.StatusUnauthorized, httputil.ErrorResponse{Error: "Não autorizado"})
 		return
@@ -168,7 +175,7 @@ func (h *ManagerHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.CreateSession(r.Context(), userID, req); err != nil {
+	if err := h.service.CreateSession(r.Context(), userID, role, req); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -185,9 +192,10 @@ func (h *ManagerHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 // @Router /admin/sessions/{id} [delete]
 func (h *ManagerHandler) DeleteSession(w http.ResponseWriter, r *http.Request) {
 	userID, _ := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
+	role, _ := r.Context().Value(httputil.UserRoleKey).(httputil.Role)
 	sessionID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 
-	if err := h.service.DeleteSession(r.Context(), userID, sessionID); err != nil {
+	if err := h.service.DeleteSession(r.Context(), userID, role, sessionID); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
 		return
 	}

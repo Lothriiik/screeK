@@ -29,5 +29,6 @@ type Event struct {
 
 type Service interface {
 	CreatePayment(ctx context.Context, amount int, currency string, metadata map[string]string, idempotencyKey string) (*PaymentResponse, error)
+	RefundPayment(ctx context.Context, paymentID string) error
 	ParseWebhook(r *http.Request) (*Event, error)
 }

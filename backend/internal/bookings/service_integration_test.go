@@ -229,7 +229,7 @@ func Test_integ_payment_resilience(t *testing.T) {
 		tx, err := svc.ReserveSeats(ctx, user.ID, session.ID, []TicketRequest{{SeatID: seat.ID, Type: "STANDARD"}})
 		require.NoError(t, err)
 
-		err = svc.ConfirmPaymentWebhook(ctx, uuid.New(), user.ID, "STRIPE")
+		err = svc.ConfirmPaymentWebhook(ctx, uuid.New(), user.ID, "STRIPE", "STRIPE_TEST_ID")
 		assert.Error(t, err)
 
 		var dbTx Transaction

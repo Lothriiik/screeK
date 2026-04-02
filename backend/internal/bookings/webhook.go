@@ -1,7 +1,7 @@
 package bookings
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/StartLivin/screek/backend/internal/payment"
@@ -23,14 +23,14 @@ func NewWebhookHandler(svc Service, paymentSvc payment.Service) *WebhookHandler 
 func (h *WebhookHandler) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 	event, err := h.paymentSvc.ParseWebhook(r)
 	if err != nil {
-		log.Printf("Webhook Rejeitado: %v", err)
+		slog.Error("Webhook Rejeitado", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	isNew, err := h.svc.SetPaymentProcessedNX(r.Context(), event.PaymentID)
 	if err != nil || !isNew {
-		log.Printf("Webhook Ignorado ou Erro: Pagamento %s já processado ou erro Redis: %v\n", event.PaymentID, err)
+		slog.Warn("Webhook Ignorado ou Erro", "payment_id", event.PaymentID, "error", err)
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -42,27 +42,27 @@ func (h *WebhookHandler) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 
 		txID, err := uuid.Parse(txIDStr)
 		if err != nil || userIDStr == "" {
-			log.Printf("Webhook [ERRO]: Metadados inválidos na Transaction: %v", event.Metadata)
+			slog.Error("Webhook [ERRO]: Metadados inválidos na Transaction", "metadata", event.Metadata)
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
 		userID, err := uuid.Parse(userIDStr)
 		if err != nil {
-			log.Printf("Webhook [ERRO]: UUID de usuário inválido")
+			slog.Error("Webhook [ERRO]: UUID de usuário inválido")
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		err = h.svc.ConfirmPaymentWebhook(r.Context(), txID, userID, method)
+		err = h.svc.ConfirmPaymentWebhook(r.Context(), txID, userID, method, event.PaymentID)
 		if err != nil {
-			log.Printf("Webhook [ERRO CRÍTICO]: Erro ao processar pagamento %v\n", err)
+			slog.Error("Erro ao confirmar pagamento, removendo lock para retry", "tx_id", txID, "error", err)
 			h.svc.DeletePaymentLock(r.Context(), event.PaymentID)
-			http.Error(w, "Erro interno de pagamento", http.StatusInternalServerError)
+			http.Error(w, "Erro interno", http.StatusInternalServerError)
 			return
 		}
 
-		log.Printf("Pago com sucesso! TX: %s\n", txID.String())
+		slog.Info("Pago com sucesso!", "tx_id", txID.String())
 	}
 
 	w.WriteHeader(http.StatusOK)

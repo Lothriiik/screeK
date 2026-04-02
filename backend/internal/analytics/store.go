@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Store struct {
@@ -51,7 +52,10 @@ func (s *Store) UpsertDailyStats(ctx context.Context, stats []DailyCinemaStats) 
 	if len(stats) == 0 {
 		return nil
 	}
-	return s.db.WithContext(ctx).Save(&stats).Error
+	return s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "date"}, {Name: "cinema_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"total_revenue", "tickets_sold", "occupancy_rate"}),
+	}).Create(&stats).Error
 }
 
 func (s *Store) GetStatsByDateRange(ctx context.Context, start, end time.Time) ([]DailyCinemaStats, error) {
@@ -85,7 +89,10 @@ func (s *Store) UpsertDailyMovieStats(ctx context.Context, stats []DailyMovieSta
 	if len(stats) == 0 {
 		return nil
 	}
-	return s.db.WithContext(ctx).Save(&stats).Error
+	return s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "date"}, {Name: "movie_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"total_revenue", "tickets_sold"}),
+	}).Create(&stats).Error
 }
 
 func (s *Store) GetTopMoviesByDateRange(ctx context.Context, start, end time.Time, limit int) ([]DailyMovieStats, error) {
@@ -130,11 +137,14 @@ func (s *Store) GetGenreStats(ctx context.Context, start, end time.Time) (map[st
 
 func (s *Store) GetRevenueTrends(ctx context.Context, start, end time.Time, period string) ([]DailyCinemaStats, error) {
 	var stats []DailyCinemaStats
-	trunc := "day"
-	if period == "month" {
+	var trunc string
+	switch period {
+	case "month":
 		trunc = "month"
-	} else if period == "year" {
+	case "year":
 		trunc = "year"
+	default:
+		trunc = "day"
 	}
 
 	query := fmt.Sprintf(`

@@ -167,7 +167,7 @@ func (s *AuthService) ForgotPassword(ctx context.Context, email string) error {
 	}
 
 	if s.mailer != nil {
-		s.mailer.SendPasswordReset(user.Email, token)
+		s.mailer.SendPasswordReset(ctx, user.Email, token)
 	}
 
 	return nil

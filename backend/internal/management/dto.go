@@ -3,6 +3,7 @@ package management
 import (
 	"time"
 	"github.com/StartLivin/screek/backend/internal/platform/validation"
+	"github.com/google/uuid"
 )
 
 type CinemaAdminResponseDTO struct {
@@ -42,6 +43,14 @@ type CreateSessionRequest struct {
 	StartTime   time.Time `json:"start_time" validate:"required"`
 	Price       int       `json:"price" validate:"required,min=0"`
 	SessionType string    `json:"session_type" validate:"required,oneof=REGULAR PREMIERE RESCREENING FESTIVAL UNIVERSITY SHOWCASE"`
+}
+
+type WatchlistMatchDTO struct {
+	UserID     uuid.UUID `json:"user_id"`
+	MovieID    int       `json:"movie_id"`
+	MovieTitle string    `json:"movie_title"`
+	City       string    `json:"city"`
+	Type       string    `json:"type"`
 }
 
 func (d *CreateCinemaRequest) Validate() error {

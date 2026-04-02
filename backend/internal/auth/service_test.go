@@ -129,7 +129,7 @@ func Test_forgot_password_deve_enviar_email_quando_usuario_existe(t *testing.T) 
 	user := userWithHashedPassword(t, "senha123")
 
 	repo.On("GetUserByEmail", mock.Anything, "user@screek.com").Return(user, nil)
-	mailer.On("SendPasswordReset", "user@screek.com", mock.AnythingOfType("string")).Return(nil)
+	mailer.On("SendPasswordReset", mock.Anything, "user@screek.com", mock.AnythingOfType("string")).Return(nil)
 
 	err := svc.ForgotPassword(context.Background(), "user@screek.com")
 
@@ -277,8 +277,8 @@ func Test_ForgotPassword_Token_Expiration(t *testing.T) {
 	repo.On("GetUserByEmail", mock.Anything, user.Email).Return(user, nil)
 	
 	var capturedToken string
-	mailer.On("SendPasswordReset", user.Email, mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
-		capturedToken = args.String(1)
+	mailer.On("SendPasswordReset", mock.Anything, user.Email, mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
+		capturedToken = args.String(2)
 	}).Return(nil)
 
 	err := svc.ForgotPassword(context.Background(), user.Email)
