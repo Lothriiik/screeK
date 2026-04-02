@@ -35,6 +35,8 @@ func (h *CatalogHandler) RegisterRoutes(r chi.Router, authMiddleware func(http.H
 		r.Post("/lists/{id}/movies", h.AddMovieToList)
 		r.Delete("/lists/{id}/movies/{movieID}", h.RemoveMovieFromList)
 		r.Delete("/lists/{id}", h.DeleteMovieList)
+
+		r.Get("/movies/{id}", h.GetMovieDetail)
 	})
 }
 
@@ -280,4 +282,23 @@ func (h *CatalogHandler) DeleteMovieList(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Lista excluída!"})
+}
+
+// @Summary Detalhe do Filme (ScreeK)
+// @Description Retorna detalhes do filme com estatísticas sociais
+// @Tags Catalog
+// @Param id path int true "TMDB ID"
+// @Success 200 {object} MovieDetailResponseDTO
+// @Security BearerAuth
+// @Router /movies/{id} [get]
+func (h *CatalogHandler) GetMovieDetail(w http.ResponseWriter, r *http.Request) {
+	movieID, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	
+	detail, err := h.svc.GetMovieDetail(r.Context(), movieID)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusNotFound, httputil.ErrorResponse{Error: "Filme não encontrado"})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, detail)
 }

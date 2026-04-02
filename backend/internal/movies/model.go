@@ -12,6 +12,7 @@ type Movie struct {
 	Title            string        `json:"title" gorm:"not null"`
 	Overview         string        `json:"overview" gorm:"not null"`
 	PosterURL        string        `json:"poster_url" gorm:"not null"`
+	BackdropURL      string        `json:"backdrop_url"`
 	UpdatedAt        time.Time     `json:"-"`
 	ReleaseDate      time.Time     `json:"release_date" gorm:"not null"`
 	Status           string        `json:"status" gorm:"not null;default:'Released'"`

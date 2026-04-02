@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -104,7 +105,7 @@ func Test_deve_processar_watchlist_matches_de_premiere(t *testing.T) {
 		return n.Type == "WATCHLIST_MATCH" && n.Title == "Estreia Confirmada!"
 	})).Return(nil)
 
-	err := svc.ProcessWatchlistMatches(context.Background(), []WatchlistMatchDTO{
+	err := svc.ProcessWatchlistMatches(context.Background(), []domain.WatchlistMatch{
 		{
 			UserID:     uuid.New(),
 			MovieID:    1,
@@ -128,7 +129,7 @@ func Test_deve_processar_watchlist_matches_de_rescreening(t *testing.T) {
 		return n.Title == "Filme em Reexibição!"
 	})).Return(nil)
 
-	err := svc.ProcessWatchlistMatches(context.Background(), []WatchlistMatchDTO{
+	err := svc.ProcessWatchlistMatches(context.Background(), []domain.WatchlistMatch{
 		{
 			UserID:     uuid.New(),
 			MovieID:    2,
@@ -147,7 +148,7 @@ func Test_deve_ignorar_lista_vazia_de_matches(t *testing.T) {
 	hub := NewHub()
 	svc := NewService(repo, hub)
 
-	err := svc.ProcessWatchlistMatches(context.Background(), []WatchlistMatchDTO{})
+	err := svc.ProcessWatchlistMatches(context.Background(), []domain.WatchlistMatch{})
 
 	require.NoError(t, err)
 	repo.AssertNotCalled(t, "CreateNotification")

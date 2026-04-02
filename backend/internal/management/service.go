@@ -42,8 +42,8 @@ type ManagementRepository interface {
 	GetSession(ctx context.Context, sessionID int) (*domain.Session, error)
 	DeleteSession(ctx context.Context, sessionID int) error
 	GetSessionBookingsCount(ctx context.Context, sessionID int) (int, error)
-	GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error)
-	GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]WatchlistMatch, error)
+	GetWatchlistMatches(ctx context.Context) ([]domain.WatchlistMatch, error)
+	GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]domain.WatchlistMatch, error)
 
 	IsManagerOfCinema(ctx context.Context, userID uuid.UUID, cinemaID int) (bool, error)
 }
@@ -198,22 +198,8 @@ func (s *ManagementService) DeleteSession(ctx context.Context, userID uuid.UUID,
 	return s.repo.DeleteSession(ctx, sessionID)
 }
 
-func (s *ManagementService) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]WatchlistMatchDTO, error) {
-	matches, err := s.repo.GetWatchlistMatchesForSession(ctx, sessionID)
-	if err != nil {
-		return nil, err
-	}
-	var dtos []WatchlistMatchDTO
-	for _, m := range matches {
-		dtos = append(dtos, WatchlistMatchDTO{
-			UserID:     m.UserID,
-			MovieID:    m.MovieID,
-			MovieTitle: m.MovieTitle,
-			City:       m.City,
-			Type:       m.Type,
-		})
-	}
-	return dtos, nil
+func (s *ManagementService) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]domain.WatchlistMatch, error) {
+	return s.repo.GetWatchlistMatchesForSession(ctx, sessionID)
 }
 
 func (s *ManagementService) UpdateCinema(ctx context.Context, role httputil.Role, id int, req CreateCinemaRequest) error {
@@ -395,20 +381,6 @@ func (s *ManagementService) ListSessions(ctx context.Context, cinemaID int, date
 	return response, nil
 }
 
-func (s *ManagementService) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatchDTO, error) {
-	matches, err := s.repo.GetWatchlistMatches(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var dtos []WatchlistMatchDTO
-	for _, m := range matches {
-		dtos = append(dtos, WatchlistMatchDTO{
-			UserID:     m.UserID,
-			MovieID:    m.MovieID,
-			MovieTitle: m.MovieTitle,
-			City:       m.City,
-			Type:       m.Type,
-		})
-	}
-	return dtos, nil
+func (s *ManagementService) GetWatchlistMatches(ctx context.Context) ([]domain.WatchlistMatch, error) {
+	return s.repo.GetWatchlistMatches(ctx)
 }

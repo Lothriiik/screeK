@@ -32,6 +32,7 @@ type CatalogRepository interface {
 	RemoveMovieFromList(ctx context.Context, listID uint, movieID uint) error
 	DeleteMovieList(ctx context.Context, listID uint) error
 	SearchLists(ctx context.Context, query string) ([]MovieList, error)
+	GetMovieStats(ctx context.Context, movieID uint) (*MovieStats, error)
 }
 
 type CatalogService struct {
@@ -197,4 +198,32 @@ func (s *CatalogService) DeleteMovieList(ctx context.Context, userID uuid.UUID, 
 
 func (s *CatalogService) SearchLists(ctx context.Context, query string) ([]MovieList, error) {
 	return s.repo.SearchLists(ctx, query)
+}
+
+func (s *CatalogService) GetMovieDetail(ctx context.Context, tmdbID int) (*MovieDetailResponseDTO, error) {
+	movie, err := s.movieProvider.GetMovieDetails(ctx, tmdbID)
+	if err != nil {
+		return nil, err
+	}
+
+	stats, _ := s.repo.GetMovieStats(ctx, uint(movie.ID))
+	
+	dto := &MovieDetailResponseDTO{
+		ID:            movie.ID,
+		TMDBID:        movie.TMDBID,
+		Title:         movie.Title,
+		Overview:      movie.Overview,
+		PosterURL:     movie.PosterURL,
+		BackdropURL:   movie.BackdropURL,
+		ReleaseDate:   movie.ReleaseDate.Format("2006-01-02"),
+		Runtime:       movie.Runtime,
+	}
+
+	if stats != nil {
+		dto.AverageRating = stats.AverageRating
+		dto.TotalReviews = stats.TotalReviews
+		dto.TotalLikes = stats.TotalLikes
+	}
+
+	return dto, nil
 }

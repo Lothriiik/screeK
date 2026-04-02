@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/platform/crypto"
@@ -205,7 +206,9 @@ func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword stri
 
 	timeUntilExpiry := time.Until(claims.ExpiresAt.Time)
 	if timeUntilExpiry > 0 {
-		s.redis.Set(ctx, "blacklist:reset:"+token, "true", timeUntilExpiry)
+		if err := s.redis.Set(ctx, "blacklist:reset:"+token, "true", timeUntilExpiry).Err(); err != nil {
+			slog.Error("Falha ao invalidar token de reset no Redis", "error", err)
+		}
 	}
 
 	return nil

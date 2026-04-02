@@ -206,16 +206,9 @@ func (s *Store) IsManagerOfCinema(ctx context.Context, userID uuid.UUID, cinemaI
 	return count > 0, err
 }
 
-type WatchlistMatch struct {
-	UserID     uuid.UUID
-	MovieID    int
-	MovieTitle string
-	City       string
-	Type       string
-}
 
-func (s *Store) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error) {
-	var matches []WatchlistMatch
+func (s *Store) GetWatchlistMatches(ctx context.Context) ([]domain.WatchlistMatch, error) {
+	var matches []domain.WatchlistMatch
 	
 	query := `
 		SELECT DISTINCT 
@@ -239,8 +232,8 @@ func (s *Store) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, erro
 	return matches, err
 }
 
-func (s *Store) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]WatchlistMatch, error) {
-	var matches []WatchlistMatch
+func (s *Store) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]domain.WatchlistMatch, error) {
+	var matches []domain.WatchlistMatch
 	
 	query := `
 		SELECT 

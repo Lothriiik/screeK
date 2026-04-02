@@ -247,7 +247,11 @@ func (h *Handler) GetPostDetail(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /social/users/{id}/followers [get]
 func (h *Handler) GetFollowers(w http.ResponseWriter, r *http.Request) {
-	userID, _ := uuid.Parse(chi.URLParam(r, "id"))
+	userID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "ID de usuário inválido"})
+		return
+	}
 	res, err := h.svc.GetFollowers(r.Context(), userID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, httputil.ErrorResponse{Error: err.Error()})
@@ -265,7 +269,11 @@ func (h *Handler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /social/users/{id}/following [get]
 func (h *Handler) GetFollowing(w http.ResponseWriter, r *http.Request) {
-	userID, _ := uuid.Parse(chi.URLParam(r, "id"))
+	userID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "ID de usuário inválido"})
+		return
+	}
 	res, err := h.svc.GetFollowing(r.Context(), userID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, httputil.ErrorResponse{Error: err.Error()})

@@ -404,17 +404,7 @@ func (app *Application) registerEventHandlers(notifSvc *notifications.Notificati
 			return
 		}
 
-		var dtos []notifications.WatchlistMatchDTO
-		for _, m := range matches {
-			dtos = append(dtos, notifications.WatchlistMatchDTO{
-				UserID:     m.UserID,
-				MovieID:    m.MovieID,
-				MovieTitle: m.MovieTitle,
-				City:       m.City,
-				Type:       m.Type,
-			})
-		}
-		notifSvc.ProcessWatchlistMatches(context.Background(), dtos)
+		notifSvc.ProcessWatchlistMatches(context.Background(), matches)
 	})
 
 	app.events.Subscribe(events.EventTicketPurchased, func(data events.Data) {

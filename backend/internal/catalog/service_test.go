@@ -16,6 +16,14 @@ type MockCatalogRepo struct {
 	mock.Mock
 }
 
+func (m *MockCatalogRepo) GetMovieStats(ctx context.Context, movieID uint) (*MovieStats, error) {
+	args := m.Called(ctx, movieID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*MovieStats), args.Error(1)
+}
+
 func (m *MockCatalogRepo) UpsertMovieLog(ctx context.Context, log *MovieLog) error {
 	args := m.Called(ctx, log)
 	return args.Error(0)
@@ -196,5 +204,39 @@ func TestGetMovieListDetail_Privacy(t *testing.T) {
 		list, err := svc.GetMovieListDetail(context.Background(), listID, ownerID)
 		assert.NoError(t, err)
 		assert.NotNil(t, list)
+	})
+}
+
+func TestGetMovieDetail(t *testing.T) {
+	repo := new(MockCatalogRepo)
+	mp := new(MockMovieProvider)
+	svc := NewService(repo, nil, mp)
+	ctx := context.Background()
+	tmdbID := 550
+
+	t.Run("Sucesso ao buscar detalhes", func(t *testing.T) {
+		mp.On("GetMovieDetails", ctx, tmdbID).Return(&movies.Movie{ID: 1, Title: "Fight Club"}, nil).Once()
+		repo.On("GetMovieStats", ctx, uint(1)).Return(&MovieStats{MovieID: 1, AverageRating: 4.8}, nil).Once()
+
+		movie, err := svc.GetMovieDetail(ctx, tmdbID)
+		assert.NoError(t, err)
+		assert.Equal(t, "Fight Club", movie.Title)
+		mp.AssertExpectations(t)
+		repo.AssertExpectations(t)
+	})
+}
+
+func TestRemoveFromWatchlist(t *testing.T) {
+	repo := new(MockCatalogRepo)
+	svc := NewService(repo, nil, nil)
+	ctx := context.Background()
+	userID := uuid.New()
+	movieID := uint(123)
+
+	t.Run("Sucesso ao remover", func(t *testing.T) {
+		repo.On("RemoveFromWatchlist", ctx, userID, movieID).Return(nil).Once()
+		err := svc.RemoveFromWatchlist(ctx, userID, movieID)
+		assert.NoError(t, err)
+		repo.AssertExpectations(t)
 	})
 }

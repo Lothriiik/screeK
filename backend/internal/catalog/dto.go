@@ -2,16 +2,25 @@ package catalog
 
 import (
 	"errors"
-	"github.com/StartLivin/screek/backend/internal/platform/validation"
 )
 
 type LogMovieRequest struct {
 	Watched bool    `json:"watched"`
-	Rating  float64 `json:"rating" validate:"min=0,max=5"`
+	Rating  float64 `json:"rating" validate:"min=0,max=10"`
 	Liked   bool    `json:"liked"`
 }
 
+type CreateMovieListRequest struct {
+	Title       string `json:"title" validate:"required"`
+	Description string `json:"description"`
+	IsPublic    bool   `json:"is_public"`
+}
+
 type AddWatchlistRequest struct {
+	MovieID uint `json:"movie_id" validate:"required"`
+}
+
+type AddMovieToListRequest struct {
 	MovieID uint `json:"movie_id" validate:"required"`
 }
 
@@ -24,19 +33,23 @@ type MovieListResponseDTO struct {
 	CreatedAt   string `json:"created_at"`
 }
 
-type CreateMovieListRequest struct {
-	Title       string `json:"title" validate:"required,max=100"`
-	Description string `json:"description" validate:"max=500"`
-	IsPublic    bool   `json:"is_public"`
+type MovieDetailResponseDTO struct {
+	ID            int       `json:"id"`
+	TMDBID        int       `json:"tmdb_id"`
+	Title         string    `json:"title"`
+	Overview      string    `json:"overview"`
+	PosterURL     string    `json:"poster_url"`
+	BackdropURL   string    `json:"backdrop_url,omitempty"`
+	ReleaseDate   string    `json:"release_date"`
+	Runtime       int       `json:"runtime"`
+	AverageRating float64   `json:"average_rating"`
+	TotalReviews  int       `json:"total_reviews"`
+	TotalLikes    int       `json:"total_likes"`
 }
 
-type AddMovieToListRequest struct {
-	MovieID uint `json:"movie_id" validate:"required"`
-}
-
-func (dto *LogMovieRequest) Validate() error {
-	if err := validation.Validate.Struct(dto); err != nil {
-		return errors.New("erro de validação: a nota (rating) deve estar entre 0 e 5")
+func (r *LogMovieRequest) Validate() error {
+	if r.Rating < 0 || r.Rating > 10 {
+		return errors.New("avaliação deve ser entre 0 e 10")
 	}
 	return nil
 }

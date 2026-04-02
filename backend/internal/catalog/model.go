@@ -53,10 +53,18 @@ type WatchlistItem struct {
 	Movie movies.Movie `json:"movie" gorm:"foreignKey:MovieID"`
 }
 
+type MovieStats struct {
+	MovieID       uint    `json:"movie_id" gorm:"primaryKey"`
+	AverageRating float64 `json:"average_rating"`
+	TotalReviews  int     `json:"total_reviews"`
+	TotalLikes    int     `json:"total_likes"`
+}
+
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&MovieLog{},
 		&MovieList{}, &MovieListItem{},
 		&WatchlistItem{},
+		&MovieStats{},
 	)
 }

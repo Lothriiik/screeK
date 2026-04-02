@@ -127,7 +127,7 @@ func (s *socialService) GetFeed(ctx context.Context, userID uuid.UUID, cursorID 
 		return nil, err
 	}
 
-	return s.formatFeedResponse(posts, limit), nil
+	return s.formatFeedResponse(ctx, posts, limit), nil
 }
 
 func (s *socialService) GetGlobalFeed(ctx context.Context, cursorID uint, limit int) (*FeedResponse, error) {
@@ -140,13 +140,13 @@ func (s *socialService) GetGlobalFeed(ctx context.Context, cursorID uint, limit 
 		return nil, err
 	}
 
-	return s.formatFeedResponse(posts, limit), nil
+	return s.formatFeedResponse(ctx, posts, limit), nil
 }
 
-func (s *socialService) formatFeedResponse(posts []Post, limit int) *FeedResponse {
+func (s *socialService) formatFeedResponse(ctx context.Context, posts []Post, limit int) *FeedResponse {
 	var dtos []PostResponseDTO
 	for _, p := range posts {
-		dtos = append(dtos, *s.mapToPostDTO(&p))
+		dtos = append(dtos, *s.mapToPostDTO(ctx, &p))
 	}
 
 	var nextCursor uint
@@ -160,7 +160,7 @@ func (s *socialService) formatFeedResponse(posts []Post, limit int) *FeedRespons
 	}
 }
 
-func (s *socialService) mapToPostDTO(p *Post) *PostResponseDTO {
+func (s *socialService) mapToPostDTO(ctx context.Context, p *Post) *PostResponseDTO {
 	dto := &PostResponseDTO{
 		ID:           p.ID,
 		Author:       p.User.Username,
@@ -173,7 +173,7 @@ func (s *socialService) mapToPostDTO(p *Post) *PostResponseDTO {
 	}
 
 	if p.PostType == PostTypeSessionShare && p.ReferenceID != nil {
-		sessionData, err := s.sessionProvider.GetSessionPostData(context.Background(), *p.ReferenceID)
+		sessionData, err := s.sessionProvider.GetSessionPostData(ctx, *p.ReferenceID)
 		if err == nil {
 			dto.SessionData = sessionData
 		}
@@ -253,10 +253,10 @@ func (s *socialService) GetPostDetail(ctx context.Context, postID uint) (*PostDe
 		return nil, errors.New("postagem não encontrada")
 	}
 
-	postDTO := s.mapToPostDTO(post)
+	postDTO := s.mapToPostDTO(ctx, post)
 	var repliesDTO []PostResponseDTO
 	for _, r := range replies {
-		repliesDTO = append(repliesDTO, *s.mapToPostDTO(&r))
+		repliesDTO = append(repliesDTO, *s.mapToPostDTO(ctx, &r))
 	}
 
 	return &PostDetailResponseDTO{

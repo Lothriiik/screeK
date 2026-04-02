@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
 
 type MockManagementRepo struct {
 	mock.Mock
@@ -111,30 +113,30 @@ func (m *MockManagementRepo) GetSession(ctx context.Context, sessionID int) (*do
 	return args.Get(0).(*domain.Session), args.Error(1)
 }
 
+func (m *MockManagementRepo) GetWatchlistMatches(ctx context.Context) ([]domain.WatchlistMatch, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.WatchlistMatch), args.Error(1)
+}
+
+func (m *MockManagementRepo) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]domain.WatchlistMatch, error) {
+	args := m.Called(ctx, sessionID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.WatchlistMatch), args.Error(1)
+}
+
 func (m *MockManagementRepo) DeleteSession(ctx context.Context, sessionID int) error {
 	args := m.Called(ctx, sessionID)
 	return args.Error(0)
 }
 
-func (m *MockManagementRepo) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]WatchlistMatch, error) {
-	args := m.Called(ctx, sessionID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]WatchlistMatch), args.Error(1)
-}
-
 func (m *MockManagementRepo) GetSessionBookingsCount(ctx context.Context, sessionID int) (int, error) {
 	args := m.Called(ctx, sessionID)
 	return args.Int(0), args.Error(1)
-}
-
-func (m *MockManagementRepo) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error) {
-	args := m.Called(ctx)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]WatchlistMatch), args.Error(1)
 }
 
 type MockMovieProvider struct {
@@ -249,5 +251,76 @@ func TestDeleteSession_Integrity(t *testing.T) {
 
 		err := svc.DeleteSession(context.Background(), userID, httputil.RoleManager, sessionID)
 		assert.NoError(t, err)
+	})
+}
+func TestManagementService_UpdateSession_OverlapAndSold(t *testing.T) {
+	repo := new(MockManagementRepo)
+	movieProvider := new(MockMovieProvider)
+	svc := NewService(repo, movieProvider, nil)
+
+	ctx := context.Background()
+	adminID := uuid.New()
+	sessionID := 1
+	movieID := 10
+	roomID := 5
+	startTime := time.Now().Add(24 * time.Hour)
+
+	existingSession := &domain.Session{
+		ID:        sessionID,
+		MovieID:   movieID,
+		RoomID:    roomID,
+		StartTime: startTime,
+	}
+
+	t.Run("Erro se houver ingressos vendidos", func(t *testing.T) {
+		repo.On("GetSession", ctx, sessionID).Return(existingSession, nil).Once()
+		repo.On("GetRoomByID", ctx, existingSession.RoomID).Return(&domain.Room{ID: roomID, CinemaID: 1}, nil).Once()
+		repo.On("GetSessionBookingsCount", ctx, sessionID).Return(5, nil).Once()
+
+		err := svc.UpdateSession(ctx, adminID, httputil.RoleAdmin, sessionID, CreateSessionRequest{
+			MovieID:   movieID,
+			RoomID:    roomID,
+			StartTime: startTime.Add(time.Hour),
+		})
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "não é permitido alterar")
+		repo.AssertExpectations(t)
+	})
+
+	t.Run("Erro se houver sobreposição", func(t *testing.T) {
+		repo.On("GetSession", ctx, sessionID).Return(existingSession, nil).Once()
+		repo.On("GetRoomByID", ctx, existingSession.RoomID).Return(&domain.Room{ID: roomID, CinemaID: 1}, nil).Once()
+		repo.On("GetSessionBookingsCount", ctx, sessionID).Return(0, nil).Once()
+		movieProvider.On("GetMovieByID", ctx, movieID).Return(&movies.Movie{ID: movieID, Runtime: 120}, nil).Once()
+		repo.On("UpdateSessionWithOverlapCheck", ctx, mock.Anything, 120).Return(errors.New("conflito de horário")).Once()
+
+		err := svc.UpdateSession(ctx, adminID, httputil.RoleAdmin, sessionID, CreateSessionRequest{
+			MovieID:   movieID,
+			RoomID:    roomID,
+			StartTime: startTime.Add(time.Hour),
+		})
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "conflito")
+		repo.AssertExpectations(t)
+	})
+}
+
+func TestManagementService_DeleteRoom_FutureSessions(t *testing.T) {
+	repo := new(MockManagementRepo)
+	svc := NewService(repo, nil, nil)
+	ctx := context.Background()
+	roomID := 1
+
+	t.Run("Erro se houver sessões futuras", func(t *testing.T) {
+		repo.On("GetRoomByID", ctx, roomID).Return(&domain.Room{ID: roomID, CinemaID: 1}, nil).Once()
+		repo.On("GetSessionsByRoom", ctx, roomID, mock.Anything).Return([]domain.Session{{ID: 101}}, nil).Once()
+
+		err := svc.DeleteRoom(ctx, uuid.New(), httputil.RoleAdmin, roomID)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "possui sessões agendadas")
+		repo.AssertExpectations(t)
 	})
 }

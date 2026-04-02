@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255),
     role VARCHAR(20) DEFAULT 'USER',
     avatar_url TEXT,
+    bio TEXT,
+    pronouns VARCHAR(50),
+    default_city VARCHAR(100),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -148,4 +151,26 @@ CREATE TABLE IF NOT EXISTS daily_movie_stats (
     total_revenue INTEGER,
     tickets_sold INTEGER,
     PRIMARY KEY (date, movie_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_stats (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    total_movies INTEGER DEFAULT 0,
+    total_minutes INTEGER DEFAULT 0,
+    top_genre_id INTEGER REFERENCES genres(id),
+    last_recalc_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_favorite_movies (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    movie_id INTEGER REFERENCES movies(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, movie_id)
+);
+
+CREATE TABLE IF NOT EXISTS movie_logs (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    movie_id INTEGER REFERENCES movies(id),
+    watched_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

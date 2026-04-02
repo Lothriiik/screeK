@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -76,4 +77,16 @@ func (s *Store) SearchLists(ctx context.Context, query string) ([]MovieList, err
 	pattern := "%" + query + "%"
 	err := s.db.WithContext(ctx).Preload("User").Where("is_public = true AND (title ILIKE ? OR description ILIKE ?)", pattern, pattern).Find(&lists).Error
 	return lists, err
+}
+
+func (s *Store) GetMovieStats(ctx context.Context, movieID uint) (*MovieStats, error) {
+	var stats MovieStats
+	err := s.db.WithContext(ctx).Where("movie_id = ?", movieID).First(&stats).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &stats, nil
 }
