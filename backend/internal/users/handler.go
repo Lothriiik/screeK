@@ -37,7 +37,6 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 	})
 }
 
-// CreateUser godoc
 // @Summary Registra um novo usuário
 // @Description Cria um novo usuário no sistema com name, email, username e password.
 // @Tags Users
@@ -164,14 +163,13 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, userDTO)
 }
 
-// GetMe godoc
 // @Summary Retorna o perfil do usuário logado
 // @Description Retorna os detalhes do usuário baseados no token JWT fornecido.
 // @Tags Users
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} UserDetailsDTO
+// @Success 200 {object} UserMeDetailsDTO
 // @Failure 401 {string} string "Não autorizado"
 // @Router /users/me [get]
 func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -211,14 +209,13 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, userDTO)
 }
 
-// UpdateUser godoc
 // @Summary Atualiza o perfil do usuário logado
-// @Description Permite alterar Nome, Bio, Foto, Pronomes e Cidade do usuário autenticado.
+// @Description Permite alterar Nome, Bio, AvatarURL, Pronomes e Cidade do usuário autenticado.
 // @Tags Users
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param user body User true "Dados para atualização (ID é ignorado, usa-se o do Token)"
+// @Param user body UpdateUserDTO true "Dados para atualização"
 // @Success 200 {object} httputil.MessageResponse
 // @Failure 401 {string} string "Não autorizado"
 // @Router /users/me [put]

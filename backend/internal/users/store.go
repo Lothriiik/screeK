@@ -37,7 +37,11 @@ func (s *Store) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 func (s *Store) SearchUsers(ctx context.Context, query string) ([]User, error) {
 	var users []User
 	pattern := "%" + query + "%"
-	result := s.db.WithContext(ctx).Where("username ILIKE ? OR name ILIKE ?", pattern, pattern).Find(&users)
+	result := s.db.WithContext(ctx).
+		Where("is_active = ?", true).
+		Where("username ILIKE ? OR name ILIKE ?", pattern, pattern).
+		Limit(20).
+		Find(&users)
 	return users, result.Error
 }
 

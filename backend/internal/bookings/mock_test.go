@@ -64,6 +64,19 @@ func (m *MockBookingsRepo) CancelTicket(ctx context.Context, ticketID uuid.UUID,
 	return args.Error(0)
 }
 
+func (m *MockBookingsRepo) AdminCancelTicket(ctx context.Context, ticketID uuid.UUID) (*Ticket, error) {
+	args := m.Called(ctx, ticketID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*Ticket), args.Error(1)
+}
+
+func (m *MockBookingsRepo) GetTicketsBySession(ctx context.Context, sessionID int) ([]Ticket, error) {
+	args := m.Called(ctx, sessionID)
+	return args.Get(0).([]Ticket), args.Error(1)
+}
+
 func (m *MockBookingsRepo) GetSessionByID(ctx context.Context, sessionID int) (*domain.Session, error) {
 	args := m.Called(ctx, sessionID)
 	if args.Get(0) == nil {

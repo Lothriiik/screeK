@@ -58,6 +58,17 @@ type ToggleFollowResponse struct {
 	IsFollowing bool   `json:"is_following"`
 }
 
+type PostDetailResponseDTO struct {
+	Post    PostResponseDTO   `json:"post"`
+	Replies []PostResponseDTO `json:"replies"`
+}
+
+type UserFollowResponseDTO struct {
+	UserID   string `json:"user_id"`
+	Username string `json:"username"`
+	AvatarURL string `json:"avatar_url,omitempty"`
+}
+
 func (dto *ReplyRequest) Validate() error {
 	if err := validation.Validate.Struct(dto); err != nil {
 		return errors.New("erro de validação: o conteúdo da resposta ultrapassou 280 caracteres")

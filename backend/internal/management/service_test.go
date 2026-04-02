@@ -27,8 +27,21 @@ func (m *MockManagementRepo) GetCinemaByID(ctx context.Context, id int) (*domain
 	return args.Get(0).(*domain.Cinema), args.Error(1)
 }
 
+func (m *MockManagementRepo) UpdateCinema(ctx context.Context, cinema *domain.Cinema) error {
+	args := m.Called(ctx, cinema)
+	return args.Error(0)
+}
+
+func (m *MockManagementRepo) DeleteCinema(ctx context.Context, id int) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 func (m *MockManagementRepo) ListCinemas(ctx context.Context) ([]domain.Cinema, error) {
 	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).([]domain.Cinema), args.Error(1)
 }
 
@@ -45,8 +58,33 @@ func (m *MockManagementRepo) GetRoomByID(ctx context.Context, id int) (*domain.R
 	return args.Get(0).(*domain.Room), args.Error(1)
 }
 
+func (m *MockManagementRepo) UpdateRoom(ctx context.Context, room *domain.Room) error {
+	args := m.Called(ctx, room)
+	return args.Error(0)
+}
+
+func (m *MockManagementRepo) DeleteRoom(ctx context.Context, id int) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 func (m *MockManagementRepo) CreateSession(ctx context.Context, session *domain.Session) error {
 	args := m.Called(ctx, session)
+	return args.Error(0)
+}
+
+func (m *MockManagementRepo) CreateSessionWithOverlapCheck(ctx context.Context, session *domain.Session, movieRuntime int) error {
+	args := m.Called(ctx, session, movieRuntime)
+	return args.Error(0)
+}
+
+func (m *MockManagementRepo) UpdateSession(ctx context.Context, session *domain.Session) error {
+	args := m.Called(ctx, session)
+	return args.Error(0)
+}
+
+func (m *MockManagementRepo) UpdateSessionWithOverlapCheck(ctx context.Context, session *domain.Session, movieRuntime int) error {
+	args := m.Called(ctx, session, movieRuntime)
 	return args.Error(0)
 }
 
@@ -78,6 +116,14 @@ func (m *MockManagementRepo) DeleteSession(ctx context.Context, sessionID int) e
 	return args.Error(0)
 }
 
+func (m *MockManagementRepo) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]WatchlistMatch, error) {
+	args := m.Called(ctx, sessionID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]WatchlistMatch), args.Error(1)
+}
+
 func (m *MockManagementRepo) GetSessionBookingsCount(ctx context.Context, sessionID int) (int, error) {
 	args := m.Called(ctx, sessionID)
 	return args.Int(0), args.Error(1)
@@ -105,7 +151,7 @@ func (m *MockMovieProvider) GetMovieDetails(ctx context.Context, tmdbID int) (*m
 
 func TestCreateRoom_SeatMapGeneration(t *testing.T) {
 	repo := new(MockManagementRepo)
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 
 	req := CreateRoomRequest{
 		CinemaID: 1,
@@ -113,6 +159,9 @@ func TestCreateRoom_SeatMapGeneration(t *testing.T) {
 		Capacity: 25,
 		Type:     "VIP",
 	}
+
+	repo.On("GetRoomByID", mock.Anything, mock.Anything).Return(&domain.Room{ID: 1, CinemaID: 1}, nil)
+	repo.On("IsManagerOfCinema", mock.Anything, mock.Anything, 1).Return(true, nil)
 
 	repo.On("CreateRoom", mock.Anything, mock.MatchedBy(func(r *domain.Room) bool {
 		return r.Name == "Sala VIP" && r.Capacity == 25
@@ -127,7 +176,7 @@ func TestCreateRoom_SeatMapGeneration(t *testing.T) {
 func TestCreateSession_OverlapDetection(t *testing.T) {
 	repo := new(MockManagementRepo)
 	mp := new(MockMovieProvider)
-	svc := NewService(repo, mp)
+	svc := NewService(repo, mp, nil)
 
 	userID := uuid.New()
 	roomID := 1
@@ -139,13 +188,7 @@ func TestCreateSession_OverlapDetection(t *testing.T) {
 	
 	mp.On("GetMovieDetails", mock.Anything, movieID).Return(&movies.Movie{ID: movieID, Runtime: 120}, nil)
 
-	existing := []domain.Session{
-		{
-			StartTime: startTime.Add(-30 * time.Minute), 
-			Movie:     movies.Movie{Runtime: 120}, 
-		},
-	}
-	repo.On("GetSessionsByRoom", mock.Anything, roomID, startTime).Return(existing, nil)
+	repo.On("CreateSessionWithOverlapCheck", mock.Anything, mock.Anything, 120).Return(ErrSessionOverlap)
 
 	req := CreateSessionRequest{
 		MovieID:     movieID,
@@ -157,13 +200,13 @@ func TestCreateSession_OverlapDetection(t *testing.T) {
 
 	err := svc.CreateSession(context.Background(), userID, httputil.RoleManager, req)
 
-	assert.Error(t, err)
-	assert.Equal(t, ErrSessionOverlap, err)
+	assert.ErrorIs(t, err, ErrSessionOverlap)
+	repo.AssertExpectations(t)
 }
 
 func TestCreateSession_ManagerCheck(t *testing.T) {
 	repo := new(MockManagementRepo)
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 
 	userID := uuid.New()
 	repo.On("GetRoomByID", mock.Anything, 1).Return(&domain.Room{ID: 1, CinemaID: 1}, nil)
@@ -184,7 +227,7 @@ func TestCreateSession_ManagerCheck(t *testing.T) {
 
 func TestDeleteSession_Integrity(t *testing.T) {
 	repo := new(MockManagementRepo)
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 	userID := uuid.New()
 	sessionID := 10
 

@@ -37,7 +37,7 @@ func newTestbookingsService() (*bookingsService, *MockBookingsRepo, *MockPayment
 	pay := new(MockPayment)
 	movieProv := new(MockMovieProvider)
 	redis := new(MockRedis)
-	svc := NewService(repo, redis, pay, nil, movieProv)
+	svc := NewService(repo, redis, pay, nil, movieProv, nil)
 	return svc.(*bookingsService), repo, pay, movieProv, redis
 }
 

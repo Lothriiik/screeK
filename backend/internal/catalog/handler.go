@@ -31,6 +31,7 @@ func (h *CatalogHandler) RegisterRoutes(r chi.Router, authMiddleware func(http.H
 		r.Post("/lists", h.CreateMovieList)
 		r.Get("/lists/me", h.GetMyMovieLists)
 		r.Get("/lists/{id}", h.GetMovieListDetail)
+		r.Put("/lists/{id}", h.UpdateMovieList)
 		r.Post("/lists/{id}/movies", h.AddMovieToList)
 		r.Delete("/lists/{id}/movies/{movieID}", h.RemoveMovieFromList)
 		r.Delete("/lists/{id}", h.DeleteMovieList)
@@ -235,7 +236,35 @@ func (h *CatalogHandler) RemoveMovieFromList(w http.ResponseWriter, r *http.Requ
 	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Filme removido da lista!"})
 }
 
-// @Summary Excluir lista
+// @Summary Atualizar lista
+// @Description Atualiza o título, descrição ou visibilidade de uma lista personalizada
+// @Tags Catalog
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da Lista"
+// @Param request body CreateMovieListRequest true "Novos dados"
+// @Success 200 {object} httputil.MessageResponse
+// @Security BearerAuth
+// @Router /catalog/lists/{id} [put]
+func (h *CatalogHandler) UpdateMovieList(w http.ResponseWriter, r *http.Request) {
+	listID, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	userID, _ := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
+
+	var req CreateMovieListRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "Payload inválido"})
+		return
+	}
+
+	if err := h.svc.UpdateMovieList(r.Context(), userID, uint(listID), req); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Lista atualizada!"})
+}
+
+// @Summary Detalhe da lista
 // @Description Remove permanentemente uma lista personalizada
 // @Tags Catalog
 // @Param id path int true "ID da Lista"

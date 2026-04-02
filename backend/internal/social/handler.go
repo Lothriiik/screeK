@@ -30,7 +30,11 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 
 		r.Get("/feed", h.GetFeed)
 		r.Get("/feed/global", h.GetGlobalFeed)
+		r.Get("/posts/{id}", h.GetPostDetail)
+		
 		r.Post("/users/{username}/follow", h.ToggleFollow)
+		r.Get("/users/{id}/followers", h.GetFollowers)
+		r.Get("/users/{id}/following", h.GetFollowing)
 	})
 }
 
@@ -214,4 +218,58 @@ func (h *Handler) ToggleFollow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httputil.WriteJSON(w, http.StatusOK, ToggleFollowResponse{Message: "Ok", IsFollowing: followed})
+}
+
+// @Summary Detalhes da postagem
+// @Description Retorna o post e suas respostas
+// @Tags Social
+// @Produce json
+// @Param id path int true "ID do Post"
+// @Success 200 {object} PostDetailResponseDTO
+// @Security BearerAuth
+// @Router /social/posts/{id} [get]
+func (h *Handler) GetPostDetail(w http.ResponseWriter, r *http.Request) {
+	postID, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	res, err := h.svc.GetPostDetail(r.Context(), uint(postID))
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusNotFound, httputil.ErrorResponse{Error: err.Error()})
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, res)
+}
+
+// @Summary Listar seguidores
+// @Description Retorna a lista de usuários que seguem o alvo
+// @Tags Social
+// @Produce json
+// @Param id path string true "UUID do usuário"
+// @Success 200 {array} UserFollowResponseDTO
+// @Security BearerAuth
+// @Router /social/users/{id}/followers [get]
+func (h *Handler) GetFollowers(w http.ResponseWriter, r *http.Request) {
+	userID, _ := uuid.Parse(chi.URLParam(r, "id"))
+	res, err := h.svc.GetFollowers(r.Context(), userID)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, httputil.ErrorResponse{Error: err.Error()})
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, res)
+}
+
+// @Summary Listar seguindo
+// @Description Retorna a lista de usuários que o alvo segue
+// @Tags Social
+// @Produce json
+// @Param id path string true "UUID do usuário"
+// @Success 200 {array} UserFollowResponseDTO
+// @Security BearerAuth
+// @Router /social/users/{id}/following [get]
+func (h *Handler) GetFollowing(w http.ResponseWriter, r *http.Request) {
+	userID, _ := uuid.Parse(chi.URLParam(r, "id"))
+	res, err := h.svc.GetFollowing(r.Context(), userID)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, httputil.ErrorResponse{Error: err.Error()})
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, res)
 }

@@ -8,8 +8,14 @@ import (
 
 	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/go-chi/chi/v5"
+	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/google/uuid"
 )
+
+type MovieResponseDTO movies.MovieDTO
+
+type SeatResponseDTO domain.Seat
 
 type Handler struct {
 	service Service
@@ -22,17 +28,25 @@ func NewHandler(s Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler) http.Handler) {
-	r.Get("/playing", h.GetMoviesPlaying)
-	r.Get("/{id}/sessions", h.GetMovieSessions)
-	r.Get("/sessions/{id}/seats", h.GetSeatsBySession)
-	r.Group(func(r chi.Router) {
-		r.Use(authMiddleware)
+	r.Route("/bookings", func(r chi.Router) {
+		r.Get("/playing", h.GetMoviesPlaying)
+		r.Get("/{id}/sessions", h.GetMovieSessions)
+		r.Get("/sessions/{id}/seats", h.GetSeatsBySession)
+		r.Group(func(r chi.Router) {
+			r.Use(authMiddleware)
 
-		r.Post("/transactions/{id}/pay", h.PayReservation)
-		r.Post("/tickets/reserve", h.ReserveTickets)
-		r.Post("/tickets/{id}/cancel", h.CancelTicket)
-		r.Get("/users/me/tickets", h.GetUserTickets)
-		r.Get("/tickets/{id}", h.GetTicketDetail)
+			r.Post("/transactions/{id}/pay", h.PayReservation)
+			r.Post("/tickets/reserve", h.ReserveTickets)
+			r.Post("/tickets/{id}/cancel", h.CancelTicket)
+			r.Get("/users/me/tickets", h.GetUserTickets)
+			r.Get("/tickets/{id}", h.GetTicketDetail)
+
+			r.Route("/admin", func(r chi.Router) {
+				r.Get("/sessions/{id}/tickets", h.GetTicketsBySession)
+				r.Post("/tickets/{id}/cancel", h.AdminCancelTicket)
+				r.Post("/sessions/{id}/cancel", h.AdminCancelSession)
+			})
+		})
 	})
 }
 
@@ -42,7 +56,7 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 // @Param city query string true "Cidade do cinema"
 // @Param date query string true "Data (format: YYYY-MM-DD)"
 // @Produce json
-// @Success 200 {array} movies.MovieDTO
+// @Success 200 {array} MovieResponseDTO
 // @Router /bookings/playing [get]
 func (h *Handler) GetMoviesPlaying(w http.ResponseWriter, r *http.Request) {
 	city := r.URL.Query().Get("city")
@@ -99,9 +113,12 @@ func (h *Handler) GetMovieSessions(w http.ResponseWriter, r *http.Request) {
 // @Summary Mapa de assentos
 // @Description Retorna todos os assentos de uma sessão e seu status de ocupação
 // @Tags Bookings
+// @Summary Mapa de assentos
+// @Description Retorna todos os assentos de uma sessão e seu status de ocupação
+// @Tags Bookings
 // @Param id path int true "ID da sessão"
 // @Produce json
-// @Success 200 {array} domain.Seat
+// @Success 200 {array} SeatResponseDTO
 // @Router /bookings/sessions/{id}/seats [get]
 func (h *Handler) GetSeatsBySession(w http.ResponseWriter, r *http.Request) {
 	sessionIDStr := chi.URLParam(r, "id")
@@ -300,4 +317,54 @@ func (h *Handler) GetTicketDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, ticket)
+}
+
+// @Summary Listar ingressos da sessão (Admin)
+// @Description Retorna todos os ingressos vendidos para uma sessão específica
+// @Tags Admin
+// @Param id path int true "ID da Sessão"
+// @Produce json
+// @Success 200 {array} TicketResponseDTO
+// @Security BearerAuth
+// @Router /bookings/admin/sessions/{id}/tickets [get]
+func (h *Handler) GetTicketsBySession(w http.ResponseWriter, r *http.Request) {
+	sessionID, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	tickets, err := h.service.GetTicketsBySession(r.Context(), sessionID)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, httputil.ErrorResponse{Error: err.Error()})
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, tickets)
+}
+
+// @Summary Cancelar ingresso (Admin)
+// @Description Cancela um ingresso sem restrição de tempo ou dono
+// @Tags Admin
+// @Param id path string true "ID do Ticket (UUID)"
+// @Success 200 {object} httputil.MessageResponse
+// @Security BearerAuth
+// @Router /bookings/admin/tickets/{id}/cancel [post]
+func (h *Handler) AdminCancelTicket(w http.ResponseWriter, r *http.Request) {
+	ticketID, _ := uuid.Parse(chi.URLParam(r, "id"))
+	if err := h.service.AdminCancelTicket(r.Context(), ticketID); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Ingresso cancelado administrativamente"})
+}
+
+// @Summary Cancelar sessão por contingência (Admin)
+// @Description Cancela todos os ingressos de uma sessão em caso de problemas técnicos no cinema
+// @Tags Admin
+// @Param id path int true "ID da Sessão"
+// @Success 200 {object} httputil.MessageResponse
+// @Security BearerAuth
+// @Router /bookings/admin/sessions/{id}/cancel [post]
+func (h *Handler) AdminCancelSession(w http.ResponseWriter, r *http.Request) {
+	sessionID, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	if err := h.service.AdminCancelSession(r.Context(), sessionID); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Sessão cancelada e ingressos processados"})
 }

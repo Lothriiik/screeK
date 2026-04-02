@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/StartLivin/screek/backend/internal/notifications"
+	"github.com/StartLivin/screek/backend/internal/platform/events"
 	"github.com/StartLivin/screek/backend/internal/platform/httputil"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
@@ -17,10 +17,8 @@ func newTestService() (Service, *MockSocialRepo, *MockUserProvider, *MockSession
 	repo := new(MockSocialRepo)
 	userProv := new(MockUserProvider)
 	sessionProv := new(MockSessionProvider)
-	hub := notifications.NewHub()
-	notifRepo := new(mockNotifRepo)
-	notifSvc := notifications.NewService(notifRepo, hub)
-	svc := NewService(repo, userProv, notifSvc, sessionProv)
+	bus := events.NewEventBus()
+	svc := NewService(repo, userProv, bus, sessionProv)
 	return svc, repo, userProv, sessionProv
 }
 
@@ -32,21 +30,6 @@ func (m *MockSessionProvider) GetSessionPostData(ctx context.Context, sessionID 
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*PostSessionData), args.Error(1)
-}
-
-type mockNotifRepo struct{ mock.Mock }
-
-func (m *mockNotifRepo) CreateNotification(ctx context.Context, n *notifications.Notification) error {
-	return nil
-}
-func (m *mockNotifRepo) GetUserNotifications(ctx context.Context, userID uuid.UUID, limit int) ([]notifications.Notification, error) {
-	return nil, nil
-}
-func (m *mockNotifRepo) MarkAsRead(ctx context.Context, userID uuid.UUID, id uint) error {
-	return nil
-}
-func (m *mockNotifRepo) MarkAllAsRead(ctx context.Context, userID uuid.UUID) error {
-	return nil
 }
 
 func Test_deve_criar_post_com_sucesso(t *testing.T) {

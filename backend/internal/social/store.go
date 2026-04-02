@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
 
 	"gorm.io/gorm"
@@ -138,4 +139,34 @@ func (s *Store) ToggleFollow(ctx context.Context, followerID uuid.UUID, followee
 		return nil
 	})
 	return isFollowing, err
+}
+func (s *Store) GetPostWithReplies(ctx context.Context, postID uint) (*Post, []Post, error) {
+	var post Post
+	if err := s.db.WithContext(ctx).Preload("User").First(&post, postID).Error; err != nil {
+		return nil, nil, err
+	}
+
+	var replies []Post
+	err := s.db.WithContext(ctx).Preload("User").Where("parent_id = ?", postID).Order("id ASC").Find(&replies).Error
+	return &post, replies, err
+}
+
+func (s *Store) GetFollowers(ctx context.Context, userID uuid.UUID) ([]users.User, error) {
+	var usersList []users.User
+	err := s.db.WithContext(ctx).
+		Table("users").
+		Joins("JOIN follows ON follows.follower_id = users.id").
+		Where("follows.followee_id = ?", userID).
+		Find(&usersList).Error
+	return usersList, err
+}
+
+func (s *Store) GetFollowing(ctx context.Context, userID uuid.UUID) ([]users.User, error) {
+	var usersList []users.User
+	err := s.db.WithContext(ctx).
+		Table("users").
+		Joins("JOIN follows ON follows.followee_id = users.id").
+		Where("follows.follower_id = ?", userID).
+		Find(&usersList).Error
+	return usersList, err
 }

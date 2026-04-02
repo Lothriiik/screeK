@@ -27,16 +27,13 @@ import (
 // @name Authorization
 
 func main() {
-	// 1. Carregar Configurações
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatal("Erro ao carregar configurações: ", err)
 	}
 
-	// 2. Instanciar a Aplicação (internal/app)
 	application := app.NewApplication(cfg)
 
-	// 3. Rodar a aplicação (com Graceful Shutdown embutido)
 	if err := application.Run(); err != nil {
 		log.Fatal("Erro fatal na aplicação: ", err)
 	}

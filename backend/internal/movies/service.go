@@ -14,10 +14,10 @@ type ListSearchProvider interface {
 }
 
 type UserSearchResult struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	Name     string `json:"name"`
-	PhotoURL string `json:"photo_url"`
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatar_url"`
 }
 
 type ListSearchResult struct {

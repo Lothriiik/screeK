@@ -14,6 +14,8 @@ const (
 	EventPostLiked    EventType = "social.post_liked"
 	EventUserFollowed EventType = "social.user_followed"
 	EventCommentAdded EventType = "social.comment_added"
+
+	EventSessionScheduled EventType = "session.scheduled"
 )
 
 type Data map[string]interface{}

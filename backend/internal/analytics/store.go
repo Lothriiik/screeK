@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -136,25 +135,18 @@ func (s *Store) GetGenreStats(ctx context.Context, start, end time.Time) (map[st
 }
 
 func (s *Store) GetRevenueTrends(ctx context.Context, start, end time.Time, period string) ([]DailyCinemaStats, error) {
-	var stats []DailyCinemaStats
-	var trunc string
-	switch period {
-	case "month":
-		trunc = "month"
-	case "year":
-		trunc = "year"
-	default:
-		trunc = "day"
+	var results []DailyCinemaStats
+	queryMap := map[string]string{
+		"month": `SELECT date_trunc('month', date) as period, SUM(total_revenue) as revenue FROM daily_cinema_stats WHERE date >= now() - interval '365 days' GROUP BY period ORDER BY period ASC;`,
+		"year":  `SELECT date_trunc('year', date) as period, SUM(total_revenue) as revenue FROM daily_cinema_stats WHERE date >= now() - interval '365 days' GROUP BY period ORDER BY period ASC;`,
+		"day":   `SELECT date_trunc('day', date) as period, SUM(total_revenue) as revenue FROM daily_cinema_stats WHERE date >= now() - interval '365 days' GROUP BY period ORDER BY period ASC;`,
 	}
 
-	query := fmt.Sprintf(`
-		SELECT date_trunc('%s', date) as date, SUM(total_revenue) as total_revenue, SUM(tickets_sold) as tickets_sold
-		FROM daily_cinema_stats
-		WHERE date BETWEEN ? AND ?
-		GROUP BY 1
-		ORDER BY 1 ASC
-	`, trunc)
+	query, ok := queryMap[period]
+	if !ok {
+		query = queryMap["day"]
+	}
 
-	err := s.db.WithContext(ctx).Raw(query, start, end).Scan(&stats).Error
-	return stats, err
+	err := s.db.WithContext(ctx).Raw(query).Scan(&results).Error
+	return results, err
 }

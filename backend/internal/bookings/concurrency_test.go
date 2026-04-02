@@ -34,7 +34,7 @@ func Test_Bookings_Concurrency_SeatSelection_RealRedis(t *testing.T) {
 	mockMailer := new(MockMailer)
 	mockMovieSvc := new(MockMovieProvider)
 
-	svc := NewService(NewStore(db), rdb, mockPayment, mockMailer, mockMovieSvc)
+	svc := NewService(NewStore(db), rdb, mockPayment, mockMailer, mockMovieSvc, nil)
 	require.NoError(t, domain.AutoMigrate(db))
 
 	cinema := domain.Cinema{Name: "Concurrency Cinema", City: "Test City", Address: "123 Street", Phone: "123", Email: "c@test.com"}

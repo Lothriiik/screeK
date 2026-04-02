@@ -39,7 +39,7 @@ func Test_integ_precos_calculados_no_db(t *testing.T) {
 
 	store := NewStore(db)
 	movieProv := new(MockMovieProvider)
-	svc := NewService(store, rdb, nil, nil, movieProv)
+	svc := NewService(store, rdb, nil, nil, movieProv, nil)
 
 	cinema := &domain.Cinema{Name: "Cine Luxo", City: "Recife", Address: "Av Boa Viagem", Phone: "81", Email: "l@l.com"}
 	db.Create(cinema)
@@ -92,7 +92,7 @@ func Test_integ_concorrencia_reserva_assento(t *testing.T) {
 
 	store := NewStore(db)
 	movieProv := new(MockMovieProvider)
-	svc := NewService(store, rdb, nil, nil, movieProv)
+	svc := NewService(store, rdb, nil, nil, movieProv, nil)
 
 	cinema := &domain.Cinema{Name: "Cine Race", City: "SP", Address: "Interlagos", Phone: "11", Email: "r@r.com"}
 	db.Create(cinema)
@@ -156,7 +156,7 @@ func Test_integ_expiracao_reserva(t *testing.T) {
 	rdb.FlushAll(ctx)
 
 	store := NewStore(db)
-	svc := NewService(store, rdb, nil, nil, nil)
+	svc := NewService(store, rdb, nil, nil, nil, nil)
 
 	cinema := &domain.Cinema{Name: "Cine Expiry", City: "SP"}
 	db.Create(cinema)
@@ -210,7 +210,7 @@ func Test_integ_payment_resilience(t *testing.T) {
 	rdb.FlushAll(ctx)
 
 	store := NewStore(db)
-	svc := NewService(store, rdb, nil, nil, nil)
+	svc := NewService(store, rdb, nil, nil, nil, nil)
 
 	cinema := &domain.Cinema{Name: "Cine Payment", City: "SP"}
 	db.Create(cinema)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,10 +12,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/StartLivin/screek/backend/internal/analytics"
 	"github.com/StartLivin/screek/backend/internal/auth"
 	"github.com/StartLivin/screek/backend/internal/bookings"
 	"github.com/StartLivin/screek/backend/internal/catalog"
+	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/management"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/notifications"
@@ -114,7 +118,6 @@ func (app *Application) mount() {
 	notifStore := notifications.NewStore(app.db)
 
 	jwtService := auth.NewJWTService(&app.config)
-	authMiddleware := auth.AuthMiddleware(jwtService, app.redis)
 	tmdbClient := movies.NewTMDBClient(app.config.TMDBToken)
 	resendClient := email.NewResendClient(app.config.ResendKey)
 	paymentSvc := payment.NewStripeService(app.config.StripeKey, app.config.StripeWebhookSecret)
@@ -134,47 +137,43 @@ func (app *Application) mount() {
 	notifService := notifications.NewService(notifStore, app.hub)
 	
 	authSvc := auth.NewAuthService(userStore, jwtService, app.redis, resendClient)
-	mgmtSvc := management.NewService(mgmtStore, movieService)
+	mgmtSvc := management.NewService(mgmtStore, movieService, app.events)
 	analyticsSvc := analytics.NewService(analyticsStore, movieService)
 	catalogSvc := catalog.NewService(catalogStore, userService, movieService)
-	socialSvc := social.NewService(socialStore, userService, notifService, sessionAdapter)
-	bookingSvc := bookings.NewService(bookingStore, app.redis, paymentSvc, resendClient, movieService)
+	socialSvc := social.NewService(socialStore, userStore, app.events, sessionAdapter)
+	bookingSvc := bookings.NewService(bookingStore, app.redis, paymentSvc, resendClient, movieService, app.events)
 
 	userAdapter.svc = userService
 	listAdapter.svc = catalogSvc
 	sessionAdapter.svc = bookingSvc
 
 	authHandler := auth.NewHandler(authSvc)
-	authHandler.RegisterRoutes(app.router, authMiddleware)
-
 	authAdminHandler := auth.NewAdminHandler(authSvc)
-	authAdminHandler.RegisterRoutes(app.router, authMiddleware)
-
 	userHandler := users.NewHandler(userService)
-	userHandler.RegisterRoutes(app.router, authMiddleware)
-
 	movieHandler := movies.NewHandler(movieService)
-	movieHandler.RegisterRoutes(app.router)
-
 	mgmtHandler := management.NewHandler(mgmtSvc)
-	mgmtHandler.RegisterRoutes(app.router, authMiddleware)
-
 	analyticsHandler := analytics.NewHandler(analyticsSvc)
-	analyticsHandler.RegisterRoutes(app.router, authMiddleware)
-
 	catalogHandler := catalog.NewHandler(catalogSvc)
-	catalogHandler.RegisterRoutes(app.router, authMiddleware)
-
 	socialHandler := social.NewHandler(socialSvc)
-	socialHandler.RegisterRoutes(app.router, authMiddleware)
-
 	bookingHandler := bookings.NewHandler(bookingSvc)
-	bookingHandler.RegisterRoutes(app.router, authMiddleware)
-
 	notifHandler := notifications.NewHandler(notifService)
-	notifHandler.RegisterRoutes(app.router, authMiddleware)
-
 	webhookHandler := bookings.NewWebhookHandler(bookingSvc, paymentSvc)
+
+	app.registerEventHandlers(notifService, mgmtSvc)
+
+	app.router.Mount("/api/v1", app.buildRoutes(
+		authHandler, 
+		authAdminHandler,
+		userHandler, 
+		movieHandler, 
+		mgmtHandler, 
+		analyticsHandler, 
+		catalogHandler, 
+		socialHandler, 
+		bookingHandler, 
+		notifHandler,
+	))
+
 	app.router.Post("/webhooks/stripe", webhookHandler.StripeWebhook)
 
 	app.jobs.Register("@every 1m", "Reserva Cleanup", func() {
@@ -185,23 +184,6 @@ func (app *Application) mount() {
 		analyticsSvc.RunAnalyticsAggregation(context.Background(), time.Now().AddDate(0, 0, -1))
 	})
 
-	app.jobs.Register("@daily", "Watchlist Matches", func() {
-		matches, err := mgmtSvc.GetWatchlistMatches(context.Background())
-		if err != nil {
-			return
-		}
-		var dtos []notifications.WatchlistMatchDTO
-		for _, m := range matches {
-			dtos = append(dtos, notifications.WatchlistMatchDTO{
-				UserID:     m.UserID,
-				MovieID:    m.MovieID,
-				MovieTitle: m.MovieTitle,
-				City:       m.City,
-				Type:       m.Type,
-			})
-		}
-		notifService.ProcessWatchlistMatches(context.Background(), dtos)
-	})
 }
 
 func (app *Application) Run() error {
@@ -215,6 +197,32 @@ func (app *Application) Run() error {
 
 	app.db = db
 	app.redis = redis.InitRedis(app.config.RedisURL)
+
+	slog.Info("Executando migrações automáticas...")
+	if err := users.AutoMigrate(app.db); err != nil {
+		return err
+	}
+	if err := movies.AutoMigrate(app.db); err != nil {
+		return err
+	}
+	if err := domain.AutoMigrate(app.db); err != nil {
+		return err
+	}
+	if err := bookings.AutoMigrate(app.db); err != nil {
+		return err
+	}
+	if err := catalog.AutoMigrate(app.db); err != nil {
+		return err
+	}
+	if err := social.AutoMigrate(app.db); err != nil {
+		return err
+	}
+	if err := analytics.AutoMigrate(app.db); err != nil {
+		return err
+	}
+	if err := notifications.AutoMigrate(app.db); err != nil {
+		return err
+	}
 	
 	slog.Info("Sistema iniciado - Rodando migrações...", "db", "postgres")
 	
@@ -284,10 +292,10 @@ func (a *userSearchAdapter) SearchUsers(ctx context.Context, query string) ([]mo
 	var results []movies.UserSearchResult
 	for _, u := range usersList {
 		results = append(results, movies.UserSearchResult{
-			ID:       u.ID.String(),
-			Username: u.Username,
-			Name:     u.Name,
-			PhotoURL: u.AvatarURL,
+			ID:        u.ID.String(),
+			Username:  u.Username,
+			Name:      u.Name,
+			AvatarURL: u.AvatarURL,
 		})
 	}
 	return results, nil
@@ -335,4 +343,96 @@ func (a *sessionSearchAdapter) GetSessionPostData(ctx context.Context, sessionID
 		RoomName:   session.Room.Name,
 		CinemaName: session.Room.Cinema.Name,
 	}, nil
+}
+
+func (app *Application) buildRoutes(
+	authH *auth.Handler,
+	authAdminH *auth.AdminHandler,
+	userH *users.Handler,
+	movieH *movies.Handler,
+	mgmtH *management.ManagerHandler,
+	analyticsH *analytics.AnalyticsHandler,
+	catalogH *catalog.CatalogHandler,
+	socialH *social.Handler,
+	bookingH *bookings.Handler,
+	notifH *notifications.Handler,
+) http.Handler {
+	r := chi.NewRouter()
+	
+	authMiddleware := auth.AuthMiddleware(auth.NewJWTService(&app.config), app.redis)
+
+	authH.RegisterRoutes(r, authMiddleware)
+	authAdminH.RegisterRoutes(r, authMiddleware)
+	userH.RegisterRoutes(r, authMiddleware)
+	movieH.RegisterRoutes(r)
+	mgmtH.RegisterRoutes(r, authMiddleware)
+	analyticsH.RegisterRoutes(r, authMiddleware)
+	catalogH.RegisterRoutes(r, authMiddleware)
+	socialH.RegisterRoutes(r, authMiddleware)
+	bookingH.RegisterRoutes(r, authMiddleware)
+	notifH.RegisterRoutes(r, authMiddleware)
+
+	return r
+}
+
+func (app *Application) registerEventHandlers(notifSvc *notifications.NotificationService, mgmtSvc *management.ManagementService) {
+	app.events.Subscribe(events.EventPostLiked, func(data events.Data) {
+		userID := data["user_id"].(uuid.UUID)
+		senderName := data["sender_name"].(string)
+		postID := data["post_id"].(uint)
+		notifSvc.Notify(context.Background(), userID, "LIKE", "Novo Like", senderName+" curtiu seu post!", fmt.Sprintf("/posts/%d", postID))
+	})
+
+	app.events.Subscribe(events.EventUserFollowed, func(data events.Data) {
+		userID := data["user_id"].(uuid.UUID)
+		senderName := data["sender_name"].(string)
+		notifSvc.Notify(context.Background(), userID, "FOLLOW", "Novo Seguidor", senderName+" começou a seguir você", fmt.Sprintf("/u/%s", senderName))
+	})
+
+	app.events.Subscribe(events.EventCommentAdded, func(data events.Data) {
+		userID := data["user_id"].(uuid.UUID)
+		senderName := data["sender_name"].(string)
+		postID := data["post_id"].(uint)
+		notifSvc.Notify(context.Background(), userID, "COMMENT", "Novo Comentário", senderName+" respondeu ao seu post", fmt.Sprintf("/posts/%d", postID))
+	})
+
+	app.events.Subscribe(events.EventSessionScheduled, func(data events.Data) {
+		sessionID := data["session_id"].(uint)
+		
+		matches, err := mgmtSvc.GetWatchlistMatchesForSession(context.Background(), int(sessionID))
+		if err != nil {
+			return
+		}
+
+		var dtos []notifications.WatchlistMatchDTO
+		for _, m := range matches {
+			dtos = append(dtos, notifications.WatchlistMatchDTO{
+				UserID:     m.UserID,
+				MovieID:    m.MovieID,
+				MovieTitle: m.MovieTitle,
+				City:       m.City,
+				Type:       m.Type,
+			})
+		}
+		notifSvc.ProcessWatchlistMatches(context.Background(), dtos)
+	})
+
+	app.events.Subscribe(events.EventTicketPurchased, func(data events.Data) {
+		userEmail := data["user_email"].(string)
+		userName := data["user_name"].(string)
+		tickets := data["tickets"].([]bookings.Ticket)
+
+		bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		for _, t := range tickets {
+			if app.config.ResendKey != "" {
+				resend := email.NewResendClient(app.config.ResendKey)
+				resend.SendTicketEmail(bgCtx, userEmail, userName, t.QRCode)
+			}
+		}
+		
+		userID := data["user_id"].(uuid.UUID)
+		notifSvc.Notify(bgCtx, userID, "PURCHASE", "Compra Confirmada", "Seus ingressos já estão disponíveis!", "/users/me/tickets")
+	})
 }

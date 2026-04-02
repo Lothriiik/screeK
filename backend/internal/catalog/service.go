@@ -25,6 +25,7 @@ type CatalogRepository interface {
 	GetWatchlist(ctx context.Context, userID uuid.UUID) ([]WatchlistItem, error)
 	
 	CreateMovieList(ctx context.Context, list *MovieList) error
+	UpdateMovieList(ctx context.Context, list *MovieList) error
 	GetMovieLists(ctx context.Context, userID uuid.UUID) ([]MovieList, error)
 	GetMovieListByID(ctx context.Context, listID uint) (*MovieList, error)
 	AddMovieToList(ctx context.Context, listID uint, movieID uint) error
@@ -64,7 +65,6 @@ func (s *CatalogService) LogMovie(ctx context.Context, userID uuid.UUID, movieID
 		return err
 	}
 
-	// Gamificação: incrementar estatísticas
 	if req.Watched {
 		movie, err := s.movieProvider.GetMovieDetails(ctx, int(movieID))
 		runtime := 0
@@ -110,6 +110,23 @@ func (s *CatalogService) CreateMovieList(ctx context.Context, userID uuid.UUID, 
 		IsPublic:    list.IsPublic,
 		CreatedAt:   list.CreatedAt.Format("02/01/2006"),
 	}, nil
+}
+
+func (s *CatalogService) UpdateMovieList(ctx context.Context, userID uuid.UUID, listID uint, req CreateMovieListRequest) error {
+	list, err := s.repo.GetMovieListByID(ctx, listID)
+	if err != nil {
+		return errors.New("Lista não encontrada")
+	}
+
+	if list.UserID != userID {
+		return errors.New("Você não tem permissão para editar esta lista")
+	}
+
+	list.Title = req.Title
+	list.Description = req.Description
+	list.IsPublic = req.IsPublic
+
+	return s.repo.UpdateMovieList(ctx, list)
 }
 
 func (s *CatalogService) GetMyMovieLists(ctx context.Context, userID uuid.UUID) ([]MovieListResponseDTO, error) {

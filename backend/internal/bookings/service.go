@@ -11,6 +11,7 @@ import (
 	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/payment"
+	"github.com/StartLivin/screek/backend/internal/platform/events"
 	"github.com/google/uuid"
 	redisclient "github.com/redis/go-redis/v9"
 )
@@ -47,6 +48,10 @@ type Service interface {
 	SetPaymentProcessedNX(ctx context.Context, paymentID string) (bool, error)
 	DeletePaymentLock(ctx context.Context, paymentID string) error
 	CleanupExpiredReservations(ctx context.Context) error
+
+	AdminCancelTicket(ctx context.Context, ticketID uuid.UUID) error
+	AdminCancelSession(ctx context.Context, sessionID int) error
+	GetTicketsBySession(ctx context.Context, sessionID int) ([]TicketResponseDTO, error)
 }
 
 type bookingsService struct {
@@ -55,15 +60,17 @@ type bookingsService struct {
 	payment       payment.Service
 	mailer        Mailer
 	movieProvider MovieProvider
+	events        *events.EventBus
 }
 
-func NewService(store BookingsRepository, redis SimpleRedisClient, payment payment.Service, mailer Mailer, movieProvider MovieProvider) Service {
+func NewService(store BookingsRepository, redis SimpleRedisClient, payment payment.Service, mailer Mailer, movieProvider MovieProvider, eventBus *events.EventBus) Service {
 	return &bookingsService{
 		store:         store,
 		redisClient:   redis,
 		payment:       payment,
 		mailer:        mailer,
 		movieProvider: movieProvider,
+		events:        eventBus,
 	}
 }
 
@@ -247,15 +254,15 @@ func (s *bookingsService) PayReservation(ctx context.Context, transactionID uuid
 			return "", errors.New("erro ao processar reserva gratuita")
 		}
 		
-		if s.mailer != nil {
-			go func() {
-				bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-				defer cancel()
-				for _, t := range transaction.Tickets {
-					s.mailer.SendTicketEmail(bgCtx, transaction.User.Email, transaction.User.Name, t.QRCode)
-				}
-				slog.Info("E-mails de confirmação enviados para reserva gratuita", "tx_id", transaction.ID)
-			}()
+		if s.events != nil {
+			s.events.Publish(events.EventTicketPurchased, events.Data{
+				"transaction_id": transactionID,
+				"user_id":        userID,
+				"user_name":      transaction.User.Name,
+				"user_email":     transaction.User.Email,
+				"is_free":        true,
+				"tickets":        transaction.Tickets,
+			})
 		}
 		return "FREE", nil
 	}
@@ -361,15 +368,16 @@ func (s *bookingsService) ConfirmPaymentWebhook(ctx context.Context, transaction
 		return fmt.Errorf("erro ao recuperar transação paga: %w", err)
 	}
 	
-	if s.mailer != nil {
-		go func() {
-			bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
-			for _, t := range transaction.Tickets {
-				s.mailer.SendTicketEmail(bgCtx, transaction.User.Email, transaction.User.Name, t.QRCode)
-			}
-			slog.Info("E-mails de confirmação enviados via background", "tx_id", transactionID)
-		}()
+	if s.events != nil {
+		s.events.Publish(events.EventTicketPurchased, events.Data{
+			"transaction_id": transactionID,
+			"user_id":        userID,
+			"user_name":      transaction.User.Name,
+			"user_email":     transaction.User.Email,
+			"is_free":        false,
+			"payment_id":     paymentID,
+			"tickets":        transaction.Tickets,
+		})
 	}
 
 	return nil
@@ -398,4 +406,89 @@ func (s *bookingsService) DeletePaymentLock(ctx context.Context, paymentID strin
 	lockKey := "payment_processed:" + paymentID
 	res := s.redisClient.Del(ctx, lockKey)
 	return res.Err()
+}
+
+func (s *bookingsService) AdminCancelTicket(ctx context.Context, ticketID uuid.UUID) error {
+	ticket, err := s.store.AdminCancelTicket(ctx, ticketID)
+	if err != nil {
+		return err
+	}
+
+	if ticket.Status == TicketStatusCancelled && ticket.Transaction.PaymentID != "" && ticket.PricePaid > 0 {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := s.payment.RefundPayment(bgCtx, ticket.Transaction.PaymentID); err != nil {
+			slog.Error("Falha ao processar estorno admin", "ticket_id", ticketID, "payment_id", ticket.Transaction.PaymentID, "error", err)
+		}
+	}
+
+	return nil
+}
+
+func (s *bookingsService) AdminCancelSession(ctx context.Context, sessionID int) error {
+	tickets, err := s.store.GetTicketsBySession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+
+	var errors []error
+	var cancelledCount int
+	for _, t := range tickets {
+		if t.Status != TicketStatusCancelled {
+			if err := s.AdminCancelTicket(ctx, t.ID); err != nil {
+				errors = append(errors, fmt.Errorf("ticket %s: %w", t.ID, err))
+			} else {
+				cancelledCount++
+			}
+		}
+	}
+
+	slog.Info("Cancelamento de sessão processado", 
+		"session_id", sessionID, 
+		"sucesso", cancelledCount, 
+		"falhas", len(errors),
+	)
+
+	if len(errors) > 0 {
+		return fmt.Errorf("cancelamento parcial: %v", errors)
+	}
+
+	return nil
+}
+
+func (s *bookingsService) mapTicketToDTO(t Ticket) TicketResponseDTO {
+	return TicketResponseDTO{
+		ID:        t.ID,
+		MovieName: t.Session.Movie.Title,
+		Cinema:    t.Session.Room.Cinema.Name,
+		Date:      t.Session.StartTime.Format("02/01/2006 15:04"),
+		Room:      t.Session.Room.Name,
+		Seat: func() string {
+			if t.Seat != nil {
+				return fmt.Sprintf("%s%d", t.Seat.Row, t.Seat.Number)
+			}
+			return "Geral"
+		}(),
+		Status: string(t.Status),
+		QRCode: t.QRCode,
+		User: &UserBookingDTO{
+			ID:    t.Transaction.User.ID.String(),
+			Email: t.Transaction.User.Email,
+			Name:  t.Transaction.User.Name,
+		},
+	}
+}
+
+func (s *bookingsService) GetTicketsBySession(ctx context.Context, sessionID int) ([]TicketResponseDTO, error) {
+	tickets, err := s.store.GetTicketsBySession(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []TicketResponseDTO
+	for _, t := range tickets {
+		response = append(response, s.mapTicketToDTO(t))
+	}
+
+	return response, nil
 }

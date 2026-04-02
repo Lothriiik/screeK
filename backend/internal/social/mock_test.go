@@ -25,6 +25,14 @@ func (m *MockSocialRepo) GetPostByID(ctx context.Context, postID uint) (*Post, e
 	return args.Get(0).(*Post), args.Error(1)
 }
 
+func (m *MockSocialRepo) GetPostWithReplies(ctx context.Context, postID uint) (*Post, []Post, error) {
+	args := m.Called(ctx, postID)
+	if args.Get(0) == nil {
+		return nil, nil, args.Error(1)
+	}
+	return args.Get(0).(*Post), args.Get(1).([]Post), args.Error(2)
+}
+
 func (m *MockSocialRepo) UpdatePost(ctx context.Context, post *Post) error {
 	args := m.Called(ctx, post)
 	return args.Error(0)
@@ -58,6 +66,16 @@ func (m *MockSocialRepo) ToggleLike(ctx context.Context, userID uuid.UUID, postI
 func (m *MockSocialRepo) ToggleFollow(ctx context.Context, followerID uuid.UUID, followeeID uuid.UUID) (bool, error) {
 	args := m.Called(ctx, followerID, followeeID)
 	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockSocialRepo) GetFollowers(ctx context.Context, userID uuid.UUID) ([]users.User, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).([]users.User), args.Error(1)
+}
+
+func (m *MockSocialRepo) GetFollowing(ctx context.Context, userID uuid.UUID) ([]users.User, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).([]users.User), args.Error(1)
 }
 
 func (m *MockSocialRepo) DeleteMovieList(ctx context.Context, listID uint) error {

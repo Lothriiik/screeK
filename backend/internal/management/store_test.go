@@ -33,7 +33,6 @@ func TestStore_Integracao(t *testing.T) {
 		require.NoError(t, store.CreateCinema(ctx, cinema))
 		require.NotZero(t, cinema.ID)
 
-		// Teste explícito de IsManager
 		userID := uuid.New()
 		db.Create(&domain.CinemaManager{UserID: userID, CinemaID: cinema.ID})
 		
@@ -48,7 +47,6 @@ func TestStore_Integracao(t *testing.T) {
 		room := &domain.Room{CinemaID: cinema.ID, Name: "Sala Sessao"}
 		db.Create(room)
 		
-		// Criar filme real para evitar FK violation se houver constraints ativas
 		movie := movies.Movie{Title: "Movie A", TMDBID: 999}
 		db.Create(&movie)
 
@@ -58,16 +56,13 @@ func TestStore_Integracao(t *testing.T) {
 			Price:   1500,
 		}
 
-		// Create
 		require.NoError(t, store.CreateSession(ctx, session))
 		require.NotZero(t, session.ID)
 
-		// Get & Count Bookings
 		count, err := store.GetSessionBookingsCount(ctx, session.ID)
 		require.NoError(t, err)
 		assert.Equal(t, 0, count)
 
-		// Simular ticket via Model real
 		user := users.User{ID: uuid.New(), Email: "test@test.com", Username: "tester"}
 		require.NoError(t, db.Create(&user).Error)
 
@@ -85,7 +80,6 @@ func TestStore_Integracao(t *testing.T) {
 		count2, _ := store.GetSessionBookingsCount(ctx, session.ID)
 		assert.Equal(t, 1, count2)
 
-		// Delete (Limpar dependências primeiro para testar a remoção da sessão)
 		db.Exec("DELETE FROM tickets WHERE session_id = ?", session.ID)
 		db.Exec("DELETE FROM transactions WHERE id = ?", tx.ID)
 		
@@ -97,7 +91,6 @@ func TestStore_Integracao(t *testing.T) {
 		cinema := &domain.Cinema{Name: "Mega Cine", City: "SP"}
 		db.Create(cinema)
 
-		// Cenário: 1000 assentos
 		numSeats := 1000
 		room := &domain.Room{CinemaID: cinema.ID, Name: "Sala IMAX 1000", Capacity: numSeats}
 		

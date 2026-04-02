@@ -38,6 +38,10 @@ func (s *Store) CreateMovieList(ctx context.Context, list *MovieList) error {
 	return s.db.WithContext(ctx).Create(list).Error
 }
 
+func (s *Store) UpdateMovieList(ctx context.Context, list *MovieList) error {
+	return s.db.WithContext(ctx).Save(list).Error
+}
+
 func (s *Store) GetMovieLists(ctx context.Context, userID uuid.UUID) ([]MovieList, error) {
 	var lists []MovieList
 	err := s.db.WithContext(ctx).Preload("Items").Where("user_id = ?", userID).Find(&lists).Error

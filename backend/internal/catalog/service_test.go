@@ -41,6 +41,11 @@ func (m *MockCatalogRepo) CreateMovieList(ctx context.Context, list *MovieList) 
 	return args.Error(0)
 }
 
+func (m *MockCatalogRepo) UpdateMovieList(ctx context.Context, list *MovieList) error {
+	args := m.Called(ctx, list)
+	return args.Error(0)
+}
+
 func (m *MockCatalogRepo) GetMovieLists(ctx context.Context, userID uuid.UUID) ([]MovieList, error) {
 	args := m.Called(ctx, userID)
 	return args.Get(0).([]MovieList), args.Error(1)

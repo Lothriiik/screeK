@@ -17,9 +17,11 @@ type BookingsRepository interface {
 	GetTransactionByID(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID) (*Transaction, error)
 	PayTransaction(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, paymentID string) error
 	CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) error
+	AdminCancelTicket(ctx context.Context, ticketID uuid.UUID) (*Ticket, error)
 	GetSessionByID(ctx context.Context, sessionID int) (*domain.Session, error)
 	GetUserTickets(ctx context.Context, userID uuid.UUID, status string) ([]Ticket, error)
 	GetTicketDetail(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) (*Ticket, error)
+	GetTicketsBySession(ctx context.Context, sessionID int) ([]Ticket, error)
 	GetSpecialStatusForMovies(ctx context.Context, city string, movieIDs []int) (map[int]map[string]bool, error)
 	CleanupExpiredReservations(ctx context.Context) (int64, int64, error)
 }

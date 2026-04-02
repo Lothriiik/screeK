@@ -7,6 +7,7 @@ import (
 	"github.com/StartLivin/screek/backend/internal/domain"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Store struct {
@@ -61,7 +62,38 @@ func (s *Store) GetRoomByID(ctx context.Context, roomID int) (*domain.Room, erro
 }
 
 func (s *Store) CreateSession(ctx context.Context, session *domain.Session) error {
+	return s.db.WithContext(ctx).Create(session).Error
+}
+
+func (s *Store) CreateSessionWithOverlapCheck(ctx context.Context, session *domain.Session, movieRuntime int) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var room domain.Room
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&room, session.RoomID).Error; err != nil {
+			return err
+		}
+
+		var existingSessions []domain.Session
+		startRange := session.StartTime.Truncate(24 * time.Hour)
+		endRange := startRange.Add(24 * time.Hour)
+
+		if err := tx.Where("room_id = ? AND start_time >= ? AND start_time < ?", session.RoomID, startRange, endRange).
+			Preload("Movie").
+			Find(&existingSessions).Error; err != nil {
+			return err
+		}
+
+		newStart := session.StartTime
+		newEnd := newStart.Add(time.Duration(movieRuntime+15) * time.Minute)
+
+		for _, es := range existingSessions {
+			esStart := es.StartTime
+			esEnd := esStart.Add(time.Duration(es.Movie.Runtime+15) * time.Minute)
+
+			if newStart.Before(esEnd) && esStart.Before(newEnd) {
+				return ErrSessionOverlap
+			}
+		}
+
 		return tx.Create(session).Error
 	})
 }
@@ -91,6 +123,59 @@ func (s *Store) GetSessionsByRoom(ctx context.Context, roomID int, startTime tim
 		Preload("Movie").
 		Find(&sessions).Error
 	return sessions, err
+}
+
+func (s *Store) UpdateCinema(ctx context.Context, cinema *domain.Cinema) error {
+	return s.db.WithContext(ctx).Save(cinema).Error
+}
+
+func (s *Store) DeleteCinema(ctx context.Context, id int) error {
+	return s.db.WithContext(ctx).Delete(&domain.Cinema{}, id).Error
+}
+
+func (s *Store) UpdateRoom(ctx context.Context, room *domain.Room) error {
+	return s.db.WithContext(ctx).Save(room).Error
+}
+
+func (s *Store) DeleteRoom(ctx context.Context, id int) error {
+	return s.db.WithContext(ctx).Delete(&domain.Room{}, id).Error
+}
+
+func (s *Store) UpdateSession(ctx context.Context, session *domain.Session) error {
+	return s.db.WithContext(ctx).Save(session).Error
+}
+
+func (s *Store) UpdateSessionWithOverlapCheck(ctx context.Context, session *domain.Session, movieRuntime int) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&domain.Room{}, session.RoomID).Error; err != nil {
+			return err
+		}
+
+		var existingSessions []domain.Session
+		startRange := session.StartTime.Truncate(24 * time.Hour)
+		endRange := startRange.Add(24 * time.Hour)
+
+		if err := tx.Where("room_id = ? AND start_time >= ? AND start_time < ? AND id != ?",
+			session.RoomID, startRange, endRange, session.ID).
+			Preload("Movie").
+			Find(&existingSessions).Error; err != nil {
+			return err
+		}
+
+		newStart := session.StartTime
+		newEnd := newStart.Add(time.Duration(movieRuntime+15) * time.Minute)
+
+		for _, es := range existingSessions {
+			esStart := es.StartTime
+			esEnd := esStart.Add(time.Duration(es.Movie.Runtime+15) * time.Minute)
+
+			if newStart.Before(esEnd) && esStart.Before(newEnd) {
+				return ErrSessionOverlap
+			}
+		}
+
+		return tx.Save(session).Error
+	})
 }
 
 func (s *Store) GetSession(ctx context.Context, sessionID int) (*domain.Session, error) {
@@ -151,5 +236,29 @@ func (s *Store) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, erro
 	`
 	
 	err := s.db.WithContext(ctx).Raw(query).Scan(&matches).Error
+	return matches, err
+}
+
+func (s *Store) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]WatchlistMatch, error) {
+	var matches []WatchlistMatch
+	
+	query := `
+		SELECT 
+			wi.user_id, 
+			wi.movie_id, 
+			m.title as movie_title, 
+			u.default_city as city,
+			s.session_type as type
+		FROM sessions s
+		JOIN movies m ON s.movie_id = m.id
+		JOIN rooms r ON s.room_id = r.id
+		JOIN cinemas c ON r.cinema_id = c.id
+		JOIN watchlist_items wi ON wi.movie_id = s.movie_id
+		JOIN users u ON wi.user_id = u.id
+		WHERE s.id = ? 
+		  AND c.city = u.default_city
+	`
+	
+	err := s.db.WithContext(ctx).Raw(query, sessionID).Scan(&matches).Error
 	return matches, err
 }

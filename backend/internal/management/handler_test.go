@@ -32,7 +32,7 @@ func TestHandler_ManagementIntegration(t *testing.T) {
 	testutil.CleanupDB(t, db)
 	
 	store := management.NewStore(db)
-	svc := management.NewService(store, nil)
+	svc := management.NewService(store, nil, nil)
 	handler := management.NewHandler(svc)
 
 	adminID := uuid.MustParse("00000000-0000-0000-0000-000000000001")

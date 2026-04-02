@@ -179,6 +179,11 @@ func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword stri
 		return ErrInvalidToken
 	}
 
+	exists, err := s.redis.Exists(ctx, "blacklist:reset:"+token).Result()
+	if err == nil && exists > 0 {
+		return ErrInvalidToken
+	}
+
 	user, err := s.userRepo.GetUserByID(ctx, claims.UserID)
 	if err != nil {
 		return ErrUserNotFound
@@ -196,6 +201,11 @@ func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword stri
 	user.Password = hashedPassword
 	if err := s.userRepo.UpdateUser(ctx, user); err != nil {
 		return ErrPasswordUpdate
+	}
+
+	timeUntilExpiry := time.Until(claims.ExpiresAt.Time)
+	if timeUntilExpiry > 0 {
+		s.redis.Set(ctx, "blacklist:reset:"+token, "true", timeUntilExpiry)
 	}
 
 	return nil

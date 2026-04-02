@@ -35,15 +35,22 @@ type PayRequestDTO struct {
 	PaymentMethod string `json:"payment_method" validate:"required"`
 }
 
+type UserBookingDTO struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
 type TicketResponseDTO struct {
-	ID        uuid.UUID  `json:"ticket_id"`
-	MovieName string     `json:"movie_name"`
-	Cinema    string     `json:"cinema"`
-	Date      string     `json:"date"`
-	Room      string     `json:"room"`
-	Seat      string     `json:"seat"`
-	Status    string     `json:"status"`
-    QRCode    string     `json:"qr_code,omitempty"`
+	ID        uuid.UUID       `json:"ticket_id"`
+	MovieName string          `json:"movie_name"`
+	Cinema    string          `json:"cinema"`
+	Date      string          `json:"date"`
+	Room      string          `json:"room"`
+	Seat      string          `json:"seat"`
+	Status    string          `json:"status"`
+	QRCode    string          `json:"qr_code,omitempty"`
+	User      *UserBookingDTO `json:"user,omitempty"`
 }
 
 type ReserveResponseDTO struct {

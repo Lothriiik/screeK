@@ -10,6 +10,7 @@ import (
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var _ BookingsRepository = (*Store)(nil)
@@ -338,4 +339,30 @@ func (s *Store) CleanupExpiredReservations(ctx context.Context) (int64, int64, e
 	})
 
 	return ticketsDeleted, transactionsDeleted, err
+}
+
+func (s *Store) AdminCancelTicket(ctx context.Context, ticketID uuid.UUID) (*Ticket, error) {
+	var ticket Ticket
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Preload("Transaction").
+			Where("id = ? AND status != ?", ticketID, TicketStatusCancelled).First(&ticket).Error; err != nil {
+			return ErrTicketNotFound
+		}
+		ticket.Status = TicketStatusCancelled
+		return tx.Save(&ticket).Error
+	})
+	return &ticket, err
+}
+
+func (s *Store) GetTicketsBySession(ctx context.Context, sessionID int) ([]Ticket, error) {
+	var tickets []Ticket
+	err := s.db.WithContext(ctx).
+		Preload("Seat").
+		Preload("Session.Movie").
+		Preload("Session.Room.Cinema").
+		Preload("Transaction.User").
+		Where("session_id = ?", sessionID).
+		Find(&tickets).Error
+	return tickets, err
 }
