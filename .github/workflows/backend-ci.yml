@@ -53,22 +53,22 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.25'
-        cache-dependency-path: backend/go.sum
+        cache-dependency-path: backend/core/go.sum
 
     - name: Generate Swagger Docs
       run: |
         go install github.com/swaggo/swag/cmd/swag@latest
-        cd backend
+        cd backend/core
         $(go env GOPATH)/bin/swag init -g cmd/api/main.go
 
     - name: Install dependencies
       run: |
-        cd backend
+        cd backend/core
         go mod download
 
     - name: Run Unit Tests
       run: |
-        cd backend
+        cd backend/core
         # -short pula os testes que precisam de banco real
         go test ./internal/... -v -short -p 1
 
@@ -78,11 +78,11 @@ jobs:
         REDIS_URL: "localhost:6379"
         JWT_SECRET: "ci-test-secret"
       run: |
-        cd backend
+        cd backend/core
         # Roda apenas os testes que contém "Test_integ" ou que dependem de infra
         go test ./internal/... -v -run "Test_integ" -p 1
 
     - name: Build Backend Image
       run: |
-        cd backend
+        cd backend/core
         docker build -t screek-backend:latest .
