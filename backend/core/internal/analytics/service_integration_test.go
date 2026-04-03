@@ -16,9 +16,6 @@ import (
 )
 
 func Test_integ_analytics_consolidation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
 	db := testutil.SetupTestDB(t)
 	require.NoError(t, domain.AutoMigrate(db))
 	require.NoError(t, movies.AutoMigrate(db))

@@ -379,7 +379,7 @@ func (app *Application) registerEventHandlers(notifSvc *notifications.Notificati
 	app.events.Subscribe(events.EventPostLiked, func(data events.Data) {
 		userID := data["user_id"].(uuid.UUID)
 		senderName := data["sender_name"].(string)
-		postID := data["post_id"].(uint)
+		postID := data["post_id"].(int)
 		notifSvc.Notify(context.Background(), userID, "LIKE", "Novo Like", senderName+" curtiu seu post!", fmt.Sprintf("/posts/%d", postID))
 	})
 
@@ -392,12 +392,12 @@ func (app *Application) registerEventHandlers(notifSvc *notifications.Notificati
 	app.events.Subscribe(events.EventCommentAdded, func(data events.Data) {
 		userID := data["user_id"].(uuid.UUID)
 		senderName := data["sender_name"].(string)
-		postID := data["post_id"].(uint)
+		postID := data["post_id"].(int)
 		notifSvc.Notify(context.Background(), userID, "COMMENT", "Novo Comentário", senderName+" respondeu ao seu post", fmt.Sprintf("/posts/%d", postID))
 	})
 
 	app.events.Subscribe(events.EventSessionScheduled, func(data events.Data) {
-		sessionID := data["session_id"].(uint)
+		sessionID := data["session_id"].(int)
 		
 		matches, err := mgmtSvc.GetWatchlistMatchesForSession(context.Background(), int(sessionID))
 		if err != nil {

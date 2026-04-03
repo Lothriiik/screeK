@@ -22,19 +22,21 @@ func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler)
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
 		
-		r.Post("/posts", h.CreatePost)
-		r.Put("/posts/{id}", h.UpdatePost)
-		r.Delete("/posts/{id}", h.DeletePost)
-		r.Post("/posts/{id}/reply", h.ReplyToPost)
-		r.Post("/posts/{id}/like", h.ToggleLike)
+		r.Route("/social", func(r chi.Router) {
+			r.Post("/posts", h.CreatePost)
+			r.Put("/posts/{id}", h.UpdatePost)
+			r.Delete("/posts/{id}", h.DeletePost)
+			r.Post("/posts/{id}/reply", h.ReplyToPost)
+			r.Post("/posts/{id}/like", h.ToggleLike)
 
-		r.Get("/feed", h.GetFeed)
-		r.Get("/feed/global", h.GetGlobalFeed)
-		r.Get("/posts/{id}", h.GetPostDetail)
-		
-		r.Post("/users/{username}/follow", h.ToggleFollow)
-		r.Get("/users/{id}/followers", h.GetFollowers)
-		r.Get("/users/{id}/following", h.GetFollowing)
+			r.Get("/feed", h.GetFeed)
+			r.Get("/feed/global", h.GetGlobalFeed)
+			r.Get("/posts/{id}", h.GetPostDetail)
+			
+			r.Post("/users/{username}/follow", h.ToggleFollow)
+			r.Get("/users/{id}/followers", h.GetFollowers)
+			r.Get("/users/{id}/following", h.GetFollowing)
+		})
 	})
 }
 

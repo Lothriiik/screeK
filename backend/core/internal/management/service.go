@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/domain"
@@ -148,6 +149,7 @@ func (s *ManagementService) CreateSession(ctx context.Context, userID uuid.UUID,
 	}
 
 	if err := s.repo.CreateSessionWithOverlapCheck(ctx, session, movie.Runtime); err != nil {
+		slog.Error("Erro ao criar sessão no repositório", "error", err)
 		return err
 	}
 

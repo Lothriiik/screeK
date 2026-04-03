@@ -12,9 +12,6 @@ import (
 )
 
 func Test_Store_ToggleFollow(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
 	db := testutil.SetupTestDB(t)
 	users.AutoMigrate(db)
 	AutoMigrate(db)
@@ -49,9 +46,6 @@ func Test_Store_ToggleFollow(t *testing.T) {
 }
 
 func Test_Store_ToggleLike(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
 	db := testutil.SetupTestDB(t)
 	users.AutoMigrate(db)
 	AutoMigrate(db)

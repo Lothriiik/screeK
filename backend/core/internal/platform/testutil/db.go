@@ -29,35 +29,22 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 func CleanupDB(t *testing.T, db *gorm.DB) {
 	t.Helper()
 
-	tables := []string{
-		"tickets",
-		"transactions",
-		"daily_cinema_stats",
-		"daily_movie_stats",
-		"sessions",
-		"seats",
-		"rooms",
-		"cinema_managers",
-		"cinemas",
-		"post_likes",
-		"posts",
-		"movie_list_items",
-		"movie_lists",
-		"movie_logs",
-		"watchlist_items",
-		"follows",
-		"notifications",
-		"user_favorite_movies",
-		"user_stats",
-		"users",
-		"movie_genres",
-		"genres",
-		"movies",
-		"people",
-		"movie_credits",
-	}
+	err := db.Transaction(func(tx *gorm.DB) error {
+		// Desabilita as triggers para evitar problemas de FK durante o truncate
+		tx.Exec("SET CONSTRAINTS ALL DEFERRED")
+		
+		// Busca todas as tabelas do esquema public
+		var tables []string
+		tx.Raw("SELECT tablename FROM pg_tables WHERE schemaname = 'public'").Scan(&tables)
 
-	for _, table := range tables {
-		db.Exec("TRUNCATE TABLE " + table + " RESTART IDENTITY CASCADE")
-	}
+		for _, table := range tables {
+			if table == "spatial_ref_sys" { // Ignorar tabelas de sistema/extensões
+				continue
+			}
+			tx.Exec("TRUNCATE TABLE " + table + " RESTART IDENTITY CASCADE")
+		}
+		return nil
+	})
+
+	require.NoError(t, err, "falha ao limpar o banco de teste")
 }

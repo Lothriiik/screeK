@@ -12,14 +12,13 @@ import (
 )
 
 func Test_E2E_Social_Follow_Notification(t *testing.T) {
-
 	app, _, _ := SetupTestApp(t)
 
 	tokenA := loginHelper(t, app, "follower_user", "pass123")
 	
 	tokenB := loginHelper(t, app, "target_user", "pass123")
 
-	rr := executeRequest(app.router, "POST", "/users/target_user/follow", nil, tokenA)
+	rr := executeRequest(app.router, "POST", "/api/v1/social/users/target_user/follow", nil, tokenA)
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	var followResp social.ToggleFollowResponse
@@ -27,7 +26,7 @@ func Test_E2E_Social_Follow_Notification(t *testing.T) {
 	assert.True(t, followResp.IsFollowing)
 	assert.Equal(t, "Ok", followResp.Message)
 
-	rr = executeRequest(app.router, "GET", "/notifications", nil, tokenB)
+	rr = executeRequest(app.router, "GET", "/api/v1/notifications", nil, tokenB)
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	var userNotifications []notifications.Notification
@@ -46,6 +45,6 @@ func Test_E2E_Social_Follow_Notification(t *testing.T) {
 	require.NotNil(t, followNotif, "Notificação do tipo FOLLOW não encontrada")
 	assert.Equal(t, "Novo Seguidor", followNotif.Title)
 	assert.Contains(t, followNotif.Message, "follower_user")
-	assert.Contains(t, followNotif.Message, "começou a seguir você!")
-	assert.Equal(t, "/profile/follower_user", followNotif.Link)
+	assert.Contains(t, followNotif.Message, "começou a seguir você")
+	assert.Equal(t, "/u/follower_user", followNotif.Link)
 }
