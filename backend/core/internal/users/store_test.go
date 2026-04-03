@@ -14,6 +14,9 @@ import (
 )
 
 func TestStore_Integracao(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	db := testutil.SetupTestDB(t)
 	
 	movies.AutoMigrate(db)

@@ -83,13 +83,13 @@ func TestHandler_ManagementIntegration(t *testing.T) {
 		db.Create(&sess2)
 
 		// Teste 1: Tentativa de deletar sess1 (com tickets) -> 400 Bad Request
-		req1 := httptest.NewRequest("DELETE", "/admin/sessions/"+strconv.Itoa(sess1.ID), nil)
+		req1 := httptest.NewRequest("DELETE", "/admin/management/sessions/"+strconv.Itoa(sess1.ID), nil)
 		w1 := httptest.NewRecorder()
 		r.ServeHTTP(w1, req1)
 		assert.Equal(t, http.StatusBadRequest, w1.Code)
 
 		// Teste 2: Tentativa de deletar sess2 (vazia) -> 200 OK
-		req2 := httptest.NewRequest("DELETE", "/admin/sessions/"+strconv.Itoa(sess2.ID), nil)
+		req2 := httptest.NewRequest("DELETE", "/admin/management/sessions/"+strconv.Itoa(sess2.ID), nil)
 		w2 := httptest.NewRecorder()
 		r.ServeHTTP(w2, req2)
 		assert.Equal(t, http.StatusOK, w2.Code)
@@ -106,7 +106,7 @@ func TestHandler_ManagementIntegration(t *testing.T) {
 		}
 		body, _ := json.Marshal(payload)
 		
-		req := httptest.NewRequest("POST", "/cinemas", bytes.NewBuffer(body))
+		req := httptest.NewRequest("POST", "/admin/management/cinemas", bytes.NewBuffer(body))
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 

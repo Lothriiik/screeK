@@ -92,13 +92,13 @@ func loginHelper(t *testing.T, app *Application, username, password string) stri
 		Password:             password,
 		PasswordConfirmation: password,
 	}
-	executeRequest(app.router, "POST", "/users/register", regReq, "")
+	executeRequest(app.router, "POST", "/api/v1/users/register", regReq, "")
 
 	logReq := auth.LoginRequest{
 		Username: username,
 		Password: password,
 	}
-	rr := executeRequest(app.router, "POST", "/auth/login", logReq, "")
+	rr := executeRequest(app.router, "POST", "/api/v1/auth/login", logReq, "")
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	var resp auth.AuthTokenResponse

@@ -278,13 +278,15 @@ func TestManagementService_UpdateSession_OverlapAndSold(t *testing.T) {
 		repo.On("GetSessionBookingsCount", ctx, sessionID).Return(5, nil).Once()
 
 		err := svc.UpdateSession(ctx, adminID, httputil.RoleAdmin, sessionID, CreateSessionRequest{
-			MovieID:   movieID,
-			RoomID:    roomID,
-			StartTime: startTime.Add(time.Hour),
+			MovieID:     movieID,
+			RoomID:      roomID,
+			StartTime:   startTime.Add(time.Hour),
+			Price:       1000,
+			SessionType: "REGULAR",
 		})
 
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "não é permitido alterar")
+		assert.Contains(t, err.Error(), "não é possível editar")
 		repo.AssertExpectations(t)
 	})
 
@@ -292,13 +294,15 @@ func TestManagementService_UpdateSession_OverlapAndSold(t *testing.T) {
 		repo.On("GetSession", ctx, sessionID).Return(existingSession, nil).Once()
 		repo.On("GetRoomByID", ctx, existingSession.RoomID).Return(&domain.Room{ID: roomID, CinemaID: 1}, nil).Once()
 		repo.On("GetSessionBookingsCount", ctx, sessionID).Return(0, nil).Once()
-		movieProvider.On("GetMovieByID", ctx, movieID).Return(&movies.Movie{ID: movieID, Runtime: 120}, nil).Once()
+		movieProvider.On("GetMovieDetails", ctx, movieID).Return(&movies.Movie{ID: movieID, Runtime: 120}, nil).Once()
 		repo.On("UpdateSessionWithOverlapCheck", ctx, mock.Anything, 120).Return(errors.New("conflito de horário")).Once()
 
 		err := svc.UpdateSession(ctx, adminID, httputil.RoleAdmin, sessionID, CreateSessionRequest{
-			MovieID:   movieID,
-			RoomID:    roomID,
-			StartTime: startTime.Add(time.Hour),
+			MovieID:     movieID,
+			RoomID:      roomID,
+			StartTime:   startTime.Add(time.Hour),
+			Price:       1000,
+			SessionType: "REGULAR",
 		})
 
 		assert.Error(t, err)
@@ -320,7 +324,7 @@ func TestManagementService_DeleteRoom_FutureSessions(t *testing.T) {
 		err := svc.DeleteRoom(ctx, uuid.New(), httputil.RoleAdmin, roomID)
 
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "possui sessões agendadas")
+		assert.Contains(t, err.Error(), "sessões futuras agendadas")
 		repo.AssertExpectations(t)
 	})
 }

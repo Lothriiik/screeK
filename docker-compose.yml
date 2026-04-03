@@ -65,6 +65,22 @@ services:
     networks:
       - screek-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: screek-frontend
+    restart: on-failure
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - screek-network
+
 networks:
   screek-network:
     driver: bridge
