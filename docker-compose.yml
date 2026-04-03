@@ -37,7 +37,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ./backend/core
       dockerfile: Dockerfile
     container_name: screek-backend
     restart: on-failure
@@ -49,10 +49,21 @@ services:
     ports:
       - "8003:8003"
     env_file:
-      - ./backend/.env
+      - ./backend/core/.env
     environment:
       - DATABASE_URL=host=db user=postgres password=password dbname=screek port=5432 sslmode=disable TimeZone=America/Sao_Paulo
       - REDIS_URL=redis:6379
+    networks:
+      - screek-network
+
+  recommendation:
+    build:
+      context: ./backend/recommendation
+      dockerfile: Dockerfile
+    container_name: screek-recommendation
+    restart: on-failure
+    ports:
+      - "8081:8081"
     networks:
       - screek-network
 

@@ -1,0 +1,26 @@
+# VCS
+.git/
+.gitignore
+.dockerignore
+.github/
+
+# Go binaries and build artifacts
+bin/
+server.exe
+*.exe
+*.test
+*.out
+cover.out
+
+# Temp files and local config
+.env*
+vendor/
+files/
+data/
+postgresql_data/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.log

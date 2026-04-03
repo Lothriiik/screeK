@@ -1,0 +1,2493 @@
+basePath: /
+definitions:
+  analytics.AnalyticsSummaryResponseDTO:
+    properties:
+      end_date:
+        type: string
+      global_revenue:
+        type: number
+      global_tickets:
+        type: integer
+      start_date:
+        type: string
+      stats_by_cinema:
+        items:
+          $ref: '#/definitions/analytics.DailyCinemaStatsResponseDTO'
+        type: array
+    type: object
+  analytics.DailyCinemaStatsResponseDTO:
+    properties:
+      cinema_name:
+        type: string
+      date:
+        type: string
+      occupancy_rate:
+        type: number
+      tickets_sold:
+        type: integer
+      total_revenue:
+        type: number
+    type: object
+  analytics.GenreStatsResponseDTO:
+    properties:
+      genre_name:
+        type: string
+      total_revenue:
+        type: number
+    type: object
+  analytics.MovieStatsDTO:
+    properties:
+      movie_id:
+        type: integer
+      movie_title:
+        type: string
+      tickets_sold:
+        type: integer
+      total_revenue:
+        type: number
+    type: object
+  auth.AuthTokenResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  auth.ChangePasswordRequest:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  auth.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  auth.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  auth.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  auth.ResetPasswordRequest:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
+  auth.UpdateRoleDTO:
+    properties:
+      role:
+        enum:
+        - USER
+        - MANAGER
+        - ADMIN
+        type: string
+    required:
+    - role
+    type: object
+  bookings.CinemaSessionsResponseDTO:
+    properties:
+      cinema_city:
+        type: string
+      cinema_id:
+        type: integer
+      cinema_name:
+        type: string
+      sessions:
+        items:
+          $ref: '#/definitions/bookings.SessionResponseDTO'
+        type: array
+    type: object
+  bookings.MovieResponseDTO:
+    properties:
+      id:
+        type: integer
+      is_premiere:
+        type: boolean
+      is_rescreening:
+        type: boolean
+      poster_url:
+        type: string
+      title:
+        type: string
+      tmdb_id:
+        type: integer
+    type: object
+  bookings.PayRequestDTO:
+    properties:
+      payment_method:
+        type: string
+    required:
+    - payment_method
+    type: object
+  bookings.PayResponseDTO:
+    properties:
+      client_secret:
+        type: string
+      message:
+        type: string
+    type: object
+  bookings.ReserveRequestDTO:
+    properties:
+      session_id:
+        type: integer
+      tickets_request:
+        items:
+          $ref: '#/definitions/bookings.TicketRequest'
+        minItems: 1
+        type: array
+    required:
+    - session_id
+    - tickets_request
+    type: object
+  bookings.ReserveResponseDTO:
+    properties:
+      message:
+        type: string
+      transaction_id:
+        type: string
+      valor_total_centavos:
+        type: integer
+    type: object
+  bookings.SeatResponseDTO:
+    properties:
+      id:
+        type: integer
+      is_occupied:
+        type: boolean
+      number:
+        type: integer
+      pos_x:
+        type: integer
+      pos_y:
+        type: integer
+      room_id:
+        type: integer
+      row:
+        type: string
+      type:
+        type: string
+    type: object
+  bookings.SessionResponseDTO:
+    properties:
+      id:
+        type: integer
+      price:
+        type: integer
+      room_type:
+        type: string
+      session_type:
+        type: string
+      start_time:
+        type: string
+    type: object
+  bookings.TicketRequest:
+    properties:
+      seat_id:
+        type: integer
+      type:
+        allOf:
+        - $ref: '#/definitions/bookings.TicketType'
+        enum:
+        - STANDARD
+        - HALF
+        - FREE
+    required:
+    - type
+    type: object
+  bookings.TicketResponseDTO:
+    properties:
+      cinema:
+        type: string
+      date:
+        type: string
+      movie_name:
+        type: string
+      qr_code:
+        type: string
+      room:
+        type: string
+      seat:
+        type: string
+      status:
+        type: string
+      ticket_id:
+        type: string
+      user:
+        $ref: '#/definitions/bookings.UserBookingDTO'
+    type: object
+  bookings.TicketType:
+    enum:
+    - STANDARD
+    - HALF
+    - FREE
+    type: string
+    x-enum-varnames:
+    - TicketTypeStandard
+    - TicketTypeHalf
+    - TicketTypeFree
+  bookings.UserBookingDTO:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  catalog.AddMovieToListRequest:
+    properties:
+      movie_id:
+        type: integer
+    required:
+    - movie_id
+    type: object
+  catalog.AddWatchlistRequest:
+    properties:
+      movie_id:
+        type: integer
+    required:
+    - movie_id
+    type: object
+  catalog.CreateMovieListRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      is_public:
+        type: boolean
+      title:
+        maxLength: 100
+        type: string
+    required:
+    - title
+    type: object
+  catalog.LogMovieRequest:
+    properties:
+      liked:
+        type: boolean
+      rating:
+        maximum: 5
+        minimum: 0
+        type: number
+      watched:
+        type: boolean
+    type: object
+  catalog.MovieListResponseDTO:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_public:
+        type: boolean
+      item_count:
+        type: integer
+      title:
+        type: string
+    type: object
+  catalog.WatchlistItem:
+    properties:
+      added_at:
+        type: string
+      movie:
+        $ref: '#/definitions/movies.Movie'
+      movie_id:
+        type: integer
+      user:
+        $ref: '#/definitions/users.User'
+      user_id:
+        type: string
+    type: object
+  domain.Room:
+    properties:
+      capacity:
+        type: integer
+      cinema_id:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      seats:
+        items:
+          $ref: '#/definitions/domain.Seat'
+        type: array
+      type:
+        $ref: '#/definitions/domain.RoomType'
+    type: object
+  domain.RoomType:
+    enum:
+    - STANDARD
+    - IMAX
+    - VIP
+    type: string
+    x-enum-varnames:
+    - RoomTypeStandard
+    - RoomTypeIMAX
+    - RoomTypeVIP
+  domain.Seat:
+    properties:
+      id:
+        type: integer
+      is_occupied:
+        type: boolean
+      number:
+        type: integer
+      pos_x:
+        type: integer
+      pos_y:
+        type: integer
+      room_id:
+        type: integer
+      row:
+        type: string
+      type:
+        type: string
+    type: object
+  httputil.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  httputil.Role:
+    enum:
+    - USER
+    - MANAGER
+    - ADMIN
+    type: string
+    x-enum-varnames:
+    - RoleUser
+    - RoleManager
+    - RoleAdmin
+  management.CinemaAdminResponseDTO:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  management.CinemaResponseDTO:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      rooms:
+        items:
+          $ref: '#/definitions/domain.Room'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  management.CreateCinemaRequest:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    required:
+    - address
+    - city
+    - email
+    - name
+    - phone
+    type: object
+  management.CreateRoomRequest:
+    properties:
+      capacity:
+        minimum: 1
+        type: integer
+      cinema_id:
+        type: integer
+      name:
+        type: string
+      type:
+        enum:
+        - STANDARD
+        - IMAX
+        - VIP
+        type: string
+    required:
+    - capacity
+    - cinema_id
+    - name
+    - type
+    type: object
+  management.CreateSessionRequest:
+    properties:
+      movie_id:
+        type: integer
+      price:
+        minimum: 0
+        type: integer
+      room_id:
+        type: integer
+      session_type:
+        enum:
+        - REGULAR
+        - PREMIERE
+        - RESCREENING
+        - FESTIVAL
+        - UNIVERSITY
+        - SHOWCASE
+        type: string
+      start_time:
+        type: string
+    required:
+    - movie_id
+    - price
+    - room_id
+    - session_type
+    - start_time
+    type: object
+  management.SessionAdminResponseDTO:
+    properties:
+      id:
+        type: integer
+      movie_title:
+        type: string
+      price:
+        type: integer
+      room_name:
+        type: string
+      session_type:
+        type: string
+      start_time:
+        type: string
+    type: object
+  movies.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  movies.Genre:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      tmdb_id:
+        type: integer
+    type: object
+  movies.Movie:
+    properties:
+      credits:
+        items:
+          $ref: '#/definitions/movies.MovieCredit'
+        type: array
+      genres:
+        items:
+          $ref: '#/definitions/movies.Genre'
+        type: array
+      id:
+        type: integer
+      original_language:
+        type: string
+      overview:
+        type: string
+      poster_url:
+        type: string
+      release_date:
+        type: string
+      runtime:
+        type: integer
+      spoken_languages:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      tmdb_id:
+        type: integer
+    type: object
+  movies.MovieCredit:
+    properties:
+      character:
+        type: string
+      id:
+        type: integer
+      movie_id:
+        type: integer
+      person:
+        $ref: '#/definitions/movies.Person'
+      person_id:
+        type: integer
+      role:
+        type: string
+    type: object
+  movies.MovieDTO:
+    properties:
+      id:
+        type: integer
+      is_premiere:
+        type: boolean
+      is_rescreening:
+        type: boolean
+      poster_url:
+        type: string
+      title:
+        type: string
+      tmdb_id:
+        type: integer
+    type: object
+  movies.Person:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      profile_url:
+        type: string
+      tmdb_id:
+        type: integer
+    type: object
+  movies.TMDBMovie:
+    properties:
+      id:
+        type: integer
+      original_language:
+        type: string
+      overview:
+        type: string
+      poster_path:
+        type: string
+      release_date:
+        type: string
+      title:
+        type: string
+      vote_average:
+        type: number
+    type: object
+  movies.TMDBPersonMovieCast:
+    properties:
+      character:
+        type: string
+      id:
+        type: integer
+      original_title:
+        type: string
+      overview:
+        type: string
+      poster_path:
+        type: string
+      release_date:
+        type: string
+      title:
+        type: string
+      vote_average:
+        type: number
+    type: object
+  notifications.Notification:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_read:
+        type: boolean
+      link:
+        type: string
+      message:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      user:
+        $ref: '#/definitions/users.User'
+      user_id:
+        type: string
+    type: object
+  social.CreatePostRequest:
+    properties:
+      content:
+        maxLength: 280
+        type: string
+      is_spoiler:
+        type: boolean
+      post_type:
+        enum:
+        - TEXT
+        - REVIEW
+        - SESSION_SHARE
+        - REPOST
+        type: string
+      reference_id:
+        type: integer
+    required:
+    - content
+    - post_type
+    type: object
+  social.FeedResponse:
+    properties:
+      next_cursor:
+        type: integer
+      posts:
+        items:
+          $ref: '#/definitions/social.PostResponseDTO'
+        type: array
+    type: object
+  social.PostDetailResponseDTO:
+    properties:
+      post:
+        $ref: '#/definitions/social.PostResponseDTO'
+      replies:
+        items:
+          $ref: '#/definitions/social.PostResponseDTO'
+        type: array
+    type: object
+  social.PostResponseDTO:
+    properties:
+      author:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_spoiler:
+        type: boolean
+      likes_count:
+        type: integer
+      post_type:
+        type: string
+      replies_count:
+        type: integer
+      session_data:
+        $ref: '#/definitions/social.PostSessionData'
+    type: object
+  social.PostSessionData:
+    properties:
+      cinema_name:
+        type: string
+      movie_title:
+        type: string
+      poster_url:
+        type: string
+      room_name:
+        type: string
+      session_id:
+        type: integer
+      start_time:
+        type: string
+    type: object
+  social.ReplyRequest:
+    properties:
+      content:
+        maxLength: 280
+        type: string
+    required:
+    - content
+    type: object
+  social.ToggleFollowResponse:
+    properties:
+      is_following:
+        type: boolean
+      message:
+        type: string
+    type: object
+  social.ToggleLikeResponse:
+    properties:
+      liked:
+        type: boolean
+      message:
+        type: string
+    type: object
+  social.UpdatePostRequest:
+    properties:
+      content:
+        maxLength: 280
+        type: string
+      is_spoiler:
+        type: boolean
+    required:
+    - content
+    type: object
+  social.UserFollowResponseDTO:
+    properties:
+      avatar_url:
+        type: string
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
+  users.CreateUserDTO:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      password_confirmation:
+        type: string
+      username:
+        minLength: 4
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - username
+    type: object
+  users.UpdateUserDTO:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      default_city:
+        type: string
+      name:
+        type: string
+      pronouns:
+        type: string
+    type: object
+  users.User:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      default_city:
+        type: string
+      email:
+        type: string
+      favorite_movies:
+        items:
+          $ref: '#/definitions/movies.Movie'
+        type: array
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      pronouns:
+        type: string
+      role:
+        $ref: '#/definitions/httputil.Role'
+      username:
+        type: string
+    type: object
+  users.UserDTO:
+    properties:
+      avatar_url:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      username:
+        type: string
+    type: object
+  users.UserDetailsDTO:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      default_city:
+        type: string
+      favorite_movies:
+        items:
+          $ref: '#/definitions/movies.MovieDTO'
+        type: array
+      id:
+        type: string
+      name:
+        type: string
+      pronouns:
+        type: string
+      username:
+        type: string
+    type: object
+  users.UserMeDetailsDTO:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      default_city:
+        type: string
+      email:
+        type: string
+      favorite_movies:
+        items:
+          $ref: '#/definitions/movies.MovieDTO'
+        type: array
+      id:
+        type: string
+      name:
+        type: string
+      pronouns:
+        type: string
+      username:
+        type: string
+    type: object
+  users.UserStats:
+    properties:
+      genre:
+        $ref: '#/definitions/movies.Genre'
+      last_recalc_at:
+        type: string
+      top_genre_id:
+        type: integer
+      total_minutes:
+        type: integer
+      total_movies:
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+host: localhost:8003
+info:
+  contact:
+    email: suporte@screek.com
+    name: Suporte screeK
+    url: http://www.screek.com/support
+  description: API para a plataforma de cinema screeK.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: screeK API
+  version: "1.0"
+paths:
+  /admin/analytics/genres:
+    get:
+      description: Analisa a distribuição de vendas por gênero de filme
+      parameters:
+      - description: Data inicial
+        in: query
+        name: start
+        type: string
+      - description: Data final
+        in: query
+        name: end
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/analytics.GenreStatsResponseDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Preferência por gênero
+      tags:
+      - Analytics
+  /admin/analytics/movies:
+    get:
+      description: Retorna ranking de filmes por bilheteria e ingressos vendidos
+      parameters:
+      - description: Data inicial
+        in: query
+        name: start
+        type: string
+      - description: Data final
+        in: query
+        name: end
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/analytics.MovieStatsDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Desempenho por filme
+      tags:
+      - Analytics
+  /admin/analytics/revenue:
+    get:
+      description: Retorna métricas financeiras (total, média, tendências)
+      parameters:
+      - description: Data inicial (YYYY-MM-DD)
+        in: query
+        name: start
+        type: string
+      - description: Data final (YYYY-MM-DD)
+        in: query
+        name: end
+        type: string
+      - description: Periodicidade (daily, monthly)
+        in: query
+        name: period
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/analytics.AnalyticsSummaryResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Estatísticas de receita
+      tags:
+      - Analytics
+  /admin/management/cinemas:
+    get:
+      description: Retorna todos os cinemas cadastrados (Apenas Admin/Manager)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/management.CinemaAdminResponseDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Listar cinemas (Admin)
+      tags:
+      - Management
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo cinema no sistema (Apenas Admin)
+      parameters:
+      - description: Dados do cinema
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/management.CreateCinemaRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Cadastrar cinema
+      tags:
+      - Management
+  /admin/management/cinemas/{id}:
+    get:
+      description: Retorna os dados completos de um cinema, incluindo salas
+      parameters:
+      - description: ID do Cinema
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/management.CinemaResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Detalhes do cinema (Admin)
+      tags:
+      - Management
+  /admin/management/cinemas/{id}/rooms:
+    post:
+      consumes:
+      - application/json
+      description: Adiciona uma sala a um cinema e gera o mapa de assentos automaticamente
+      parameters:
+      - description: ID do Cinema
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Configuração da sala
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/management.CreateRoomRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Criar sala e assentos
+      tags:
+      - Management
+  /admin/management/sessions:
+    get:
+      description: Consulta sessões de forma expandida para gestão
+      parameters:
+      - description: ID do Cinema
+        in: query
+        name: cinema_id
+        required: true
+        type: integer
+      - description: Data YYYY-MM-DD
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/management.SessionAdminResponseDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Listar sessões administrativas
+      tags:
+      - Management
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova sessão de filme em uma sala específica
+      parameters:
+      - description: Dados da sessão
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/management.CreateSessionRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Agendar sessão
+      tags:
+      - Management
+  /admin/management/sessions/{id}:
+    delete:
+      description: Remove uma sessão do sistema, desde que não existam ingressos vendidos
+      parameters:
+      - description: ID da Sessão
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Excluir sessão
+      tags:
+      - Management
+  /admin/users/{id}/role:
+    patch:
+      consumes:
+      - application/json
+      description: Altera o nível de acesso (Role) de um usuário (Apenas Admin)
+      parameters:
+      - description: ID do Usuário (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Novo Papel
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.UpdateRoleDTO'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      summary: Atualizar papel do usuário
+      tags:
+      - Auth (Admin)
+  /auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Atualiza a senha do usuário logado validando a senha antiga
+      parameters:
+      - description: Senhas antiga e nova
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ChangePasswordRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Alterar senha
+      tags:
+      - Auth
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Envia e-mail com instruções para recuperação de senha
+      parameters:
+      - description: E-mail cadastrado
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ForgotPasswordRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      summary: Esqueci minha senha
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica um usuário e retorna tokens de acesso (JWT) e refresh
+      parameters:
+      - description: Credenciais
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.AuthTokenResponse'
+      summary: Login de usuário
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Invalida o token de acesso atual
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Gera um novo token de acesso a partir de um refresh token válido
+      parameters:
+      - description: Refresh Token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.AuthTokenResponse'
+      summary: Renovar token
+      tags:
+      - Auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Define uma nova senha usando o token recebido por e-mail
+      parameters:
+      - description: Token e nova senha
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ResetPasswordRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      summary: Resetar senha
+      tags:
+      - Auth
+  /bookings/{id}/sessions:
+    get:
+      description: Retorna as sessões de um filme agrupadas por cinema
+      parameters:
+      - description: ID do filme (TMDB)
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Cidade
+        in: query
+        name: city
+        required: true
+        type: string
+      - description: Data
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bookings.CinemaSessionsResponseDTO'
+            type: array
+      summary: Consultar sessões de um filme
+      tags:
+      - Bookings
+  /bookings/admin/sessions/{id}/cancel:
+    post:
+      description: Cancela todos os ingressos de uma sessão em caso de problemas técnicos
+        no cinema
+      parameters:
+      - description: ID da Sessão
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancelar sessão por contingência (Admin)
+      tags:
+      - Admin
+  /bookings/admin/sessions/{id}/tickets:
+    get:
+      description: Retorna todos os ingressos vendidos para uma sessão específica
+      parameters:
+      - description: ID da Sessão
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bookings.TicketResponseDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Listar ingressos da sessão (Admin)
+      tags:
+      - Admin
+  /bookings/admin/tickets/{id}/cancel:
+    post:
+      description: Cancela um ingresso sem restrição de tempo ou dono
+      parameters:
+      - description: ID do Ticket (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancelar ingresso (Admin)
+      tags:
+      - Admin
+  /bookings/playing:
+    get:
+      description: Retorna todos os filmes que possuem sessões ativas na cidade e
+        data informada
+      parameters:
+      - description: Cidade do cinema
+        in: query
+        name: city
+        required: true
+        type: string
+      - description: 'Data (format: YYYY-MM-DD)'
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bookings.MovieResponseDTO'
+            type: array
+      summary: Listar filmes em cartaz
+      tags:
+      - Bookings
+  /bookings/sessions/{id}/seats:
+    get:
+      description: |-
+        Retorna todos os assentos de uma sessão e seu status de ocupação
+        Retorna todos os assentos de uma sessão e seu status de ocupação
+      parameters:
+      - description: ID da sessão
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bookings.SeatResponseDTO'
+            type: array
+      summary: Mapa de assentos
+      tags:
+      - Bookings
+      - Bookings
+  /bookings/tickets/{id}:
+    get:
+      description: Retorna informações detalhadas de um ingresso específico
+      parameters:
+      - description: ID do Ticket (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bookings.TicketResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Detalhe do ingresso
+      tags:
+      - Bookings
+  /bookings/tickets/{id}/cancel:
+    post:
+      description: Cancela um ingresso e processa estorno se aplicável
+      parameters:
+      - description: ID do Ticket (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancelar ingresso
+      tags:
+      - Bookings
+  /bookings/tickets/reserve:
+    post:
+      consumes:
+      - application/json
+      description: Cria uma reserva temporária de 10 minutos para os assentos selecionados
+      parameters:
+      - description: Dados da reserva
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookings.ReserveRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/bookings.ReserveResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Reservar assentos
+      tags:
+      - Bookings
+  /bookings/transactions/{id}/pay:
+    post:
+      consumes:
+      - application/json
+      description: Processa o pagamento de uma reserva pendente via Stripe
+      parameters:
+      - description: ID da Transação (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Chave de Idempotência
+        in: header
+        name: idempotency-key
+        required: true
+        type: string
+      - description: Método de pagamento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookings.PayRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bookings.PayResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Pagar reserva
+      tags:
+      - Bookings
+  /bookings/users/me/tickets:
+    get:
+      description: Retorna o histórico de ingressos do usuário autenticado
+      parameters:
+      - description: Filtrar por status (PAID, PENDING, CANCELLED)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bookings.TicketResponseDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Meus ingressos
+      tags:
+      - Bookings
+  /catalog/lists/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o título, descrição ou visibilidade de uma lista personalizada
+      parameters:
+      - description: ID da Lista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Novos dados
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/catalog.CreateMovieListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Atualizar lista
+      tags:
+      - Catalog
+  /lists:
+    post:
+      consumes:
+      - application/json
+      description: 'Cria uma nova coleção personalizada de filmes (ex: "Favoritos
+        de Terror")'
+      parameters:
+      - description: Dados da lista
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/catalog.CreateMovieListRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/catalog.MovieListResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Criar lista de filmes
+      tags:
+      - Catalog
+  /lists/{id}:
+    delete:
+      description: Remove permanentemente uma lista personalizada
+      parameters:
+      - description: ID da Lista
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Detalhe da lista
+      tags:
+      - Catalog
+    get:
+      description: Retorna os dados de uma lista e todos os filmes nela contidos
+      parameters:
+      - description: ID da Lista
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/catalog.MovieListResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Detalhe da lista
+      tags:
+      - Catalog
+  /lists/{id}/movies:
+    post:
+      consumes:
+      - application/json
+      description: Vincula um filme a uma lista personalizada do usuário
+      parameters:
+      - description: ID da Lista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID do Filme
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/catalog.AddMovieToListRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Adicionar filme à lista
+      tags:
+      - Catalog
+  /lists/{id}/movies/{movieID}:
+    delete:
+      description: Desvincula um filme de uma lista personalizada
+      parameters:
+      - description: ID da Lista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID do Filme
+        in: path
+        name: movieID
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Remover filme da lista
+      tags:
+      - Catalog
+  /lists/me:
+    get:
+      description: Retorna todas as listas personalizadas criadas pelo usuário
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/catalog.MovieListResponseDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Minhas listas
+      tags:
+      - Catalog
+  /movies/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna informações do TMDB e cache local para um filme específico.
+      parameters:
+      - description: ID do Filme (TMDB ID)
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/movies.Movie'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/movies.ErrorResponse'
+      summary: Detalhes completos de um filme
+      tags:
+      - Movies
+  /movies/{id}/log:
+    post:
+      consumes:
+      - application/json
+      description: Registra que o usuário assistiu a um filme, permitindo nota e review
+      parameters:
+      - description: ID do Filme (TMDB)
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dados do Log
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/catalog.LogMovieRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Registrar atividade de filme
+      tags:
+      - Catalog
+  /movies/{id}/recommendations:
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma lista de filmes recomendados baseados em um filme específico.
+      parameters:
+      - description: ID do Filme
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/movies.TMDBMovie'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/movies.ErrorResponse'
+      summary: Recomendações de filmes similares
+      tags:
+      - Movies
+  /movies/discover:
+    get:
+      consumes:
+      - application/json
+      description: Filtra filmes por gênero e/ou ano de lançamento.
+      parameters:
+      - description: ID do Gênero (TMDB ID)
+        in: query
+        name: genre_id
+        type: integer
+      - description: Ano de Lançamento
+        in: query
+        name: year
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/movies.Movie'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/movies.ErrorResponse'
+      summary: Descoberta de filmes com filtros
+      tags:
+      - Movies
+  /movies/search:
+    get:
+      consumes:
+      - application/json
+      description: Realiza uma busca textual no catálogo de filmes.
+      parameters:
+      - description: 'Termo de busca (ex: Batman)'
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: MOVIE
+        description: Tipo de busca (MOVIE, PERSON, USER, LIST)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/movies.Movie'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/movies.ErrorResponse'
+      summary: Busca filmes por título
+      tags:
+      - Movies
+  /notifications:
+    get:
+      description: Retorna as últimas 20 notificações (lidas e não lidas).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/notifications.Notification'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Lista notificações do usuário
+      tags:
+      - Notifications
+  /notifications/{id}/read:
+    patch:
+      parameters:
+      - description: ID da Notificação
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Marca uma notificação como lida
+      tags:
+      - Notifications
+  /notifications/read-all:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Marca TODAS como lidas
+      tags:
+      - Notifications
+  /people/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna biografia, foto e informações do TMDB via cache local.
+      parameters:
+      - description: ID da Pessoa (TMDB ID)
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/movies.Person'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/movies.ErrorResponse'
+      summary: Busca detalhes de uma pessoa (ator/diretor)
+      tags:
+      - Movies
+  /people/{id}/movies:
+    get:
+      consumes:
+      - application/json
+      description: Retorna a filmografia (créditos) de um ator ou membro da equipe.
+      parameters:
+      - description: ID da Pessoa
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/movies.TMDBPersonMovieCast'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/movies.ErrorResponse'
+      summary: Lista filmes relacionados a uma pessoa
+      tags:
+      - Movies
+  /social/feed:
+    get:
+      description: Retorna posts das pessoas que o usuário segue
+      parameters:
+      - description: ID do último post visto (para paginação)
+        in: query
+        name: cursor
+        type: integer
+      - description: Quantidade de itens
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/social.FeedResponse'
+      security:
+      - BearerAuth: []
+      summary: Meu feed
+      tags:
+      - Social
+  /social/feed/global:
+    get:
+      description: Retorna os posts mais recentes de todos os usuários
+      parameters:
+      - description: Pagination cursor
+        in: query
+        name: cursor
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/social.FeedResponse'
+      security:
+      - BearerAuth: []
+      summary: Feed global (Explorar)
+      tags:
+      - Social
+  /social/posts:
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo post (texto, review ou compartilhamento de sessão)
+      parameters:
+      - description: Dados do post
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/social.CreatePostRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/social.PostResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Criar postagem
+      tags:
+      - Social
+  /social/posts/{id}:
+    delete:
+      description: Remove um post (autor ou admin)
+      parameters:
+      - description: ID do Post
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Apagar postagem
+      tags:
+      - Social
+    get:
+      description: Retorna o post e suas respostas
+      parameters:
+      - description: ID do Post
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/social.PostDetailResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Detalhes da postagem
+      tags:
+      - Social
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o conteúdo de um post existente (apenas o autor)
+      parameters:
+      - description: ID do Post
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Novo conteúdo
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/social.UpdatePostRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Editar postagem
+      tags:
+      - Social
+  /social/posts/{id}/like:
+    post:
+      description: Alterna o estado de curtida de um post
+      parameters:
+      - description: ID do Post
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/social.ToggleLikeResponse'
+      security:
+      - BearerAuth: []
+      summary: Curtir/Descurtir post
+      tags:
+      - Social
+  /social/posts/{id}/reply:
+    post:
+      consumes:
+      - application/json
+      description: Cria um comentário/resposta em um post existente
+      parameters:
+      - description: ID do Post Pai
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Conteúdo da resposta
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/social.ReplyRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Responder postagem
+      tags:
+      - Social
+  /social/users/{id}/followers:
+    get:
+      description: Retorna a lista de usuários que seguem o alvo
+      parameters:
+      - description: UUID do usuário
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.UserFollowResponseDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Listar seguidores
+      tags:
+      - Social
+  /social/users/{id}/following:
+    get:
+      description: Retorna a lista de usuários que o alvo segue
+      parameters:
+      - description: UUID do usuário
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.UserFollowResponseDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Listar seguindo
+      tags:
+      - Social
+  /social/users/{username}/follow:
+    post:
+      description: Alterna o estado de acompanhamento de um usuário pelo username
+      parameters:
+      - description: Username do alvo
+        in: path
+        name: username
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/social.ToggleFollowResponse'
+      security:
+      - BearerAuth: []
+      summary: Seguir/Deixar de seguir
+      tags:
+      - Social
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna o perfil público de um usuário, incluindo seus filmes favoritos.
+      parameters:
+      - description: ID do Usuário (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.UserDetailsDTO'
+        "404":
+          description: Usuário não encontrado
+          schema:
+            type: string
+      summary: Busca detalhes de um usuário pelo ID
+      tags:
+      - Users
+  /users/{id}/stats:
+    get:
+      consumes:
+      - application/json
+      description: Retorna contadores de filmes, minutos assistidos e gênero favorito.
+      parameters:
+      - description: ID do Usuário (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.UserStats'
+        "404":
+          description: Estatísticas não encontradas
+          schema:
+            type: string
+      summary: Retorna estatísticas do usuário
+      tags:
+      - Users
+  /users/me:
+    delete:
+      consumes:
+      - application/json
+      description: Deleta permanentemente o usuário. Exige confirmação de senha.
+      parameters:
+      - description: JSON com a senha
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+        "401":
+          description: Senha incorreta ou não autorizado
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Remove a conta do usuário logado
+      tags:
+      - Users
+    get:
+      consumes:
+      - application/json
+      description: Retorna os detalhes do usuário baseados no token JWT fornecido.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.UserMeDetailsDTO'
+        "401":
+          description: Não autorizado
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Retorna o perfil do usuário logado
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Permite alterar Nome, Bio, AvatarURL, Pronomes e Cidade do usuário
+        autenticado.
+      parameters:
+      - description: Dados para atualização
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/users.UpdateUserDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+        "401":
+          description: Não autorizado
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Atualiza o perfil do usuário logado
+      tags:
+      - Users
+  /users/me/favorites/{tmdb_id}:
+    delete:
+      description: Desvincula um filme do TMDB do perfil do usuário logado.
+      parameters:
+      - description: ID do filme no TMDB
+        in: path
+        name: tmdb_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Não autorizado
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Remove um filme dos favoritos
+      tags:
+      - Users
+    post:
+      description: Vincula um filme do TMDB ao perfil do usuário logado.
+      parameters:
+      - description: ID do filme no TMDB
+        in: path
+        name: tmdb_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Não autorizado
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Adiciona um filme aos favoritos
+      tags:
+      - Users
+  /users/register:
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo usuário no sistema com name, email, username e password.
+      parameters:
+      - description: Dados do Usuário
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/users.CreateUserDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/users.UserDTO'
+        "400":
+          description: Erro na validação ou usuário já existe
+          schema:
+            type: string
+      summary: Registra um novo usuário
+      tags:
+      - Users
+  /users/search:
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma lista de usuários que coincidem com o termo de busca
+        'q'.
+      parameters:
+      - description: Termo de busca
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/users.UserDTO'
+            type: array
+        "400":
+          description: Parâmetro 'q' obrigatório
+          schema:
+            type: string
+      summary: Busca usuários por nome ou username
+      tags:
+      - Users
+  /watchlist:
+    get:
+      description: Retorna todos os filmes salvos na lista de desejos do usuário autenticado
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/catalog.WatchlistItem'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Ver minha Watchlist
+      tags:
+      - Catalog
+    post:
+      consumes:
+      - application/json
+      description: Salva um filme na lista de desejos do usuário
+      parameters:
+      - description: ID do Filme
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/catalog.AddWatchlistRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Adicionar à Watchlist
+      tags:
+      - Catalog
+  /watchlist/{movieID}:
+    delete:
+      description: Remove um filme da lista de desejos
+      parameters:
+      - description: ID do Filme
+        in: path
+        name: movieID
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Remover da Watchlist
+      tags:
+      - Catalog
+  /ws:
+    get:
+      description: Realiza o upgrade HTTP para WebSocket para receber alertas em tempo
+        real.
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Conexão WebSocket para Notificações
+      tags:
+      - Notifications
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

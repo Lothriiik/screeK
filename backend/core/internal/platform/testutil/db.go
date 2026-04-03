@@ -1,0 +1,63 @@
+package testutil
+
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+)
+
+func SetupTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = "host=localhost user=postgres password=password dbname=screek_test port=5432 sslmode=disable TimeZone=America/Sao_Paulo"
+	}
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err, "falha ao conectar no banco de teste")
+
+	return db
+}
+
+func CleanupDB(t *testing.T, db *gorm.DB) {
+	t.Helper()
+
+	tables := []string{
+		"tickets",
+		"transactions",
+		"daily_cinema_stats",
+		"daily_movie_stats",
+		"sessions",
+		"seats",
+		"rooms",
+		"cinema_managers",
+		"cinemas",
+		"post_likes",
+		"posts",
+		"movie_list_items",
+		"movie_lists",
+		"movie_logs",
+		"watchlist_items",
+		"follows",
+		"notifications",
+		"user_favorite_movies",
+		"user_stats",
+		"users",
+		"movie_genres",
+		"genres",
+		"movies",
+		"people",
+		"movie_credits",
+	}
+
+	for _, table := range tables {
+		db.Exec("TRUNCATE TABLE " + table + " RESTART IDENTITY CASCADE")
+	}
+}
