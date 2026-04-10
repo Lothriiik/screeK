@@ -174,7 +174,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/management.CinemaAdminResponseDTO"
+                                "$ref": "#/definitions/cinema.CinemaAdminResponseDTO"
                             }
                         }
                     }
@@ -201,7 +201,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/management.CreateCinemaRequest"
+                            "$ref": "#/definitions/cinema.CreateCinemaRequest"
                         }
                     }
                 ],
@@ -243,7 +243,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/management.CinemaResponseDTO"
+                            "$ref": "#/definitions/cinema.CinemaResponseDTO"
                         }
                     }
                 }
@@ -276,7 +276,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/management.CreateCinemaRequest"
+                            "$ref": "#/definitions/cinema.CreateCinemaRequest"
                         }
                     }
                 ],
@@ -348,7 +348,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/management.CreateRoomRequest"
+                            "$ref": "#/definitions/cinema.CreateRoomRequest"
                         }
                     }
                 ],
@@ -391,7 +391,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/management.CreateRoomRequest"
+                            "$ref": "#/definitions/cinema.CreateRoomRequest"
                         }
                     }
                 ],
@@ -470,7 +470,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/management.SessionAdminResponseDTO"
+                                "$ref": "#/definitions/cinema.SessionAdminResponseDTO"
                             }
                         }
                     }
@@ -497,7 +497,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/management.CreateSessionRequest"
+                            "$ref": "#/definitions/cinema.CreateSessionRequest"
                         }
                     }
                 ],
@@ -540,7 +540,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/management.CreateSessionRequest"
+                            "$ref": "#/definitions/cinema.CreateSessionRequest"
                         }
                     }
                 ],
@@ -3285,7 +3285,7 @@ const docTemplate = `{
                 "RoleAdmin"
             ]
         },
-        "management.CinemaAdminResponseDTO": {
+        "cinema.CinemaAdminResponseDTO": {
             "type": "object",
             "properties": {
                 "address": {
@@ -3302,7 +3302,7 @@ const docTemplate = `{
                 }
             }
         },
-        "management.CinemaResponseDTO": {
+        "cinema.CinemaResponseDTO": {
             "type": "object",
             "properties": {
                 "address": {
@@ -3337,7 +3337,7 @@ const docTemplate = `{
                 }
             }
         },
-        "management.CreateCinemaRequest": {
+        "cinema.CreateCinemaRequest": {
             "type": "object",
             "required": [
                 "address",
@@ -3364,7 +3364,7 @@ const docTemplate = `{
                 }
             }
         },
-        "management.CreateRoomRequest": {
+        "cinema.CreateRoomRequest": {
             "type": "object",
             "required": [
                 "capacity",
@@ -3393,7 +3393,7 @@ const docTemplate = `{
                 }
             }
         },
-        "management.CreateSessionRequest": {
+        "cinema.CreateSessionRequest": {
             "type": "object",
             "required": [
                 "movie_id",
@@ -3429,7 +3429,7 @@ const docTemplate = `{
                 }
             }
         },
-        "management.SessionAdminResponseDTO": {
+        "cinema.SessionAdminResponseDTO": {
             "type": "object",
             "properties": {
                 "id": {

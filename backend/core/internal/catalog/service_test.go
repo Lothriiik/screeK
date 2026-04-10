@@ -24,6 +24,19 @@ func (m *MockCatalogRepo) GetMovieStats(ctx context.Context, movieID uint) (*Mov
 	return args.Get(0).(*MovieStats), args.Error(1)
 }
 
+func (m *MockCatalogRepo) GetUserLogs(ctx context.Context, userID uuid.UUID) ([]MovieLog, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).([]MovieLog), args.Error(1)
+}
+
+func (m *MockCatalogRepo) GetMovieLog(ctx context.Context, userID uuid.UUID, movieID uint) (*MovieLog, error) {
+	args := m.Called(ctx, userID, movieID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*MovieLog), args.Error(1)
+}
+
 func (m *MockCatalogRepo) UpsertMovieLog(ctx context.Context, log *MovieLog) error {
 	args := m.Called(ctx, log)
 	return args.Error(0)
@@ -123,6 +136,7 @@ func TestLogMovie_WithGamification(t *testing.T) {
 	movieID := uint(550)
 	req := LogMovieRequest{Watched: true, Rating: 4.5, Liked: true}
 
+	repo.On("GetMovieLog", mock.Anything, userID, movieID).Return(nil, nil)
 	repo.On("UpsertMovieLog", mock.Anything, mock.AnythingOfType("*catalog.MovieLog")).Return(nil)
 	mp.On("GetMovieDetails", mock.Anything, 550).Return(&movies.Movie{Runtime: 120}, nil)
 	up.On("IncrementStats", mock.Anything, userID, 1, 120).Return(nil)

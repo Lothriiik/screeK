@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/StartLivin/screek/backend/internal/movies"
-	"github.com/StartLivin/screek/backend/internal/platform/httputil"
-	"github.com/StartLivin/screek/backend/internal/platform/validation"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
+	"github.com/StartLivin/screek/backend/internal/shared/validation"
 	"github.com/google/uuid"
 )
 
@@ -55,7 +55,6 @@ type UpdateUserDTO struct {
 	Pronouns    string `json:"pronouns" validate:"omitempty"`
 	DefaultCity string `json:"default_city" validate:"omitempty"`
 }
-
 
 type ChangePasswordDTO struct {
 	OldPassword          string `json:"old_password" validate:"required,min=6"`

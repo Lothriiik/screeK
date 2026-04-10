@@ -2,7 +2,10 @@ package movies
 
 import (
 	"context"
+	"errors"
 	"time"
+
+	movietmdb "github.com/StartLivin/screek/backend/internal/movies/tmdb"
 )
 
 type UserSearchProvider interface {
@@ -44,7 +47,7 @@ func NewService(tmdb TMDBService, store MoviesRepository, userSearch UserSearchP
 }
 
 func (s *MovieService) SearchMovies(ctx context.Context, query string) ([]Movie, error) {
-	tmdbMovies, err := s.tmdb.SearchMovies(ctx, query)
+	tmdbMovies, err := s.tmdb.SearchMovies(ctx, query, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -87,6 +90,19 @@ func (s *MovieService) GetMovieDetails(ctx context.Context, tmdbID int) (*Movie,
 	return savedMovie, nil
 }
 
+func (s *MovieService) MatchMovieByTitleAndYear(ctx context.Context, title string, year int) (*Movie, error) {
+	if local, err := s.store.GetMovieByTitleAndYear(ctx, title, year); err == nil {
+		return local, nil
+	}
+
+	tmdbResults, err := s.tmdb.SearchMovies(ctx, title, year)
+	if err != nil || len(tmdbResults) == 0 {
+		return nil, errors.New("filme não encontrado por título/ano")
+	}
+
+	return s.GetMovieDetails(ctx, tmdbResults[0].ID)
+}
+
 func (s *MovieService) GetPersonDetails(ctx context.Context, tmdbID int) (*Person, error) {
 	localPerson, err := s.store.GetPersonByTMDBID(ctx, tmdbID)
 	if err == nil && localPerson != nil {
@@ -105,7 +121,7 @@ func (s *MovieService) GetPersonDetails(ctx context.Context, tmdbID int) (*Perso
 	return savedPerson, nil
 }
 
-func (s *MovieService) GetPersonCredits(ctx context.Context, tmdbID int) ([]TMDBPersonMovieCast, error) {
+func (s *MovieService) GetPersonCredits(ctx context.Context, tmdbID int) ([]movietmdb.TMDBPersonMovieCast, error) {
 	credits, err := s.tmdb.GetPersonCredits(ctx, tmdbID)
 	if err != nil {
 		return nil, err
@@ -113,7 +129,7 @@ func (s *MovieService) GetPersonCredits(ctx context.Context, tmdbID int) ([]TMDB
 	return credits.Cast, nil
 }
 
-func (s *MovieService) GetMovieRecommendations(ctx context.Context, tmdbID int) ([]TMDBMovie, error) {
+func (s *MovieService) GetMovieRecommendations(ctx context.Context, tmdbID int) ([]movietmdb.TMDBMovie, error) {
 	return s.tmdb.GetMoviesRecommendations(ctx, tmdbID)
 }
 
@@ -140,7 +156,7 @@ func (s *MovieService) DiscoverMovies(ctx context.Context, genreID int, year int
 	return localMovies, nil
 }
 
-func (s *MovieService) SearchPeople(ctx context.Context, query string) ([]TMDBPerson, error) {
+func (s *MovieService) SearchPeople(ctx context.Context, query string) ([]movietmdb.TMDBPerson, error) {
 	return s.tmdb.SearchPeople(ctx, query)
 }
 

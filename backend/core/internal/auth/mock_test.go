@@ -5,7 +5,7 @@ import (
 
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"

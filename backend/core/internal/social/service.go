@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/StartLivin/screek/backend/internal/platform/events"
-	"github.com/StartLivin/screek/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/shared/events"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
 )
@@ -74,7 +74,7 @@ func (s *socialService) CreatePost(ctx context.Context, userID uuid.UUID, req Cr
 	if user != nil {
 		username = user.Username
 	}
-	
+
 	return &PostResponseDTO{
 		ID:           post.ID,
 		Author:       username,
@@ -83,7 +83,7 @@ func (s *socialService) CreatePost(ctx context.Context, userID uuid.UUID, req Cr
 		IsSpoiler:    post.IsSpoiler,
 		LikesCount:   0,
 		RepliesCount: 0,
-		CreatedAt:    "agora", 
+		CreatedAt:    "agora",
 	}, nil
 }
 
@@ -193,11 +193,11 @@ func (s *socialService) ReplyToPost(ctx context.Context, userID uuid.UUID, paren
 			replier, _ := s.userProvider.GetUserByID(ctx, userID)
 			if replier != nil {
 				s.events.Publish(events.EventCommentAdded, events.Data{
-					"user_id":    parent.UserID,
-					"sender_id":  userID,
+					"user_id":     parent.UserID,
+					"sender_id":   userID,
 					"sender_name": replier.Username,
-					"post_id":    parentID,
-					"message":    fmt.Sprintf("%s respondeu ao seu post", replier.Username),
+					"post_id":     parentID,
+					"message":     fmt.Sprintf("%s respondeu ao seu post", replier.Username),
 				})
 			}
 		}
@@ -213,11 +213,11 @@ func (s *socialService) ToggleLike(ctx context.Context, userID uuid.UUID, postID
 			liker, _ := s.userProvider.GetUserByID(ctx, userID)
 			if liker != nil {
 				s.events.Publish(events.EventPostLiked, events.Data{
-					"user_id":    post.UserID,
-					"sender_id":  userID,
+					"user_id":     post.UserID,
+					"sender_id":   userID,
 					"sender_name": liker.Username,
-					"post_id":    postID,
-					"message":    fmt.Sprintf("%s curtiu seu post!", liker.Username),
+					"post_id":     postID,
+					"message":     fmt.Sprintf("%s curtiu seu post!", liker.Username),
 				})
 			}
 		}
@@ -236,10 +236,10 @@ func (s *socialService) ToggleFollow(ctx context.Context, followerID uuid.UUID, 
 		follower, _ := s.userProvider.GetUserByID(ctx, followerID)
 		if follower != nil {
 			s.events.Publish(events.EventUserFollowed, events.Data{
-				"user_id":    followee.ID,
-				"sender_id":  followerID,
+				"user_id":     followee.ID,
+				"sender_id":   followerID,
 				"sender_name": follower.Username,
-				"message":    fmt.Sprintf("%s começou a seguir você", follower.Username),
+				"message":     fmt.Sprintf("%s começou a seguir você", follower.Username),
 			})
 		}
 	}

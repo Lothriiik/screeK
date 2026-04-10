@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -138,7 +138,7 @@ func TestGetGenreAnalytics(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Len(t, result, 2)
-	assert.Equal(t, "Drama", result[0].GenreName) 
+	assert.Equal(t, "Drama", result[0].GenreName)
 }
 
 func TestRunAnalyticsAggregation(t *testing.T) {

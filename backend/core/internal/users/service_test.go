@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/StartLivin/screek/backend/internal/movies"
-	"github.com/StartLivin/screek/backend/internal/platform/crypto"
+	"github.com/StartLivin/screek/backend/internal/shared/crypto"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -165,7 +165,7 @@ func Test_deve_rejeitar_usuario_com_email_duplicado(t *testing.T) {
 	repo.On("EmailExists", mock.Anything, "duplo@test.com").Return(true, nil)
 
 	err := svc.CreateUser(context.Background(), &User{
-		Email: "duplo@test.com",
+		Email:    "duplo@test.com",
 		Username: "duplo",
 	})
 
@@ -180,7 +180,7 @@ func Test_User_Registration_Collision(t *testing.T) {
 
 	repo.On("EmailExists", mock.Anything, "collision@test.com").Return(false, nil)
 	repo.On("UsernameExists", mock.Anything, "collison").Return(false, nil)
-	
+
 	repo.On("CreateUser", mock.Anything, mock.Anything).Return(errors.New("duplicate key value violates unique constraint"))
 
 	err := svc.CreateUser(context.Background(), &User{

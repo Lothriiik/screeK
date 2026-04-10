@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/bookings/infra/payment"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
-	"github.com/StartLivin/screek/backend/internal/payment"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 )

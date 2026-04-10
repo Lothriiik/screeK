@@ -387,7 +387,7 @@ definitions:
     - RoleUser
     - RoleManager
     - RoleAdmin
-  management.CinemaAdminResponseDTO:
+  cinema.CinemaAdminResponseDTO:
     properties:
       address:
         type: string
@@ -398,7 +398,7 @@ definitions:
       name:
         type: string
     type: object
-  management.CinemaResponseDTO:
+  cinema.CinemaResponseDTO:
     properties:
       address:
         type: string
@@ -421,7 +421,7 @@ definitions:
       updated_at:
         type: string
     type: object
-  management.CreateCinemaRequest:
+  cinema.CreateCinemaRequest:
     properties:
       address:
         type: string
@@ -440,7 +440,7 @@ definitions:
     - name
     - phone
     type: object
-  management.CreateRoomRequest:
+  cinema.CreateRoomRequest:
     properties:
       capacity:
         minimum: 1
@@ -461,7 +461,7 @@ definitions:
     - name
     - type
     type: object
-  management.CreateSessionRequest:
+  cinema.CreateSessionRequest:
     properties:
       movie_id:
         type: integer
@@ -488,7 +488,7 @@ definitions:
     - session_type
     - start_time
     type: object
-  management.SessionAdminResponseDTO:
+  cinema.SessionAdminResponseDTO:
     properties:
       id:
         type: integer
@@ -999,7 +999,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/management.CinemaAdminResponseDTO'
+              $ref: '#/definitions/cinema.CinemaAdminResponseDTO'
             type: array
       security:
       - BearerAuth: []
@@ -1016,7 +1016,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/management.CreateCinemaRequest'
+          $ref: '#/definitions/cinema.CreateCinemaRequest'
       responses:
         "201":
           description: Created
@@ -1042,7 +1042,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/management.CinemaResponseDTO'
+            $ref: '#/definitions/cinema.CinemaResponseDTO'
       security:
       - BearerAuth: []
       summary: Detalhes do cinema (Admin)
@@ -1064,7 +1064,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/management.CreateRoomRequest'
+          $ref: '#/definitions/cinema.CreateRoomRequest'
       responses:
         "201":
           description: Created
@@ -1095,7 +1095,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/management.SessionAdminResponseDTO'
+              $ref: '#/definitions/cinema.SessionAdminResponseDTO'
             type: array
       security:
       - BearerAuth: []
@@ -1112,7 +1112,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/management.CreateSessionRequest'
+          $ref: '#/definitions/cinema.CreateSessionRequest'
       responses:
         "201":
           description: Created

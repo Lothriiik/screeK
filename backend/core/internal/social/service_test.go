@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/StartLivin/screek/backend/internal/platform/events"
-	"github.com/StartLivin/screek/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/shared/events"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

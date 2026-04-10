@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/movies"
+
 )
 
 type MovieProvider interface {

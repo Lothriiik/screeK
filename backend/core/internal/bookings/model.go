@@ -3,7 +3,7 @@ package bookings
 import (
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -26,15 +26,15 @@ const (
 )
 
 type Transaction struct {
-	ID            uuid.UUID      `json:"id" gorm:"type:uuid;primaryKey"`
-	UserID        uuid.UUID      `json:"user_id" gorm:"type:uuid;not null;index:idx_tx_user_status,composite:user"`
-	TotalAmount   int            `json:"total_amount" gorm:"not null"`
-	Status        TicketStatus   `json:"status" gorm:"type:varchar(20);not null;index:idx_tx_user_status,composite:status"`
-	PaymentMethod string         `json:"payment_method" gorm:"not null"`
-	PaymentID     string         `json:"payment_id" gorm:"index"`
-	User          users.User     `json:"user" gorm:"foreignKey:UserID"`
-	Tickets       []Ticket       `json:"tickets" gorm:"foreignKey:TransactionID"`
-	CreatedAt     time.Time      `json:"created_at" gorm:"not null;default:now()"`
+	ID            uuid.UUID    `json:"id" gorm:"type:uuid;primaryKey"`
+	UserID        uuid.UUID    `json:"user_id" gorm:"type:uuid;not null;index:idx_tx_user_status,composite:user"`
+	TotalAmount   int          `json:"total_amount" gorm:"not null"`
+	Status        TicketStatus `json:"status" gorm:"type:varchar(20);not null;index:idx_tx_user_status,composite:status"`
+	PaymentMethod string       `json:"payment_method" gorm:"not null"`
+	PaymentID     string       `json:"payment_id" gorm:"index"`
+	User          users.User   `json:"user" gorm:"foreignKey:UserID"`
+	Tickets       []Ticket     `json:"tickets" gorm:"foreignKey:TransactionID"`
+	CreatedAt     time.Time    `json:"created_at" gorm:"not null;default:now()"`
 }
 
 type Ticket struct {

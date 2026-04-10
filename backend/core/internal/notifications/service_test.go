@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
+	"github.com/StartLivin/screek/backend/internal/notifications/realtime"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -14,6 +15,7 @@ import (
 type MockNotificationRepo struct {
 	mock.Mock
 }
+
 
 func (m *MockNotificationRepo) CreateNotification(ctx context.Context, n *Notification) error {
 	args := m.Called(ctx, n)
@@ -37,7 +39,7 @@ func (m *MockNotificationRepo) MarkAllAsRead(ctx context.Context, userID uuid.UU
 
 func Test_deve_criar_notificacao_e_enviar_via_hub(t *testing.T) {
 	repo := new(MockNotificationRepo)
-	hub := NewHub()
+	hub := realtime.NewHub()
 	go hub.Run()
 	svc := NewService(repo, hub)
 
@@ -51,7 +53,7 @@ func Test_deve_criar_notificacao_e_enviar_via_hub(t *testing.T) {
 
 func Test_deve_buscar_notificacoes_do_usuario(t *testing.T) {
 	repo := new(MockNotificationRepo)
-	hub := NewHub()
+	hub := realtime.NewHub()
 	svc := NewService(repo, hub)
 
 	userID := uuid.New()
@@ -69,7 +71,7 @@ func Test_deve_buscar_notificacoes_do_usuario(t *testing.T) {
 
 func Test_deve_marcar_notificacao_como_lida(t *testing.T) {
 	repo := new(MockNotificationRepo)
-	hub := NewHub()
+	hub := realtime.NewHub()
 	svc := NewService(repo, hub)
 
 	userID := uuid.New()
@@ -83,7 +85,7 @@ func Test_deve_marcar_notificacao_como_lida(t *testing.T) {
 
 func Test_deve_marcar_todas_como_lidas(t *testing.T) {
 	repo := new(MockNotificationRepo)
-	hub := NewHub()
+	hub := realtime.NewHub()
 	svc := NewService(repo, hub)
 
 	userID := uuid.New()
@@ -97,7 +99,7 @@ func Test_deve_marcar_todas_como_lidas(t *testing.T) {
 
 func Test_deve_processar_watchlist_matches_de_premiere(t *testing.T) {
 	repo := new(MockNotificationRepo)
-	hub := NewHub()
+	hub := realtime.NewHub()
 	go hub.Run()
 	svc := NewService(repo, hub)
 
@@ -121,7 +123,7 @@ func Test_deve_processar_watchlist_matches_de_premiere(t *testing.T) {
 
 func Test_deve_processar_watchlist_matches_de_rescreening(t *testing.T) {
 	repo := new(MockNotificationRepo)
-	hub := NewHub()
+	hub := realtime.NewHub()
 	go hub.Run()
 	svc := NewService(repo, hub)
 
@@ -145,7 +147,7 @@ func Test_deve_processar_watchlist_matches_de_rescreening(t *testing.T) {
 
 func Test_deve_ignorar_lista_vazia_de_matches(t *testing.T) {
 	repo := new(MockNotificationRepo)
-	hub := NewHub()
+	hub := realtime.NewHub()
 	svc := NewService(repo, hub)
 
 	err := svc.ProcessWatchlistMatches(context.Background(), []domain.WatchlistMatch{})

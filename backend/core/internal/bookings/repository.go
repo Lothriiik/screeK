@@ -3,7 +3,7 @@ package bookings
 import (
 	"context"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/google/uuid"
 )

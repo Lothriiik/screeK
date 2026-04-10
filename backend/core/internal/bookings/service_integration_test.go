@@ -1,4 +1,4 @@
-package bookings
+package bookings_test
 
 import (
 	"context"
@@ -8,9 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/bookings"
+	bookingstore "github.com/StartLivin/screek/backend/internal/bookings/store"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
-	"github.com/StartLivin/screek/backend/internal/platform/testutil"
+	"github.com/StartLivin/screek/backend/internal/shared/testutil"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
@@ -23,7 +25,7 @@ func Test_integ_precos_calculados_no_db(t *testing.T) {
 	require.NoError(t, domain.AutoMigrate(db))
 	require.NoError(t, movies.AutoMigrate(db))
 	require.NoError(t, users.AutoMigrate(db))
-	require.NoError(t, AutoMigrate(db))
+	require.NoError(t, bookings.AutoMigrate(db))
 	testutil.CleanupDB(t, db)
 	ctx := context.Background()
 
@@ -37,9 +39,9 @@ func Test_integ_precos_calculados_no_db(t *testing.T) {
 	}
 	rdb.FlushAll(ctx)
 
-	store := NewStore(db)
-	movieProv := new(MockMovieProvider)
-	svc := NewService(store, rdb, nil, nil, movieProv, nil)
+	store := bookingstore.NewStore(db)
+	movieProv := new(bookings.MockMovieProvider)
+	svc := bookings.NewService(store, rdb, nil, nil, movieProv, nil)
 
 	cinema := &domain.Cinema{Name: "Cine Luxo", City: "Recife", Address: "Av Boa Viagem", Phone: "81", Email: "l@l.com"}
 	db.Create(cinema)
@@ -47,7 +49,7 @@ func Test_integ_precos_calculados_no_db(t *testing.T) {
 	db.Create(room)
 	seats := []domain.Seat{{RoomID: room.ID, Row: "A", Number: 1, Type: "STANDARD", PosX: 0, PosY: 0}}
 	db.Create(&seats[0])
-	
+
 	movie := &movies.Movie{TMDBID: 202, Title: "Preço de Ouro", Runtime: 100}
 	require.NoError(t, db.Create(movie).Error)
 
@@ -58,15 +60,15 @@ func Test_integ_precos_calculados_no_db(t *testing.T) {
 	userID := uuid.New()
 	require.NoError(t, db.Create(&users.User{ID: userID, Username: "buyer", Email: "b@b.com", Password: "hash"}).Error)
 
-	ticketsReq := []TicketRequest{
+	ticketsReq := []bookings.TicketRequest{
 		{SeatID: seats[0].ID, Type: "STANDARD"},
 	}
-	
+
 	tx, err := svc.ReserveSeats(ctx, userID, session.ID, ticketsReq)
 	require.NoError(t, err)
 	assert.Equal(t, 6000, tx.TotalAmount)
-	
-	var dbTx Transaction
+
+	var dbTx bookings.Transaction
 	db.Preload("Tickets").First(&dbTx, tx.ID)
 	assert.Equal(t, 6000, dbTx.TotalAmount)
 }
@@ -76,7 +78,7 @@ func Test_integ_concorrencia_reserva_assento(t *testing.T) {
 	require.NoError(t, domain.AutoMigrate(db))
 	require.NoError(t, movies.AutoMigrate(db))
 	require.NoError(t, users.AutoMigrate(db))
-	require.NoError(t, AutoMigrate(db))
+	require.NoError(t, bookings.AutoMigrate(db))
 	testutil.CleanupDB(t, db)
 	ctx := context.Background()
 
@@ -90,9 +92,9 @@ func Test_integ_concorrencia_reserva_assento(t *testing.T) {
 	}
 	rdb.FlushAll(ctx)
 
-	store := NewStore(db)
-	movieProv := new(MockMovieProvider)
-	svc := NewService(store, rdb, nil, nil, movieProv, nil)
+	store := bookingstore.NewStore(db)
+	movieProv := new(bookings.MockMovieProvider)
+	svc := bookings.NewService(store, rdb, nil, nil, movieProv, nil)
 
 	cinema := &domain.Cinema{Name: "Cine Race", City: "SP", Address: "Interlagos", Phone: "11", Email: "r@r.com"}
 	db.Create(cinema)
@@ -100,10 +102,10 @@ func Test_integ_concorrencia_reserva_assento(t *testing.T) {
 	db.Create(room)
 	seats := []domain.Seat{{RoomID: room.ID, Row: "A", Number: 1, Type: "STANDARD", PosX: 0, PosY: 0}}
 	db.Create(&seats[0])
-	
+
 	movie := &movies.Movie{TMDBID: 303, Title: "Corrida de Assentos", Runtime: 60}
 	db.Create(movie)
-	
+
 	session := &domain.Session{MovieID: movie.ID, RoomID: room.ID, StartTime: time.Now().Add(1 * time.Hour), Price: 2000}
 	db.Create(session)
 
@@ -117,8 +119,8 @@ func Test_integ_concorrencia_reserva_assento(t *testing.T) {
 			defer wg.Done()
 			userID := uuid.New()
 			db.Create(&users.User{ID: userID, Username: fmt.Sprintf("user_%d", id), Email: fmt.Sprintf("%d@u.com", id)})
-			
-			_, err := svc.ReserveSeats(ctx, userID, session.ID, []TicketRequest{{SeatID: seats[0].ID, Type: "STANDARD"}})
+
+			_, err := svc.ReserveSeats(ctx, userID, session.ID, []bookings.TicketRequest{{SeatID: seats[0].ID, Type: "STANDARD"}})
 			results <- err
 		}(i)
 	}
@@ -145,18 +147,22 @@ func Test_integ_expiracao_reserva(t *testing.T) {
 	require.NoError(t, domain.AutoMigrate(db))
 	require.NoError(t, movies.AutoMigrate(db))
 	require.NoError(t, users.AutoMigrate(db))
-	require.NoError(t, AutoMigrate(db))
+	require.NoError(t, bookings.AutoMigrate(db))
 	testutil.CleanupDB(t, db)
 	ctx := context.Background()
 
 	redisURL := os.Getenv("REDIS_URL")
-	if redisURL == "" { redisURL = "localhost:6379" }
+	if redisURL == "" {
+		redisURL = "localhost:6379"
+	}
 	rdb := goredis.NewClient(&goredis.Options{Addr: redisURL})
-	if err := rdb.Ping(ctx).Err(); err != nil { t.Skip("Redis off") }
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skip("Redis off")
+	}
 	rdb.FlushAll(ctx)
 
-	store := NewStore(db)
-	svc := NewService(store, rdb, nil, nil, nil, nil)
+	store := bookingstore.NewStore(db)
+	svc := bookings.NewService(store, rdb, nil, nil, nil, nil)
 
 	cinema := &domain.Cinema{Name: "Cine Expiry", City: "SP"}
 	db.Create(cinema)
@@ -174,22 +180,22 @@ func Test_integ_expiracao_reserva(t *testing.T) {
 	db.Create(&user2)
 
 	t.Run("Assento deve ser liberado após expiração no Redis e DB", func(t *testing.T) {
-		_, err := svc.ReserveSeats(ctx, user1.ID, session.ID, []TicketRequest{{SeatID: seat.ID, Type: "STANDARD"}})
+		_, err := svc.ReserveSeats(ctx, user1.ID, session.ID, []bookings.TicketRequest{{SeatID: seat.ID, Type: "STANDARD"}})
 		require.NoError(t, err)
 
-		_, err = svc.ReserveSeats(ctx, user2.ID, session.ID, []TicketRequest{{SeatID: seat.ID, Type: "STANDARD"}})
+		_, err = svc.ReserveSeats(ctx, user2.ID, session.ID, []bookings.TicketRequest{{SeatID: seat.ID, Type: "STANDARD"}})
 		assert.Error(t, err, "Deveria falhar pois está reservado")
 
 		seatKey := fmt.Sprintf("seat:%d:%d", session.ID, seat.ID)
 		rdb.Del(ctx, seatKey)
-		
+
 		db.Exec("UPDATE transactions SET created_at = ? WHERE status = 'PENDING'", time.Now().Add(-15*time.Minute))
 		db.Exec("UPDATE tickets SET created_at = ? WHERE status = 'PENDING'", time.Now().Add(-15*time.Minute))
 
 		err = svc.CleanupExpiredReservations(ctx)
 		require.NoError(t, err)
 
-		_, err = svc.ReserveSeats(ctx, user2.ID, session.ID, []TicketRequest{{SeatID: seat.ID, Type: "STANDARD"}})
+		_, err = svc.ReserveSeats(ctx, user2.ID, session.ID, []bookings.TicketRequest{{SeatID: seat.ID, Type: "STANDARD"}})
 		assert.NoError(t, err, "Deveria conseguir reservar agora")
 	})
 }
@@ -199,18 +205,22 @@ func Test_integ_payment_resilience(t *testing.T) {
 	require.NoError(t, domain.AutoMigrate(db))
 	require.NoError(t, movies.AutoMigrate(db))
 	require.NoError(t, users.AutoMigrate(db))
-	require.NoError(t, AutoMigrate(db))
+	require.NoError(t, bookings.AutoMigrate(db))
 	testutil.CleanupDB(t, db)
 	ctx := context.Background()
 
 	redisURL := os.Getenv("REDIS_URL")
-	if redisURL == "" { redisURL = "localhost:6379" }
+	if redisURL == "" {
+		redisURL = "localhost:6379"
+	}
 	rdb := goredis.NewClient(&goredis.Options{Addr: redisURL})
-	if err := rdb.Ping(ctx).Err(); err != nil { t.Skip("Redis off") }
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skip("Redis off")
+	}
 	rdb.FlushAll(ctx)
 
-	store := NewStore(db)
-	svc := NewService(store, rdb, nil, nil, nil, nil)
+	store := bookingstore.NewStore(db)
+	svc := bookings.NewService(store, rdb, nil, nil, nil, nil)
 
 	cinema := &domain.Cinema{Name: "Cine Payment", City: "SP"}
 	db.Create(cinema)
@@ -226,14 +236,14 @@ func Test_integ_payment_resilience(t *testing.T) {
 	db.Create(&user)
 
 	t.Run("Reserva deve permanecer PENDING se o pagamento falhar no webhook", func(t *testing.T) {
-		tx, err := svc.ReserveSeats(ctx, user.ID, session.ID, []TicketRequest{{SeatID: seat.ID, Type: "STANDARD"}})
+		tx, err := svc.ReserveSeats(ctx, user.ID, session.ID, []bookings.TicketRequest{{SeatID: seat.ID, Type: "STANDARD"}})
 		require.NoError(t, err)
 
 		err = svc.ConfirmPaymentWebhook(ctx, uuid.New(), user.ID, "STRIPE", "STRIPE_TEST_ID")
 		assert.Error(t, err)
 
-		var dbTx Transaction
+		var dbTx bookings.Transaction
 		db.First(&dbTx, tx.ID)
-		assert.Equal(t, TicketStatusPending, dbTx.Status)
+		assert.Equal(t, bookings.TicketStatusPending, dbTx.Status)
 	})
 }

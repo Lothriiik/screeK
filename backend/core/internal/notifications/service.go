@@ -7,16 +7,21 @@ import (
 	"log"
 	"log/slog"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
+	"github.com/StartLivin/screek/backend/internal/notifications/realtime"
 	"github.com/google/uuid"
 )
 
 type NotificationService struct {
 	repo NotificationRepository
-	hub  *Hub
+	hub  *realtime.Hub
 }
 
-func NewService(repo NotificationRepository, hub *Hub) *NotificationService {
+func (s *NotificationService) Hub() *realtime.Hub {
+	return s.hub
+}
+
+func NewService(repo NotificationRepository, hub *realtime.Hub) *NotificationService {
 	return &NotificationService{repo: repo, hub: hub}
 }
 
@@ -54,7 +59,6 @@ func (s *NotificationService) MarkAsRead(ctx context.Context, userID uuid.UUID, 
 func (s *NotificationService) MarkAllAsRead(ctx context.Context, userID uuid.UUID) error {
 	return s.repo.MarkAllAsRead(ctx, userID)
 }
-
 
 func (s *NotificationService) ProcessWatchlistMatches(ctx context.Context, matches []domain.WatchlistMatch) error {
 	for _, m := range matches {

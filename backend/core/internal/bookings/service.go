@@ -8,10 +8,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/bookings/infra/payment"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
-	"github.com/StartLivin/screek/backend/internal/payment"
-	"github.com/StartLivin/screek/backend/internal/platform/events"
+	"github.com/StartLivin/screek/backend/internal/shared/events"
 	"github.com/google/uuid"
 	redisclient "github.com/redis/go-redis/v9"
 )
@@ -191,7 +191,7 @@ func (s *bookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, se
 	}
 
 	basePrice := session.Price
-	
+
 	if session.Room.Type == domain.RoomTypeVIP {
 		basePrice = int(float64(basePrice) * 1.5)
 	} else if session.Room.Type == domain.RoomTypeIMAX {
@@ -211,7 +211,7 @@ func (s *bookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, se
 		}
 
 		totalAmount += finalPrice
-		
+
 		sID := tReq.SeatID
 		ticketsToSave = append(ticketsToSave, Ticket{
 			ID:        uuid.New(),
@@ -239,7 +239,7 @@ func (s *bookingsService) PayReservation(ctx context.Context, transactionID uuid
 	if err != nil {
 		return "", errors.New("transação não encontrada, não pertence a você ou já paga")
 	}
-	if transaction.Status != TicketStatusPending { 
+	if transaction.Status != TicketStatusPending {
 		return "", errors.New("esta transação não está mais pendente")
 	}
 
@@ -253,7 +253,7 @@ func (s *bookingsService) PayReservation(ctx context.Context, transactionID uuid
 		if err := s.store.PayTransaction(ctx, transactionID, userID, "FREE", "FREE"); err != nil {
 			return "", errors.New("erro ao processar reserva gratuita")
 		}
-		
+
 		if s.events != nil {
 			s.events.Publish(events.EventTicketPurchased, events.Data{
 				"transaction_id": transactionID,
@@ -299,7 +299,7 @@ func (s *bookingsService) GetUserTickets(ctx context.Context, userID uuid.UUID, 
 	}
 
 	tickets, err := s.store.GetUserTickets(ctx, userID, status)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -307,18 +307,18 @@ func (s *bookingsService) GetUserTickets(ctx context.Context, userID uuid.UUID, 
 	for _, t := range tickets {
 		dto := TicketResponseDTO{
 			ID:        t.ID,
-			MovieName: t.Session.Movie.Title,         
+			MovieName: t.Session.Movie.Title,
 			Cinema:    t.Session.Room.Cinema.Name,
 			Date:      t.Session.StartTime.Format("02/01/2006 15:04"),
 			Room:      t.Session.Room.Name,
-			Seat:      func() string {
+			Seat: func() string {
 				if t.Seat != nil {
 					return fmt.Sprintf("%s%d", t.Seat.Row, t.Seat.Number)
 				}
 				return "Geral"
 			}(),
-			Status:    string(t.Status),
-			QRCode:    t.QRCode,
+			Status: string(t.Status),
+			QRCode: t.QRCode,
 		}
 		response = append(response, dto)
 	}
@@ -329,29 +329,29 @@ func (s *bookingsService) GetUserTickets(ctx context.Context, userID uuid.UUID, 
 		return ti.After(tj)
 	})
 
-    return response, nil
+	return response, nil
 }
 
 func (s *bookingsService) GetTicketDetail(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) (TicketResponseDTO, error) {
 	ticket, err := s.store.GetTicketDetail(ctx, ticketID, userID)
 	if err != nil {
-		return TicketResponseDTO{}, err 
+		return TicketResponseDTO{}, err
 	}
 
 	dto := TicketResponseDTO{
 		ID:        ticket.ID,
-		MovieName: ticket.Session.Movie.Title,         
+		MovieName: ticket.Session.Movie.Title,
 		Cinema:    ticket.Session.Room.Cinema.Name,
 		Date:      ticket.Session.StartTime.Format("02/01/2006 15:04"),
 		Room:      ticket.Session.Room.Name,
-		Seat:      func() string {
+		Seat: func() string {
 			if ticket.Seat != nil {
 				return fmt.Sprintf("%s%d", ticket.Seat.Row, ticket.Seat.Number)
 			}
 			return "Geral"
 		}(),
-		Status:    string(ticket.Status),
-		QRCode:    ticket.QRCode,
+		Status: string(ticket.Status),
+		QRCode: ticket.QRCode,
 	}
 
 	return dto, err
@@ -367,7 +367,7 @@ func (s *bookingsService) ConfirmPaymentWebhook(ctx context.Context, transaction
 	if err != nil {
 		return fmt.Errorf("erro ao recuperar transação paga: %w", err)
 	}
-	
+
 	if s.events != nil {
 		s.events.Publish(events.EventTicketPurchased, events.Data{
 			"transaction_id": transactionID,
@@ -443,9 +443,9 @@ func (s *bookingsService) AdminCancelSession(ctx context.Context, sessionID int)
 		}
 	}
 
-	slog.Info("Cancelamento de sessão processado", 
-		"session_id", sessionID, 
-		"sucesso", cancelledCount, 
+	slog.Info("Cancelamento de sessão processado",
+		"session_id", sessionID,
+		"sucesso", cancelledCount,
 		"falhas", len(errors),
 	)
 

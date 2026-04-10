@@ -168,7 +168,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/management.CinemaAdminResponseDTO"
+                                "$ref": "#/definitions/cinema.CinemaAdminResponseDTO"
                             }
                         }
                     }
@@ -195,7 +195,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/management.CreateCinemaRequest"
+                            "$ref": "#/definitions/cinema.CreateCinemaRequest"
                         }
                     }
                 ],
@@ -237,7 +237,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/management.CinemaResponseDTO"
+                            "$ref": "#/definitions/cinema.CinemaResponseDTO"
                         }
                     }
                 }
@@ -272,7 +272,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/management.CreateRoomRequest"
+                            "$ref": "#/definitions/cinema.CreateRoomRequest"
                         }
                     }
                 ],
@@ -322,7 +322,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/management.SessionAdminResponseDTO"
+                                "$ref": "#/definitions/cinema.SessionAdminResponseDTO"
                             }
                         }
                     }
@@ -349,7 +349,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/management.CreateSessionRequest"
+                            "$ref": "#/definitions/cinema.CreateSessionRequest"
                         }
                     }
                 ],
@@ -3096,7 +3096,7 @@
                 "RoleAdmin"
             ]
         },
-        "management.CinemaAdminResponseDTO": {
+        "cinema.CinemaAdminResponseDTO": {
             "type": "object",
             "properties": {
                 "address": {
@@ -3113,7 +3113,7 @@
                 }
             }
         },
-        "management.CinemaResponseDTO": {
+        "cinema.CinemaResponseDTO": {
             "type": "object",
             "properties": {
                 "address": {
@@ -3148,7 +3148,7 @@
                 }
             }
         },
-        "management.CreateCinemaRequest": {
+        "cinema.CreateCinemaRequest": {
             "type": "object",
             "required": [
                 "address",
@@ -3175,7 +3175,7 @@
                 }
             }
         },
-        "management.CreateRoomRequest": {
+        "cinema.CreateRoomRequest": {
             "type": "object",
             "required": [
                 "capacity",
@@ -3204,7 +3204,7 @@
                 }
             }
         },
-        "management.CreateSessionRequest": {
+        "cinema.CreateSessionRequest": {
             "type": "object",
             "required": [
                 "movie_id",
@@ -3240,7 +3240,7 @@
                 }
             }
         },
-        "management.SessionAdminResponseDTO": {
+        "cinema.SessionAdminResponseDTO": {
             "type": "object",
             "properties": {
                 "id": {

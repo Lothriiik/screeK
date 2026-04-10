@@ -5,10 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/platform/config"
-	"github.com/StartLivin/screek/backend/internal/platform/crypto"
-	"github.com/StartLivin/screek/backend/internal/platform/testutil"
+	"github.com/StartLivin/screek/backend/internal/shared/config"
+	"github.com/StartLivin/screek/backend/internal/shared/crypto"
+	"github.com/StartLivin/screek/backend/internal/shared/testutil"
 	"github.com/StartLivin/screek/backend/internal/users"
+	userstore "github.com/StartLivin/screek/backend/internal/users/store"
+	"github.com/StartLivin/screek/backend/internal/auth/jwt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,8 +25,8 @@ func Test_Auth_TokenRotation_FamilyRevocation(t *testing.T) {
 	defer testutil.CleanupRedis(t, rdb)
 
 	cfg := &config.Config{JWTSecret: "test_secret"}
-	jwtSvc := NewJWTService(cfg)
-	userStore := users.NewStore(db)
+	jwtSvc := jwt.NewJWTService(cfg)
+	userStore := userstore.NewStore(db)
 	authSvc := NewAuthService(userStore, jwtSvc, rdb, nil)
 
 	userID := uuid.New()

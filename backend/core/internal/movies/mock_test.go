@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/stretchr/testify/mock"
+	movietmdb "github.com/StartLivin/screek/backend/internal/movies/tmdb"
 )
 
 type MockMoviesRepo struct {
@@ -23,7 +24,7 @@ func (m *MockMoviesRepo) GetMovieByTMDBID(ctx context.Context, tmdbID int) (*Mov
 	return args.Get(0).(*Movie), args.Error(1)
 }
 
-func (m *MockMoviesRepo) SaveMovieDetails(ctx context.Context, tmdbData *TMDBMovieDetails) (*Movie, error) {
+func (m *MockMoviesRepo) SaveMovieDetails(ctx context.Context, tmdbData *movietmdb.TMDBMovieDetails) (*Movie, error) {
 	args := m.Called(ctx, tmdbData)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -39,7 +40,7 @@ func (m *MockMoviesRepo) GetPersonByTMDBID(ctx context.Context, tmdbID int) (*Pe
 	return args.Get(0).(*Person), args.Error(1)
 }
 
-func (m *MockMoviesRepo) SavePersonDetails(ctx context.Context, tmdbData *TMDBPersonDetails) (*Person, error) {
+func (m *MockMoviesRepo) SavePersonDetails(ctx context.Context, tmdbData *movietmdb.TMDBPersonDetails) (*Person, error) {
 	args := m.Called(ctx, tmdbData)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -52,52 +53,60 @@ func (m *MockMoviesRepo) GetGenreName(ctx context.Context, genreID int) (string,
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockMoviesRepo) GetMovieByTitleAndYear(ctx context.Context, title string, year int) (*Movie, error) {
+	args := m.Called(ctx, title, year)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*Movie), args.Error(1)
+}
+
 type MockTMDBService struct {
 	mock.Mock
 }
 
-func (m *MockTMDBService) SearchMovies(ctx context.Context, query string) ([]TMDBMovie, error) {
-	args := m.Called(ctx, query)
-	return args.Get(0).([]TMDBMovie), args.Error(1)
+func (m *MockTMDBService) SearchMovies(ctx context.Context, query string, year int) ([]movietmdb.TMDBMovie, error) {
+	args := m.Called(ctx, query, year)
+	return args.Get(0).([]movietmdb.TMDBMovie), args.Error(1)
 }
 
-func (m *MockTMDBService) GetMovieDetails(ctx context.Context, tmdbID int) (*TMDBMovieDetails, error) {
+func (m *MockTMDBService) GetMovieDetails(ctx context.Context, tmdbID int) (*movietmdb.TMDBMovieDetails, error) {
 	args := m.Called(ctx, tmdbID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*TMDBMovieDetails), args.Error(1)
+	return args.Get(0).(*movietmdb.TMDBMovieDetails), args.Error(1)
 }
 
-func (m *MockTMDBService) GetPersonDetails(ctx context.Context, id int) (*TMDBPersonDetails, error) {
+func (m *MockTMDBService) GetPersonDetails(ctx context.Context, id int) (*movietmdb.TMDBPersonDetails, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*TMDBPersonDetails), args.Error(1)
+	return args.Get(0).(*movietmdb.TMDBPersonDetails), args.Error(1)
 }
 
-func (m *MockTMDBService) GetPersonCredits(ctx context.Context, id int) (*TMDBPersonCredits, error) {
+func (m *MockTMDBService) GetPersonCredits(ctx context.Context, id int) (*movietmdb.TMDBPersonCredits, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*TMDBPersonCredits), args.Error(1)
+	return args.Get(0).(*movietmdb.TMDBPersonCredits), args.Error(1)
 }
 
-func (m *MockTMDBService) GetMoviesRecommendations(ctx context.Context, movieID int) ([]TMDBMovie, error) {
+func (m *MockTMDBService) GetMoviesRecommendations(ctx context.Context, movieID int) ([]movietmdb.TMDBMovie, error) {
 	args := m.Called(ctx, movieID)
-	return args.Get(0).([]TMDBMovie), args.Error(1)
+	return args.Get(0).([]movietmdb.TMDBMovie), args.Error(1)
 }
 
-func (m *MockTMDBService) DiscoverMovies(ctx context.Context, genreID int, year int) ([]TMDBMovie, error) {
+func (m *MockTMDBService) DiscoverMovies(ctx context.Context, genreID int, year int) ([]movietmdb.TMDBMovie, error) {
 	args := m.Called(ctx, genreID, year)
-	return args.Get(0).([]TMDBMovie), args.Error(1)
+	return args.Get(0).([]movietmdb.TMDBMovie), args.Error(1)
 }
 
-func (m *MockTMDBService) SearchPeople(ctx context.Context, query string) ([]TMDBPerson, error) {
+func (m *MockTMDBService) SearchPeople(ctx context.Context, query string) ([]movietmdb.TMDBPerson, error) {
 	args := m.Called(ctx, query)
-	return args.Get(0).([]TMDBPerson), args.Error(1)
+	return args.Get(0).([]movietmdb.TMDBPerson), args.Error(1)
 }
 
 type MockUserSearchProvider struct {

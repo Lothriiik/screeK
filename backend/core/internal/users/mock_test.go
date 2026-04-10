@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/StartLivin/screek/backend/internal/movies"
-	"github.com/StartLivin/screek/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 )

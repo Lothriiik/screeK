@@ -47,6 +47,21 @@ type MovieDetailResponseDTO struct {
 	TotalLikes    int       `json:"total_likes"`
 }
 
+type WatchlistItemResponseDTO struct {
+	MovieID   uint                   `json:"movie_id"`
+	AddedAt   string                 `json:"added_at"`
+	Movie     MovieDetailResponseDTO `json:"movie"`
+}
+
+type MovieLogResponseDTO struct {
+	MovieID   uint                   `json:"movie_id"`
+	Watched   bool                   `json:"watched"`
+	Rating    float64                `json:"rating"`
+	Liked     bool                   `json:"liked"`
+	UpdatedAt string                 `json:"updated_at"`
+	Movie     MovieDetailResponseDTO `json:"movie"`
+}
+
 func (r *LogMovieRequest) Validate() error {
 	if r.Rating < 0 || r.Rating > 10 {
 		return errors.New("avaliação deve ser entre 0 e 10")

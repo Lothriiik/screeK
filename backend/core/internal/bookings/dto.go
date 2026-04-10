@@ -2,23 +2,24 @@ package bookings
 
 import (
 	"time"
-	"github.com/StartLivin/screek/backend/internal/platform/validation"
+
+	"github.com/StartLivin/screek/backend/internal/shared/validation"
 	"github.com/google/uuid"
 )
 
 type SessionResponseDTO struct {
-	ID          int         `json:"id"`
-	StartTime   time.Time   `json:"start_time"`
-	Price       int		    `json:"price"`
-	RoomType    string      `json:"room_type"`
-	SessionType string      `json:"session_type"`
+	ID          int       `json:"id"`
+	StartTime   time.Time `json:"start_time"`
+	Price       int       `json:"price"`
+	RoomType    string    `json:"room_type"`
+	SessionType string    `json:"session_type"`
 }
 
 type CinemaSessionsResponseDTO struct {
-	CinemaID    int                    `json:"cinema_id"`
-	CinemaName  string                 `json:"cinema_name"`
-	CinemaCity  string                 `json:"cinema_city"`
-	Sessions    []SessionResponseDTO   `json:"sessions"`
+	CinemaID   int                  `json:"cinema_id"`
+	CinemaName string               `json:"cinema_name"`
+	CinemaCity string               `json:"cinema_city"`
+	Sessions   []SessionResponseDTO `json:"sessions"`
 }
 
 type TicketRequest struct {
@@ -55,7 +56,7 @@ type TicketResponseDTO struct {
 
 type ReserveResponseDTO struct {
 	Message            string    `json:"message"`
-	TransactionID       uuid.UUID `json:"transaction_id"`
+	TransactionID      uuid.UUID `json:"transaction_id"`
 	ValorTotalCentavos int       `json:"valor_total_centavos"`
 }
 

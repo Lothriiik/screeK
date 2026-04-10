@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
+	"github.com/StartLivin/screek/backend/internal/shared/events"
 	"github.com/StartLivin/screek/backend/internal/users"
-	"github.com/StartLivin/screek/backend/internal/platform/events"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -54,11 +54,11 @@ func TestConfirmPaymentWebhookPublishEvent(t *testing.T) {
 
 	transactionID := uuid.New()
 	userID := uuid.New()
-	
+
 	transaction := &Transaction{
-		ID:        transactionID,
-		UserID:    userID,
-		Status:    "PENDING",
+		ID:     transactionID,
+		UserID: userID,
+		Status: "PENDING",
 		User: users.User{
 			ID:    userID,
 			Name:  "Test User",
@@ -80,7 +80,7 @@ func TestConfirmPaymentWebhookPublishEvent(t *testing.T) {
 	err := service.ConfirmPaymentWebhook(context.Background(), transactionID, userID, "STRIPE", "pi_456")
 
 	assert.NoError(t, err)
-	
+
 	select {
 	case <-eventReceived:
 	case <-time.After(1 * time.Second):

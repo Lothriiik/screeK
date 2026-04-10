@@ -3,7 +3,7 @@ package analytics
 import (
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
 	"gorm.io/gorm"
 )
 

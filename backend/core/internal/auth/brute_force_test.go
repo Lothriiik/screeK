@@ -8,8 +8,10 @@ import (
 	"testing"
 
 	"github.com/StartLivin/screek/backend/internal/auth"
-	"github.com/StartLivin/screek/backend/internal/platform/testutil"
+	"github.com/StartLivin/screek/backend/internal/shared/testutil"
 	"github.com/StartLivin/screek/backend/internal/users"
+	userstore "github.com/StartLivin/screek/backend/internal/users/store"
+	"github.com/StartLivin/screek/backend/internal/auth/handler"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,9 +24,9 @@ func Test_Auth_Login_BruteForce_Protection(t *testing.T) {
 	rdb := testutil.SetupTestRedis(t)
 	defer testutil.CleanupRedis(t, rdb)
 
-	userStore := users.NewStore(db)
+	userStore := userstore.NewStore(db)
 	authSvc := auth.NewAuthService(userStore, nil, rdb, nil)
-	handler := auth.NewHandler(authSvc)
+	handler := handler.NewHandler(authSvc)
 
 	noopMiddleware := func(next http.Handler) http.Handler { return next }
 	r := chi.NewRouter()
@@ -40,7 +42,7 @@ func Test_Auth_Login_BruteForce_Protection(t *testing.T) {
 		req := httptest.NewRequest("POST", "/auth/login", bytes.NewBuffer(body))
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
-		
+
 		if i < 5 {
 			assert.Equal(t, http.StatusUnauthorized, w.Code)
 		}

@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/StartLivin/screek/backend/internal/app"
-	"github.com/StartLivin/screek/backend/internal/platform/config"
+	"github.com/StartLivin/screek/backend/internal/shared/config"
 )
 
 // @title screeK API

@@ -3,14 +3,14 @@ package social
 import (
 	"errors"
 
-	"github.com/StartLivin/screek/backend/internal/platform/validation"
+	"github.com/StartLivin/screek/backend/internal/shared/validation"
 )
 
 type CreatePostRequest struct {
 	PostType    string `json:"post_type" validate:"required,oneof=TEXT REVIEW SESSION_SHARE REPOST"`
 	Content     string `json:"content" validate:"required,max=280"`
 	IsSpoiler   bool   `json:"is_spoiler"`
-	ReferenceID *uint  `json:"reference_id,omitempty"` 
+	ReferenceID *uint  `json:"reference_id,omitempty"`
 }
 
 type UpdatePostRequest struct {
@@ -31,7 +31,7 @@ type PostResponseDTO struct {
 }
 
 type PostSessionData struct {
-	SessionID int    `json:"session_id"`
+	SessionID  int    `json:"session_id"`
 	MovieTitle string `json:"movie_title"`
 	PosterURL  string `json:"poster_url"`
 	StartTime  string `json:"start_time"`
@@ -64,8 +64,8 @@ type PostDetailResponseDTO struct {
 }
 
 type UserFollowResponseDTO struct {
-	UserID   string `json:"user_id"`
-	Username string `json:"username"`
+	UserID    string `json:"user_id"`
+	Username  string `json:"username"`
 	AvatarURL string `json:"avatar_url,omitempty"`
 }
 
@@ -82,7 +82,7 @@ func (dto *CreatePostRequest) Validate() error {
 	}
 
 	isReviewOrSession := dto.PostType == "REVIEW" || dto.PostType == "SESSION_SHARE"
-	
+
 	if isReviewOrSession && dto.ReferenceID == nil {
 		return errors.New("erro de validação: posts do tipo REVIEW ou SESSION_SHARE obrigam o envio de um reference_id válido")
 	}
@@ -100,4 +100,3 @@ func (dto *UpdatePostRequest) Validate() error {
 	}
 	return nil
 }
-

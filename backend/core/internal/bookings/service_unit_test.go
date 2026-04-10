@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/google/uuid"
 	redisclient "github.com/redis/go-redis/v9"
@@ -41,8 +41,6 @@ func newTestbookingsService() (*bookingsService, *MockBookingsRepo, *MockPayment
 	return svc.(*bookingsService), repo, pay, movieProv, redis
 }
 
-
-
 func Test_deve_listar_filmes_em_cartaz_com_status_especial(t *testing.T) {
 	svc, repo, _, _, _ := newTestbookingsService()
 
@@ -64,8 +62,6 @@ func Test_deve_listar_filmes_em_cartaz_com_status_especial(t *testing.T) {
 	assert.False(t, moviesDTO[1].IsPremiere)
 	assert.True(t, moviesDTO[1].IsRescreening)
 }
-
-
 
 func Test_ReserveSeats_Rollback_Em_Falha_Parcial(t *testing.T) {
 	svc, _, _, _, redis := newTestbookingsService()
@@ -110,12 +106,12 @@ func Test_PriceCalculation_Exactness(t *testing.T) {
 	roomID := 101
 
 	repo.On("GetSessionByID", mock.Anything, sessionID).Return(&domain.Session{
-		ID: sessionID, RoomID: roomID, Price: 2999, 
+		ID: sessionID, RoomID: roomID, Price: 2999,
 		Room: domain.Room{Type: domain.RoomTypeVIP},
 	}, nil)
 
 	ticketsReq := []TicketRequest{
-		{SeatID: 1, Type: TicketTypeHalf}, 
+		{SeatID: 1, Type: TicketTypeHalf},
 	}
 
 	redis.On("SetNX", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil)
@@ -124,6 +120,5 @@ func Test_PriceCalculation_Exactness(t *testing.T) {
 	tx, err := svc.ReserveSeats(context.Background(), userID, sessionID, ticketsReq)
 
 	assert.NoError(t, err)
-	assert.Equal(t, 2249, tx.TotalAmount) 
+	assert.Equal(t, 2249, tx.TotalAmount)
 }
-

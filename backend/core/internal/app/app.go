@@ -12,30 +12,51 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/StartLivin/screek/backend/internal/analytics"
+	analyticalstore "github.com/StartLivin/screek/backend/internal/analytics/store"
+    analyticalhandler "github.com/StartLivin/screek/backend/internal/analytics/handler"
 	"github.com/StartLivin/screek/backend/internal/auth"
+	authhandler "github.com/StartLivin/screek/backend/internal/auth/handler"
+    authjwt "github.com/StartLivin/screek/backend/internal/auth/jwt"
 	"github.com/StartLivin/screek/backend/internal/bookings"
+	bookingstore "github.com/StartLivin/screek/backend/internal/bookings/store"
+    bookinghandler "github.com/StartLivin/screek/backend/internal/bookings/handler"
+	"github.com/StartLivin/screek/backend/internal/bookings/infra/payment"
 	"github.com/StartLivin/screek/backend/internal/catalog"
-	"github.com/StartLivin/screek/backend/internal/domain"
-	"github.com/StartLivin/screek/backend/internal/management"
+	catalogstore "github.com/StartLivin/screek/backend/internal/catalog/store"
+    cataloghandler "github.com/StartLivin/screek/backend/internal/catalog/handler"
+	"github.com/StartLivin/screek/backend/internal/cinema"
+	cinemastore "github.com/StartLivin/screek/backend/internal/cinema/store"
+    cinemahandler "github.com/StartLivin/screek/backend/internal/cinema/handler"
+	"github.com/StartLivin/screek/backend/internal/cinema/domain"
+	"github.com/StartLivin/screek/backend/internal/imports/letterboxd"
+	lbxdhandler "github.com/StartLivin/screek/backend/internal/imports/letterboxd/handler"
 	"github.com/StartLivin/screek/backend/internal/movies"
+	moviestore "github.com/StartLivin/screek/backend/internal/movies/store"
+    moviehandler "github.com/StartLivin/screek/backend/internal/movies/handler"
+    movietmdb "github.com/StartLivin/screek/backend/internal/movies/tmdb"
 	"github.com/StartLivin/screek/backend/internal/notifications"
-	"github.com/StartLivin/screek/backend/internal/payment"
-	"github.com/StartLivin/screek/backend/internal/platform/config"
-	"github.com/StartLivin/screek/backend/internal/platform/database"
-	"github.com/StartLivin/screek/backend/internal/platform/email"
-	"github.com/StartLivin/screek/backend/internal/platform/httputil"
-	"github.com/StartLivin/screek/backend/internal/platform/jobs"
-	"github.com/StartLivin/screek/backend/internal/platform/redis"
-	"github.com/StartLivin/screek/backend/internal/platform/events"
+    notifhandler "github.com/StartLivin/screek/backend/internal/notifications/handler"
+	notifstore "github.com/StartLivin/screek/backend/internal/notifications/store"
+    "github.com/StartLivin/screek/backend/internal/notifications/realtime"
+	"github.com/StartLivin/screek/backend/internal/shared/config"
+	"github.com/StartLivin/screek/backend/internal/shared/database"
+	"github.com/StartLivin/screek/backend/internal/shared/email"
+	"github.com/StartLivin/screek/backend/internal/shared/events"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
+	"github.com/StartLivin/screek/backend/internal/shared/jobs"
+	"github.com/StartLivin/screek/backend/internal/shared/redis"
 	"github.com/StartLivin/screek/backend/internal/social"
+	socialstore "github.com/StartLivin/screek/backend/internal/social/store"
+    socialhandler "github.com/StartLivin/screek/backend/internal/social/handler"
 	"github.com/StartLivin/screek/backend/internal/users"
+	userstore "github.com/StartLivin/screek/backend/internal/users/store"
+    userhandler "github.com/StartLivin/screek/backend/internal/users/handler"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/rs/cors"
+	"github.com/google/uuid"
 	redisclient "github.com/redis/go-redis/v9"
+	"github.com/rs/cors"
 	"gorm.io/gorm"
 
 	_ "github.com/StartLivin/screek/backend/docs"
@@ -47,7 +68,7 @@ type Application struct {
 	db     *gorm.DB
 	redis  *redisclient.Client
 	router *chi.Mux
-	hub    *notifications.Hub
+	hub    *realtime.Hub
 	jobs   *jobs.JobRunner
 	events *events.EventBus
 }
@@ -56,7 +77,7 @@ func NewApplication(cfg config.Config) *Application {
 	return &Application{
 		config: cfg,
 		router: chi.NewRouter(),
-		hub:    notifications.NewHub(),
+		hub:    realtime.NewHub(),
 		jobs:   jobs.NewRunner(),
 		events: events.NewEventBus(),
 	}
@@ -108,17 +129,17 @@ func (app *Application) mount() {
 
 	app.router.Get("/swagger/*", httpSwagger.WrapHandler)
 
-	userStore := users.NewStore(app.db)
-	movieStore := movies.NewStore(app.db)
-	bookingStore := bookings.NewStore(app.db)
-	mgmtStore := management.NewStore(app.db)
-	analyticsStore := analytics.NewStore(app.db)
-	catalogStore := catalog.NewStore(app.db)
-	socialStore := social.NewStore(app.db)
-	notifStore := notifications.NewStore(app.db)
+	userStore := userstore.NewStore(app.db)
+	movieStore := moviestore.NewStore(app.db)
+	bookingStore := bookingstore.NewStore(app.db)
+	mgmtStore := cinemastore.NewStore(app.db)
+	analyticsStore := analyticalstore.NewStore(app.db)
+	catalogStore := catalogstore.NewStore(app.db)
+	socialStore := socialstore.NewStore(app.db)
+	notifStore := notifstore.NewStore(app.db)
 
-	jwtService := auth.NewJWTService(&app.config)
-	tmdbClient := movies.NewTMDBClient(app.config.TMDBToken)
+	jwtService := authjwt.NewJWTService(&app.config)
+	tmdbClient := movietmdb.NewTMDBClient(app.config.TMDBToken)
 	resendClient := email.NewResendClient(app.config.ResendKey)
 	paymentSvc := payment.NewStripeService(app.config.StripeKey, app.config.StripeWebhookSecret)
 
@@ -135,9 +156,9 @@ func (app *Application) mount() {
 
 	userService := users.NewService(userStore, movieStore)
 	notifService := notifications.NewService(notifStore, app.hub)
-	
+
 	authSvc := auth.NewAuthService(userStore, jwtService, app.redis, resendClient)
-	mgmtSvc := management.NewService(mgmtStore, movieService, app.events)
+	mgmtSvc := cinema.NewService(mgmtStore, movieService, app.events)
 	analyticsSvc := analytics.NewService(analyticsStore, movieService)
 	catalogSvc := catalog.NewService(catalogStore, userService, movieService)
 	socialSvc := social.NewService(socialStore, userStore, app.events, sessionAdapter)
@@ -147,31 +168,34 @@ func (app *Application) mount() {
 	listAdapter.svc = catalogSvc
 	sessionAdapter.svc = bookingSvc
 
-	authHandler := auth.NewHandler(authSvc)
-	authAdminHandler := auth.NewAdminHandler(authSvc)
-	userHandler := users.NewHandler(userService)
-	movieHandler := movies.NewHandler(movieService)
-	mgmtHandler := management.NewHandler(mgmtSvc)
-	analyticsHandler := analytics.NewHandler(analyticsSvc)
-	catalogHandler := catalog.NewHandler(catalogSvc)
-	socialHandler := social.NewHandler(socialSvc)
-	bookingHandler := bookings.NewHandler(bookingSvc)
-	notifHandler := notifications.NewHandler(notifService)
-	webhookHandler := bookings.NewWebhookHandler(bookingSvc, paymentSvc)
+	authHandler := authhandler.NewHandler(authSvc)
+	authAdminHandler := authhandler.NewAdminHandler(authSvc)
+	userHandler := userhandler.NewHandler(userService)
+	movieHandler := moviehandler.NewHandler(movieService)
+	mgmtHandler := cinemahandler.NewHandler(mgmtSvc)
+	analyticsHandler := analyticalhandler.NewHandler(analyticsSvc)
+	catalogHandler := cataloghandler.NewHandler(catalogSvc)
+	socialHandler := socialhandler.NewHandler(socialSvc)
+	bookingHandler := bookinghandler.NewHandler(bookingSvc)
+	notifHandler := notifhandler.NewHandler(notifService)
+	webhookHandler := bookinghandler.NewWebhookHandler(bookingSvc, paymentSvc)
+	letterboxdSvc := letterboxd.NewService(movieService, catalogSvc)
+	letterboxdHandler := lbxdhandler.NewHandler(letterboxdSvc)
 
 	app.registerEventHandlers(notifService, mgmtSvc)
 
 	app.router.Mount("/api/v1", app.buildRoutes(
-		authHandler, 
+		authHandler,
 		authAdminHandler,
-		userHandler, 
-		movieHandler, 
-		mgmtHandler, 
-		analyticsHandler, 
-		catalogHandler, 
-		socialHandler, 
-		bookingHandler, 
+		userHandler,
+		movieHandler,
+		mgmtHandler,
+		analyticsHandler,
+		catalogHandler,
+		socialHandler,
+		bookingHandler,
 		notifHandler,
+		letterboxdHandler,
 	))
 
 	app.router.Post("/webhooks/stripe", webhookHandler.StripeWebhook)
@@ -179,7 +203,7 @@ func (app *Application) mount() {
 	app.jobs.Register("@every 1m", "Reserva Cleanup", func() {
 		bookingSvc.CleanupExpiredReservations(context.Background())
 	})
-	
+
 	app.jobs.Register("@midnight", "Analytics Diário", func() {
 		analyticsSvc.RunAnalyticsAggregation(context.Background(), time.Now().AddDate(0, 0, -1))
 	})
@@ -223,9 +247,9 @@ func (app *Application) Run() error {
 	if err := notifications.AutoMigrate(app.db); err != nil {
 		return err
 	}
-	
+
 	slog.Info("Sistema iniciado - Rodando migrações...", "db", "postgres")
-	
+
 	go app.hub.Run()
 
 	app.mount()
@@ -265,7 +289,7 @@ func (app *Application) Run() error {
 	}()
 
 	slog.Info("Servidor rodando", "host", "http://localhost:"+app.config.Port)
-	
+
 	err = srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err
@@ -346,20 +370,21 @@ func (a *sessionSearchAdapter) GetSessionPostData(ctx context.Context, sessionID
 }
 
 func (app *Application) buildRoutes(
-	authH *auth.Handler,
-	authAdminH *auth.AdminHandler,
-	userH *users.Handler,
-	movieH *movies.Handler,
-	mgmtH *management.ManagerHandler,
-	analyticsH *analytics.AnalyticsHandler,
-	catalogH *catalog.CatalogHandler,
-	socialH *social.Handler,
-	bookingH *bookings.Handler,
-	notifH *notifications.Handler,
+	authH *authhandler.Handler,
+	authAdminH *authhandler.AdminHandler,
+	userH *userhandler.Handler,
+	movieH *moviehandler.Handler,
+	mgmtH *cinemahandler.ManagerHandler,
+	analyticsH *analyticalhandler.AnalyticsHandler,
+	catalogH *cataloghandler.CatalogHandler,
+	socialH *socialhandler.Handler,
+	bookingH *bookinghandler.Handler,
+	notifH *notifhandler.Handler,
+	letterboxdH *lbxdhandler.ImportHandler,
 ) http.Handler {
 	r := chi.NewRouter()
-	
-	authMiddleware := auth.AuthMiddleware(auth.NewJWTService(&app.config), app.redis)
+
+	authMiddleware := authhandler.AuthMiddleware(authjwt.NewJWTService(&app.config), app.redis)
 
 	authH.RegisterRoutes(r, authMiddleware)
 	authAdminH.RegisterRoutes(r, authMiddleware)
@@ -371,11 +396,12 @@ func (app *Application) buildRoutes(
 	socialH.RegisterRoutes(r, authMiddleware)
 	bookingH.RegisterRoutes(r, authMiddleware)
 	notifH.RegisterRoutes(r, authMiddleware)
+	letterboxdH.RegisterRoutes(r, authMiddleware)
 
 	return r
 }
 
-func (app *Application) registerEventHandlers(notifSvc *notifications.NotificationService, mgmtSvc *management.ManagementService) {
+func (app *Application) registerEventHandlers(notifSvc *notifications.NotificationService, mgmtSvc *cinema.CinemaService) {
 	app.events.Subscribe(events.EventPostLiked, func(data events.Data) {
 		userID := data["user_id"].(uuid.UUID)
 		senderName := data["sender_name"].(string)
@@ -398,7 +424,7 @@ func (app *Application) registerEventHandlers(notifSvc *notifications.Notificati
 
 	app.events.Subscribe(events.EventSessionScheduled, func(data events.Data) {
 		sessionID := data["session_id"].(int)
-		
+
 		matches, err := mgmtSvc.GetWatchlistMatchesForSession(context.Background(), int(sessionID))
 		if err != nil {
 			return
@@ -421,7 +447,7 @@ func (app *Application) registerEventHandlers(notifSvc *notifications.Notificati
 				resend.SendTicketEmail(bgCtx, userEmail, userName, t.QRCode)
 			}
 		}
-		
+
 		userID := data["user_id"].(uuid.UUID)
 		notifSvc.Notify(bgCtx, userID, "PURCHASE", "Compra Confirmada", "Seus ingressos já estão disponíveis!", "/users/me/tickets")
 	})

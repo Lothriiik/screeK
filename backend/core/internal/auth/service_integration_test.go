@@ -5,10 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/StartLivin/screek/backend/internal/platform/config"
-	"github.com/StartLivin/screek/backend/internal/platform/crypto"
-	"github.com/StartLivin/screek/backend/internal/platform/httputil"
+	"github.com/StartLivin/screek/backend/internal/shared/config"
+	"github.com/StartLivin/screek/backend/internal/shared/crypto"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/users"
+	"github.com/StartLivin/screek/backend/internal/auth/jwt"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupIntegration(t *testing.T) (*AuthService, *MockUserRepo, *MockMailer, *JWTService) {
+func setupIntegration(t *testing.T) (*AuthService, *MockUserRepo, *MockMailer, *jwt.JWTService) {
 	t.Helper()
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
@@ -30,7 +31,7 @@ func setupIntegration(t *testing.T) (*AuthService, *MockUserRepo, *MockMailer, *
 	rdb.FlushAll(context.Background())
 
 	cfg := &config.Config{JWTSecret: "test-secret-key-muito-segura-32chars"}
-	jwtSvc := NewJWTService(cfg)
+	jwtSvc := jwt.NewJWTService(cfg)
 	repo := new(MockUserRepo)
 	mailer := new(MockMailer)
 	svc := NewAuthService(repo, jwtSvc, rdb, mailer)
@@ -63,7 +64,7 @@ func Test_integ_token_na_blacklist_apos_logout(t *testing.T) {
 	err = svc.Logout(context.Background(), resp.AccessToken)
 	require.NoError(t, err)
 
-	_, err = jwtSvc.ValidateToken(resp.AccessToken, TokenTypeAccess)
+	_, err = jwtSvc.ValidateToken(resp.AccessToken, jwt.TokenTypeAccess)
 	assert.NoError(t, err, "JWT ainda é válido estruturalmente, blacklist é verificada no middleware")
 }
 
@@ -108,7 +109,7 @@ func Test_integ_fluxo_completo_de_recuperacao_de_senha(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, capturedToken, "e-mail de reset deve ter sido enviado")
 
-	claims, err := jwtSvc.ValidateToken(capturedToken, TokenTypeReset)
+	claims, err := jwtSvc.ValidateToken(capturedToken, jwt.TokenTypeReset)
 	require.NoError(t, err)
 	assert.Equal(t, user.ID, claims.UserID)
 

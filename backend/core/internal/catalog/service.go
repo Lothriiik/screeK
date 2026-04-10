@@ -33,6 +33,8 @@ type CatalogRepository interface {
 	DeleteMovieList(ctx context.Context, listID uint) error
 	SearchLists(ctx context.Context, query string) ([]MovieList, error)
 	GetMovieStats(ctx context.Context, movieID uint) (*MovieStats, error)
+	GetUserLogs(ctx context.Context, userID uuid.UUID) ([]MovieLog, error)
+	GetMovieLog(ctx context.Context, userID uuid.UUID, movieID uint) (*MovieLog, error)
 }
 
 type CatalogService struct {
@@ -61,12 +63,19 @@ func (s *CatalogService) LogMovie(ctx context.Context, userID uuid.UUID, movieID
 		Rating:  req.Rating,
 		Liked:   req.Liked,
 	}
+
+	// Verificar se já existia um log assistido para não duplicar estatísticas
+	alreadyWatched := false
+	existing, _ := s.repo.GetMovieLog(ctx, userID, movieID)
+	if existing != nil && existing.Watched {
+		alreadyWatched = true
+	}
 	
 	if err := s.repo.UpsertMovieLog(ctx, log); err != nil {
 		return err
 	}
 
-	if req.Watched {
+	if req.Watched && !alreadyWatched {
 		movie, err := s.movieProvider.GetMovieDetails(ctx, int(movieID))
 		runtime := 0
 		if err == nil && movie != nil {
@@ -88,8 +97,21 @@ func (s *CatalogService) RemoveFromWatchlist(ctx context.Context, userID uuid.UU
 	return s.repo.RemoveFromWatchlist(ctx, userID, movieID)
 }
 
-func (s *CatalogService) GetWatchlist(ctx context.Context, userID uuid.UUID) ([]WatchlistItem, error) {
-	return s.repo.GetWatchlist(ctx, userID)
+func (s *CatalogService) GetWatchlist(ctx context.Context, userID uuid.UUID) ([]WatchlistItemResponseDTO, error) {
+	items, err := s.repo.GetWatchlist(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var dtos []WatchlistItemResponseDTO
+	for _, item := range items {
+		dtos = append(dtos, WatchlistItemResponseDTO{
+			MovieID: item.MovieID,
+			AddedAt: item.AddedAt.Format("02/01/2006 15:04"),
+			Movie:   s.mapMovieToDTO(item.Movie),
+		})
+	}
+	return dtos, nil
 }
 
 func (s *CatalogService) CreateMovieList(ctx context.Context, userID uuid.UUID, req CreateMovieListRequest) (*MovieListResponseDTO, error) {
@@ -226,4 +248,37 @@ func (s *CatalogService) GetMovieDetail(ctx context.Context, tmdbID int) (*Movie
 	}
 
 	return dto, nil
+}
+
+func (s *CatalogService) GetMyHistory(ctx context.Context, userID uuid.UUID) ([]MovieLogResponseDTO, error) {
+	logs, err := s.repo.GetUserLogs(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var dtos []MovieLogResponseDTO
+	for _, log := range logs {
+		dtos = append(dtos, MovieLogResponseDTO{
+			MovieID:   log.MovieID,
+			Watched:   log.Watched,
+			Rating:    log.Rating,
+			Liked:     log.Liked,
+			UpdatedAt: log.UpdatedAt.Format("02/01/2006 15:04"),
+			Movie:     s.mapMovieToDTO(log.Movie),
+		})
+	}
+	return dtos, nil
+}
+
+func (s *CatalogService) mapMovieToDTO(movie movies.Movie) MovieDetailResponseDTO {
+	return MovieDetailResponseDTO{
+		ID:          movie.ID,
+		TMDBID:      movie.TMDBID,
+		Title:       movie.Title,
+		Overview:    movie.Overview,
+		PosterURL:   movie.PosterURL,
+		BackdropURL: movie.BackdropURL,
+		ReleaseDate: movie.ReleaseDate.Format("2006-01-02"),
+		Runtime:     movie.Runtime,
+	}
 }

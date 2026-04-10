@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/StartLivin/screek/backend/internal/platform/validation"
+	"github.com/StartLivin/screek/backend/internal/shared/validation"
 )
 
 type AuthTokenResponse struct {

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	movietmdb "github.com/StartLivin/screek/backend/internal/movies/tmdb"
 )
 
 func Test_deve_buscar_filmes_e_salvar_localmente(t *testing.T) {
@@ -18,7 +19,7 @@ func Test_deve_buscar_filmes_e_salvar_localmente(t *testing.T) {
 	lProv := new(MockListSearchProvider)
 	svc := NewService(tmdb, repo, uProv, lProv)
 
-	tmdb.On("SearchMovies", mock.Anything, "Batman").Return([]TMDBMovie{
+	tmdb.On("SearchMovies", mock.Anything, "Batman", 0).Return([]movietmdb.TMDBMovie{
 		{ID: 268, Title: "Batman", Overview: "Dark Knight", PosterPath: "/batman.jpg", ReleaseDate: "2008-07-18"},
 		{ID: 155, Title: "The Dark Knight", Overview: "Rises", PosterPath: "/dk.jpg", ReleaseDate: "2012-07-20"},
 	}, nil)
@@ -42,7 +43,7 @@ func Test_deve_retornar_erro_quando_tmdb_falha_na_busca(t *testing.T) {
 	lProv := new(MockListSearchProvider)
 	svc := NewService(tmdb, repo, uProv, lProv)
 
-	tmdb.On("SearchMovies", mock.Anything, "xyz").Return([]TMDBMovie{}, errors.New("TMDB offline"))
+	tmdb.On("SearchMovies", mock.Anything, "xyz", 0).Return([]movietmdb.TMDBMovie{}, errors.New("TMDB offline"))
 
 	results, err := svc.SearchMovies(context.Background(), "xyz")
 
@@ -79,7 +80,7 @@ func Test_deve_buscar_detalhes_do_tmdb_quando_nao_ha_cache(t *testing.T) {
 	svc := NewService(tmdb, repo, uProv, lProv)
 
 	repo.On("GetMovieByTMDBID", mock.Anything, 550).Return(nil, errors.New("not found"))
-	tmdb.On("GetMovieDetails", mock.Anything, 550).Return(&TMDBMovieDetails{
+	tmdb.On("GetMovieDetails", mock.Anything, 550).Return(&movietmdb.TMDBMovieDetails{
 		ID:          550,
 		Title:       "Fight Club",
 		Overview:    "First rule...",
@@ -146,7 +147,7 @@ func Test_deve_buscar_recomendacoes_do_tmdb(t *testing.T) {
 	lProv := new(MockListSearchProvider)
 	svc := NewService(tmdb, repo, uProv, lProv)
 
-	tmdb.On("GetMoviesRecommendations", mock.Anything, 550).Return([]TMDBMovie{
+	tmdb.On("GetMoviesRecommendations", mock.Anything, 550).Return([]movietmdb.TMDBMovie{
 		{ID: 680, Title: "Pulp Fiction"},
 		{ID: 13, Title: "Forrest Gump"},
 	}, nil)
@@ -165,8 +166,8 @@ func Test_deve_buscar_creditos_de_pessoa(t *testing.T) {
 	lProv := new(MockListSearchProvider)
 	svc := NewService(tmdb, repo, uProv, lProv)
 
-	tmdb.On("GetPersonCredits", mock.Anything, 6193).Return(&TMDBPersonCredits{
-		Cast: []TMDBPersonMovieCast{
+	tmdb.On("GetPersonCredits", mock.Anything, 6193).Return(&movietmdb.TMDBPersonCredits{
+		Cast: []movietmdb.TMDBPersonMovieCast{
 			{ID: 550, Title: "Fight Club", Character: "Tyler Durden"},
 			{ID: 27205, Title: "Inception", Character: "Cobb"},
 		},
@@ -186,7 +187,7 @@ func Test_deve_parsear_data_de_lancamento_corretamente(t *testing.T) {
 	lProv := new(MockListSearchProvider)
 	svc := NewService(tmdb, repo, uProv, lProv)
 
-	tmdb.On("SearchMovies", mock.Anything, "Inception").Return([]TMDBMovie{
+	tmdb.On("SearchMovies", mock.Anything, "Inception", 0).Return([]movietmdb.TMDBMovie{
 		{ID: 27205, Title: "Inception", ReleaseDate: "2010-07-16", PosterPath: "/inc.jpg"},
 	}, nil)
 	repo.On("SaveMovie", mock.Anything, mock.AnythingOfType("*movies.Movie")).Return(nil)

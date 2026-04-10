@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/movies"
-	"github.com/StartLivin/screek/backend/internal/platform/crypto"
+	"github.com/StartLivin/screek/backend/internal/shared/crypto"
 	"github.com/google/uuid"
 )
 
@@ -50,7 +50,6 @@ func (s *UserService) CreateUser(ctx context.Context, user *User) error {
 	return s.repo.CreateUser(ctx, user)
 }
 
-
 func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	return s.repo.GetUserByID(ctx, id)
 }
@@ -73,7 +72,6 @@ func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID, password str
 	}
 	return s.repo.DeleteUser(ctx, id)
 }
-
 
 func (s *UserService) AddFavorite(ctx context.Context, userID uuid.UUID, tmdbID int) error {
 	movie, err := s.movieRepo.GetMovieByTMDBID(ctx, tmdbID)
@@ -139,7 +137,7 @@ func (s *UserService) RecalculateTopGenre(ctx context.Context, userID uuid.UUID)
 	}
 
 	if stats != nil && time.Since(stats.LastRecalcAt) < 30*time.Second {
-		return nil 
+		return nil
 	}
 
 	genreID, err := s.repo.GetTopGenreByUsage(ctx, userID)
