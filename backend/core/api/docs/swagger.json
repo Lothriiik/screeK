@@ -3190,7 +3190,7 @@
                 }
             }
         },
-        "domain.Room": {
+        "cinema.Room": {
             "type": "object",
             "properties": {
                 "capacity": {
@@ -3208,15 +3208,15 @@
                 "seats": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.Seat"
+                        "$ref": "#/definitions/cinema.Seat"
                     }
                 },
                 "type": {
-                    "$ref": "#/definitions/domain.RoomType"
+                    "$ref": "#/definitions/cinema.RoomType"
                 }
             }
         },
-        "domain.RoomType": {
+        "cinema.RoomType": {
             "type": "string",
             "enum": [
                 "STANDARD",
@@ -3229,7 +3229,7 @@
                 "RoomTypeVIP"
             ]
         },
-        "domain.Seat": {
+        "cinema.Seat": {
             "type": "object",
             "properties": {
                 "id": {
@@ -3323,7 +3323,7 @@
                 "rooms": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.Room"
+                        "$ref": "#/definitions/cinema.Room"
                     }
                 },
                 "updated_at": {

@@ -326,7 +326,7 @@ definitions:
       user_id:
         type: string
     type: object
-  domain.Room:
+  cinema.Room:
     properties:
       capacity:
         type: integer
@@ -338,12 +338,12 @@ definitions:
         type: string
       seats:
         items:
-          $ref: '#/definitions/domain.Seat'
+          $ref: '#/definitions/cinema.Seat'
         type: array
       type:
-        $ref: '#/definitions/domain.RoomType'
+        $ref: '#/definitions/cinema.RoomType'
     type: object
-  domain.RoomType:
+  cinema.RoomType:
     enum:
     - STANDARD
     - IMAX
@@ -353,7 +353,7 @@ definitions:
     - RoomTypeStandard
     - RoomTypeIMAX
     - RoomTypeVIP
-  domain.Seat:
+  cinema.Seat:
     properties:
       id:
         type: integer
@@ -416,7 +416,7 @@ definitions:
         type: string
       rooms:
         items:
-          $ref: '#/definitions/domain.Room'
+          $ref: '#/definitions/cinema.Room'
         type: array
       updated_at:
         type: string

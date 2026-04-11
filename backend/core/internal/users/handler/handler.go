@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/users" 
 	"github.com/go-chi/chi/v5"
@@ -141,15 +140,6 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var favoriteMovies []movies.MovieDTO
-	for _, movie := range user.FavoriteMovies {
-		favoriteMovies = append(favoriteMovies, movies.MovieDTO{
-			ID:        movie.ID,
-			Title:     movie.Title,
-			PosterURL: movie.PosterURL,
-		})
-	}
-
 	userDTO := users.UserDetailsDTO{
 		ID:             user.ID,
 		Username:       user.Username,
@@ -158,7 +148,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		AvatarURL:      user.AvatarURL,
 		Pronouns:       user.Pronouns,
 		DefaultCity:    user.DefaultCity,
-		FavoriteMovies: favoriteMovies,
+		FavoriteMovies: user.FavoriteMovies,
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, userDTO)
@@ -186,15 +176,6 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var favoriteMovies []movies.MovieDTO
-	for _, movie := range user.FavoriteMovies {
-		favoriteMovies = append(favoriteMovies, movies.MovieDTO{
-			ID:        movie.ID,
-			Title:     movie.Title,
-			PosterURL: movie.PosterURL,
-		})
-	}
-
 	userDTO := users.UserMeDetailsDTO{
 		ID:             user.ID,
 		Username:       user.Username,
@@ -204,7 +185,7 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		AvatarURL:      user.AvatarURL,
 		Pronouns:       user.Pronouns,
 		DefaultCity:    user.DefaultCity,
-		FavoriteMovies: favoriteMovies,
+		FavoriteMovies: user.FavoriteMovies,
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, userDTO)

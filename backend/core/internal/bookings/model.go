@@ -3,7 +3,7 @@ package bookings
 import (
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/cinema/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema"
 	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -47,13 +47,12 @@ type Ticket struct {
 	PricePaid     int            `json:"price_paid" gorm:"not null;default:0"`
 	QRCode        string         `json:"qr_code" gorm:"not null;unique"`
 	Transaction   Transaction    `json:"-" gorm:"foreignKey:TransactionID"`
-	Session       domain.Session `json:"session" gorm:"foreignKey:SessionID"`
-	Seat          *domain.Seat   `json:"seat" gorm:"foreignKey:SeatID"`
+	Session       cinema.Session `json:"session" gorm:"foreignKey:SessionID"`
+	Seat          *cinema.Seat   `json:"seat" gorm:"foreignKey:SeatID"`
 }
 
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
-		&domain.Cinema{}, &domain.Room{}, &domain.Seat{}, &domain.Session{},
 		&Transaction{}, &Ticket{},
 	)
 }

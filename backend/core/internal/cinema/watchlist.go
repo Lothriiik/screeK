@@ -1,4 +1,4 @@
-package domain
+package cinema
 
 import (
 	"github.com/google/uuid"

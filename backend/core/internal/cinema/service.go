@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/cinema/domain"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/shared/events"
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
@@ -23,28 +22,28 @@ type MovieProvider interface {
 }
 
 type CinemaRepository interface {
-	CreateCinema(ctx context.Context, cinema *domain.Cinema) error
-	GetCinemaByID(ctx context.Context, id int) (*domain.Cinema, error)
-	UpdateCinema(ctx context.Context, cinema *domain.Cinema) error
+	CreateCinema(ctx context.Context, cinema *Cinema) error
+	GetCinemaByID(ctx context.Context, id int) (*Cinema, error)
+	UpdateCinema(ctx context.Context, cinema *Cinema) error
 	DeleteCinema(ctx context.Context, id int) error
-	ListCinemas(ctx context.Context) ([]domain.Cinema, error)
+	ListCinemas(ctx context.Context) ([]Cinema, error)
 
-	CreateRoom(ctx context.Context, room *domain.Room, seats []domain.Seat) error
-	GetRoomByID(ctx context.Context, id int) (*domain.Room, error)
-	UpdateRoom(ctx context.Context, room *domain.Room) error
+	CreateRoom(ctx context.Context, room *Room, seats []Seat) error
+	GetRoomByID(ctx context.Context, id int) (*Room, error)
+	UpdateRoom(ctx context.Context, room *Room) error
 	DeleteRoom(ctx context.Context, id int) error
 
-	CreateSession(ctx context.Context, session *domain.Session) error
-	CreateSessionWithOverlapCheck(ctx context.Context, session *domain.Session, movieRuntime int) error
-	UpdateSession(ctx context.Context, session *domain.Session) error
-	UpdateSessionWithOverlapCheck(ctx context.Context, session *domain.Session, movieRuntime int) error
-	ListSessions(ctx context.Context, cinemaID int, date string) ([]domain.Session, error)
-	GetSessionsByRoom(ctx context.Context, roomID int, date time.Time) ([]domain.Session, error)
-	GetSession(ctx context.Context, sessionID int) (*domain.Session, error)
+	CreateSession(ctx context.Context, session *Session) error
+	CreateSessionWithOverlapCheck(ctx context.Context, session *Session, movieRuntime int) error
+	UpdateSession(ctx context.Context, session *Session) error
+	UpdateSessionWithOverlapCheck(ctx context.Context, session *Session, movieRuntime int) error
+	ListSessions(ctx context.Context, cinemaID int, date string) ([]Session, error)
+	GetSessionsByRoom(ctx context.Context, roomID int, date time.Time) ([]Session, error)
+	GetSession(ctx context.Context, sessionID int) (*Session, error)
 	DeleteSession(ctx context.Context, sessionID int) error
 	GetSessionBookingsCount(ctx context.Context, sessionID int) (int, error)
-	GetWatchlistMatches(ctx context.Context) ([]domain.WatchlistMatch, error)
-	GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]domain.WatchlistMatch, error)
+	GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error)
+	GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]WatchlistMatch, error)
 
 	IsManagerOfCinema(ctx context.Context, userID uuid.UUID, cinemaID int) (bool, error)
 }
@@ -68,7 +67,7 @@ func (s *CinemaService) CreateCinema(ctx context.Context, role httputil.Role, re
 		return errors.New("apenas administradores podem criar cinemas")
 	}
 
-	cinema := &domain.Cinema{
+	cinema := &Cinema{
 		Name:    req.Name,
 		City:    req.City,
 		Address: req.Address,
@@ -93,19 +92,19 @@ func (s *CinemaService) CreateRoom(ctx context.Context, userID uuid.UUID, role h
 		return ErrNotCinemaManager
 	}
 
-	room := &domain.Room{
+	room := &Room{
 		CinemaID: req.CinemaID,
 		Name:     req.Name,
 		Capacity: req.Capacity,
-		Type:     domain.RoomType(req.Type),
+		Type:     RoomType(req.Type),
 	}
 
-	seats := make([]domain.Seat, req.Capacity)
+	seats := make([]Seat, req.Capacity)
 	rows := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
 	for i := 0; i < req.Capacity; i++ {
 		rowIdx := i / 10
 		num := (i % 10) + 1
-		seats[i] = domain.Seat{
+		seats[i] = Seat{
 			Row:    rows[rowIdx],
 			Number: num,
 			Type:   "STANDARD",
@@ -139,12 +138,12 @@ func (s *CinemaService) CreateSession(ctx context.Context, userID uuid.UUID, rol
 		return errors.New("filme não encontrado")
 	}
 
-	session := &domain.Session{
+	session := &Session{
 		MovieID:     req.MovieID,
 		RoomID:      req.RoomID,
 		StartTime:   req.StartTime,
 		Price:       req.Price,
-		SessionType: domain.SessionType(req.SessionType),
+		SessionType: SessionType(req.SessionType),
 		IsFree:      req.Price == 0,
 	}
 
@@ -153,12 +152,17 @@ func (s *CinemaService) CreateSession(ctx context.Context, userID uuid.UUID, rol
 		return err
 	}
 
+	cinemaObj, err := s.repo.GetCinemaByID(ctx, room.CinemaID)
+	if err != nil {
+		return errors.New("erro ao buscar cinema para evento")
+	}
+
 	if s.events != nil {
 		s.events.Publish(events.EventSessionScheduled, events.Data{
 			"session_id":  session.ID,
 			"movie_id":    session.MovieID,
 			"movie_title": movie.Title,
-			"city":        room.Cinema.City,
+			"city":        cinemaObj.City,
 		})
 	}
 
@@ -200,7 +204,7 @@ func (s *CinemaService) DeleteSession(ctx context.Context, userID uuid.UUID, rol
 	return s.repo.DeleteSession(ctx, sessionID)
 }
 
-func (s *CinemaService) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]domain.WatchlistMatch, error) {
+func (s *CinemaService) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]WatchlistMatch, error) {
 	return s.repo.GetWatchlistMatchesForSession(ctx, sessionID)
 }
 
@@ -262,7 +266,7 @@ func (s *CinemaService) UpdateRoom(ctx context.Context, userID uuid.UUID, role h
 
 	room.Name = req.Name
 	room.Capacity = req.Capacity
-	room.Type = domain.RoomType(req.Type)
+	room.Type = RoomType(req.Type)
 
 	return s.repo.UpdateRoom(ctx, room)
 }
@@ -330,7 +334,7 @@ func (s *CinemaService) UpdateSession(ctx context.Context, userID uuid.UUID, rol
 	session.RoomID = req.RoomID
 	session.StartTime = req.StartTime
 	session.Price = req.Price
-	session.SessionType = domain.SessionType(req.SessionType)
+	session.SessionType = SessionType(req.SessionType)
 	session.IsFree = req.Price == 0
 
 	movie, err := s.movieProvider.GetMovieDetails(ctx, req.MovieID)
@@ -341,7 +345,7 @@ func (s *CinemaService) UpdateSession(ctx context.Context, userID uuid.UUID, rol
 	return s.repo.UpdateSessionWithOverlapCheck(ctx, session, movie.Runtime)
 }
 
-func (s *CinemaService) GetCinemaByID(ctx context.Context, id int) (*domain.Cinema, error) {
+func (s *CinemaService) GetCinemaByID(ctx context.Context, id int) (*Cinema, error) {
 	return s.repo.GetCinemaByID(ctx, id)
 }
 
@@ -371,9 +375,16 @@ func (s *CinemaService) ListSessions(ctx context.Context, cinemaID int, date str
 
 	var response []SessionAdminResponseDTO
 	for _, sess := range sessions {
+
+		movie, _ := s.movieProvider.GetMovieDetails(ctx, sess.MovieID)
+		movieTitle := "Desconhecido"
+		if movie != nil {
+			movieTitle = movie.Title
+		}
+
 		response = append(response, SessionAdminResponseDTO{
 			ID:          sess.ID,
-			MovieTitle:  sess.Movie.Title,
+			MovieTitle:  movieTitle,
 			RoomName:    sess.Room.Name,
 			StartTime:   sess.StartTime,
 			Price:       sess.Price,
@@ -383,6 +394,6 @@ func (s *CinemaService) ListSessions(ctx context.Context, cinemaID int, date str
 	return response, nil
 }
 
-func (s *CinemaService) GetWatchlistMatches(ctx context.Context) ([]domain.WatchlistMatch, error) {
+func (s *CinemaService) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error) {
 	return s.repo.GetWatchlistMatches(ctx)
 }

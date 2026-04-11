@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/shared/validation"
 	"github.com/google/uuid"
@@ -33,7 +32,7 @@ type UserDetailsDTO struct {
 	AvatarURL      string            `json:"avatar_url"`
 	Pronouns       string            `json:"pronouns"`
 	DefaultCity    string            `json:"default_city"`
-	FavoriteMovies []movies.MovieDTO `json:"favorite_movies"`
+	FavoriteMovies []int			 `json:"favorite_movies"`
 }
 
 type UserMeDetailsDTO struct {
@@ -45,7 +44,7 @@ type UserMeDetailsDTO struct {
 	AvatarURL      string            `json:"avatar_url"`
 	Pronouns       string            `json:"pronouns"`
 	DefaultCity    string            `json:"default_city"`
-	FavoriteMovies []movies.MovieDTO `json:"favorite_movies"`
+	FavoriteMovies []int 			 `json:"favorite_movies"`
 }
 
 type UpdateUserDTO struct {

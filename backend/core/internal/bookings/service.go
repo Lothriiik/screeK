@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/bookings/infra/payment"
-	"github.com/StartLivin/screek/backend/internal/cinema/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/shared/events"
 	"github.com/google/uuid"
@@ -37,8 +37,8 @@ type SimpleRedisClient interface {
 type Service interface {
 	GetMoviesPlaying(ctx context.Context, city, date string) ([]movies.MovieDTO, error)
 	GetMovieSessionsGroupedByCinema(ctx context.Context, movieID int, city, date string) ([]CinemaSessionsResponseDTO, error)
-	GetSeatsBySession(ctx context.Context, sessionID int) ([]domain.Seat, error)
-	GetSessionByID(ctx context.Context, sessionID int) (*domain.Session, error)
+	GetSeatsBySession(ctx context.Context, sessionID int) ([]cinema.Seat, error)
+	GetSessionByID(ctx context.Context, sessionID int) (*cinema.Session, error)
 	ReserveSeats(ctx context.Context, userID uuid.UUID, sessionID int, ticketsReq []TicketRequest) (*Transaction, error)
 	PayReservation(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, idempotencyKey string) (string, error)
 	CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) error
@@ -113,21 +113,31 @@ func (s *bookingsService) GetMovieSessionsGroupedByCinema(ctx context.Context, m
 	}
 
 	groupedMap := make(map[int]*CinemaSessionsResponseDTO)
+	cinemasCache := make(map[int]*cinema.Cinema)
 
 	for _, session := range sessions {
-		cinema := session.Room.Cinema
-		id := cinema.ID
+		cinemaID := session.Room.CinemaID
+		
+		cinObj, ok := cinemasCache[cinemaID]
+		if !ok {
+			c, err := s.store.GetCinemaByID(ctx, cinemaID)
+			if err != nil {
+				continue
+			}
+			cinObj = c
+			cinemasCache[cinemaID] = cinObj
+		}
 
-		if _, exists := groupedMap[id]; !exists {
-			groupedMap[id] = &CinemaSessionsResponseDTO{
-				CinemaID:   cinema.ID,
-				CinemaName: cinema.Name,
-				CinemaCity: cinema.City,
+		if _, exists := groupedMap[cinemaID]; !exists {
+			groupedMap[cinemaID] = &CinemaSessionsResponseDTO{
+				CinemaID:   cinObj.ID,
+				CinemaName: cinObj.Name,
+				CinemaCity: cinObj.City,
 				Sessions:   []SessionResponseDTO{},
 			}
 		}
 
-		groupedMap[id].Sessions = append(groupedMap[id].Sessions, SessionResponseDTO{
+		groupedMap[cinemaID].Sessions = append(groupedMap[cinemaID].Sessions, SessionResponseDTO{
 			ID:          session.ID,
 			StartTime:   session.StartTime,
 			Price:       session.Price,
@@ -151,11 +161,11 @@ func (s *bookingsService) GetMovieSessionsGroupedByCinema(ctx context.Context, m
 	return response, nil
 }
 
-func (s *bookingsService) GetSeatsBySession(ctx context.Context, sessionID int) ([]domain.Seat, error) {
+func (s *bookingsService) GetSeatsBySession(ctx context.Context, sessionID int) ([]cinema.Seat, error) {
 	return s.store.GetSeatsBySession(ctx, sessionID)
 }
 
-func (s *bookingsService) GetSessionByID(ctx context.Context, sessionID int) (*domain.Session, error) {
+func (s *bookingsService) GetSessionByID(ctx context.Context, sessionID int) (*cinema.Session, error) {
 	return s.store.GetSessionByID(ctx, sessionID)
 }
 
@@ -192,9 +202,9 @@ func (s *bookingsService) ReserveSeats(ctx context.Context, userID uuid.UUID, se
 
 	basePrice := session.Price
 
-	if session.Room.Type == domain.RoomTypeVIP {
+	if session.Room.Type == cinema.RoomTypeVIP {
 		basePrice = int(float64(basePrice) * 1.5)
-	} else if session.Room.Type == domain.RoomTypeIMAX {
+	} else if session.Room.Type == cinema.RoomTypeIMAX {
 		basePrice = int(float64(basePrice) * 1.3)
 	}
 
@@ -304,11 +314,36 @@ func (s *bookingsService) GetUserTickets(ctx context.Context, userID uuid.UUID, 
 	}
 
 	var response []TicketResponseDTO
+	cinemasCache := make(map[int]string)
+	moviesCache := make(map[int]string)
+
 	for _, t := range tickets {
+		movieName, ok := moviesCache[t.Session.MovieID]
+		if !ok {
+			movie, err := s.movieProvider.GetMovieDetails(ctx, t.Session.MovieID)
+			if err == nil && movie != nil {
+				movieName = movie.Title
+			} else {
+				movieName = "Desconhecido"
+			}
+			moviesCache[t.Session.MovieID] = movieName
+		}
+		
+		cinemaName, ok := cinemasCache[t.Session.Room.CinemaID]
+		if !ok {
+			cinema, err := s.store.GetCinemaByID(ctx, t.Session.Room.CinemaID)
+			if err == nil && cinema != nil {
+				cinemaName = cinema.Name
+			} else {
+				cinemaName = "Desconhecido"
+			}
+			cinemasCache[t.Session.Room.CinemaID] = cinemaName
+		}
+
 		dto := TicketResponseDTO{
 			ID:        t.ID,
-			MovieName: t.Session.Movie.Title,
-			Cinema:    t.Session.Room.Cinema.Name,
+			MovieName: movieName,
+			Cinema:    cinemaName,
 			Date:      t.Session.StartTime.Format("02/01/2006 15:04"),
 			Room:      t.Session.Room.Name,
 			Seat: func() string {
@@ -338,10 +373,22 @@ func (s *bookingsService) GetTicketDetail(ctx context.Context, ticketID uuid.UUI
 		return TicketResponseDTO{}, err
 	}
 
+	movieName := "Desconhecido"
+	movie, err := s.movieProvider.GetMovieDetails(ctx, ticket.Session.MovieID)
+	if err == nil && movie != nil {
+		movieName = movie.Title
+	}
+
+	cinemaName := "Desconhecido"
+	cinema, err := s.store.GetCinemaByID(ctx, ticket.Session.Room.CinemaID)
+	if err == nil && cinema != nil {
+		cinemaName = cinema.Name
+	}
+
 	dto := TicketResponseDTO{
 		ID:        ticket.ID,
-		MovieName: ticket.Session.Movie.Title,
-		Cinema:    ticket.Session.Room.Cinema.Name,
+		MovieName: movieName,
+		Cinema:    cinemaName,
 		Date:      ticket.Session.StartTime.Format("02/01/2006 15:04"),
 		Room:      ticket.Session.Room.Name,
 		Seat: func() string {
@@ -456,11 +503,11 @@ func (s *bookingsService) AdminCancelSession(ctx context.Context, sessionID int)
 	return nil
 }
 
-func (s *bookingsService) mapTicketToDTO(t Ticket) TicketResponseDTO {
+func (s *bookingsService) mapTicketToDTO(t Ticket, movieName, cinemaName string) TicketResponseDTO {
 	return TicketResponseDTO{
 		ID:        t.ID,
-		MovieName: t.Session.Movie.Title,
-		Cinema:    t.Session.Room.Cinema.Name,
+		MovieName: movieName,
+		Cinema:    cinemaName,
 		Date:      t.Session.StartTime.Format("02/01/2006 15:04"),
 		Room:      t.Session.Room.Name,
 		Seat: func() string {
@@ -485,9 +532,25 @@ func (s *bookingsService) GetTicketsBySession(ctx context.Context, sessionID int
 		return nil, err
 	}
 
+	if len(tickets) == 0 {
+		return []TicketResponseDTO{}, nil
+	}
+
+	firstTicket := tickets[0]
+	movieName := "Desconhecido"
+	movie, err := s.movieProvider.GetMovieDetails(ctx, firstTicket.Session.MovieID)
+	if err == nil && movie != nil {
+		movieName = movie.Title
+	}
+	cinemaName := "Desconhecido"
+	cinema, err := s.store.GetCinemaByID(ctx, firstTicket.Session.Room.CinemaID)
+	if err == nil && cinema != nil {
+		cinemaName = cinema.Name
+	}
+
 	var response []TicketResponseDTO
 	for _, t := range tickets {
-		response = append(response, s.mapTicketToDTO(t))
+		response = append(response, s.mapTicketToDTO(t, movieName, cinemaName))
 	}
 
 	return response, nil

@@ -27,8 +27,7 @@ import (
     cataloghandler "github.com/StartLivin/screek/backend/internal/catalog/handler"
 	"github.com/StartLivin/screek/backend/internal/cinema"
 	cinemastore "github.com/StartLivin/screek/backend/internal/cinema/store"
-    cinemahandler "github.com/StartLivin/screek/backend/internal/cinema/handler"
-	"github.com/StartLivin/screek/backend/internal/cinema/domain"
+	cinemahandler "github.com/StartLivin/screek/backend/internal/cinema/handler"
 	"github.com/StartLivin/screek/backend/internal/imports/letterboxd"
 	lbxdhandler "github.com/StartLivin/screek/backend/internal/imports/letterboxd/handler"
 	"github.com/StartLivin/screek/backend/internal/movies"
@@ -167,6 +166,8 @@ func (app *Application) mount() {
 	userAdapter.svc = userService
 	listAdapter.svc = catalogSvc
 	sessionAdapter.svc = bookingSvc
+	sessionAdapter.movieSvc = movieService
+	sessionAdapter.mgmtSvc = mgmtSvc
 
 	authHandler := authhandler.NewHandler(authSvc)
 	authAdminHandler := authhandler.NewAdminHandler(authSvc)
@@ -223,13 +224,13 @@ func (app *Application) Run() error {
 	app.redis = redis.InitRedis(app.config.RedisURL)
 
 	slog.Info("Executando migrações automáticas...")
-	if err := users.AutoMigrate(app.db); err != nil {
+	if err := userstore.AutoMigrate(app.db); err != nil {
 		return err
 	}
 	if err := movies.AutoMigrate(app.db); err != nil {
 		return err
 	}
-	if err := domain.AutoMigrate(app.db); err != nil {
+	if err := cinemastore.AutoMigrate(app.db); err != nil {
 		return err
 	}
 	if err := bookings.AutoMigrate(app.db); err != nil {
@@ -347,7 +348,9 @@ func (a *listSearchAdapter) SearchLists(ctx context.Context, query string) ([]mo
 }
 
 type sessionSearchAdapter struct {
-	svc bookings.Service
+	svc      bookings.Service
+	movieSvc *movies.MovieService
+	mgmtSvc  *cinema.CinemaService
 }
 
 func (a *sessionSearchAdapter) GetSessionPostData(ctx context.Context, sessionID uint) (*social.PostSessionData, error) {
@@ -359,13 +362,25 @@ func (a *sessionSearchAdapter) GetSessionPostData(ctx context.Context, sessionID
 		return nil, err
 	}
 
+	movieTitle := "Desconhecido"
+	posterURL := ""
+	if m, err := a.movieSvc.GetMovieDetails(ctx, session.MovieID); err == nil && m != nil {
+		movieTitle = m.Title
+		posterURL = m.PosterURL
+	}
+
+	cinemaName := "Desconhecido"
+	if c, err := a.mgmtSvc.GetCinemaByID(ctx, session.Room.CinemaID); err == nil && c != nil {
+		cinemaName = c.Name
+	}
+
 	return &social.PostSessionData{
 		SessionID:  session.ID,
-		MovieTitle: session.Movie.Title,
-		PosterURL:  session.Movie.PosterURL,
+		MovieTitle: movieTitle,
+		PosterURL:  posterURL,
 		StartTime:  session.StartTime.Format("02/01 15:04"),
 		RoomName:   session.Room.Name,
-		CinemaName: session.Room.Cinema.Name,
+		CinemaName: cinemaName,
 	}, nil
 }
 

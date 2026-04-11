@@ -5,14 +5,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/StartLivin/screek/backend/internal/cinema/domain"
-	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/cinema"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
-type CinemaResponseDTO domain.Cinema
+type CinemaResponseDTO cinema.Cinema
 
 type ManagerHandler struct {
 	service *cinema.CinemaService

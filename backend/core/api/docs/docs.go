@@ -3196,7 +3196,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.Room": {
+        "cinema.Room": {
             "type": "object",
             "properties": {
                 "capacity": {
@@ -3214,15 +3214,15 @@ const docTemplate = `{
                 "seats": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.Seat"
+                        "$ref": "#/definitions/cinema.Seat"
                     }
                 },
                 "type": {
-                    "$ref": "#/definitions/domain.RoomType"
+                    "$ref": "#/definitions/cinema.RoomType"
                 }
             }
         },
-        "domain.RoomType": {
+        "cinema.RoomType": {
             "type": "string",
             "enum": [
                 "STANDARD",
@@ -3235,7 +3235,7 @@ const docTemplate = `{
                 "RoomTypeVIP"
             ]
         },
-        "domain.Seat": {
+        "cinema.Seat": {
             "type": "object",
             "properties": {
                 "id": {
@@ -3329,7 +3329,7 @@ const docTemplate = `{
                 "rooms": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.Room"
+                        "$ref": "#/definitions/cinema.Room"
                     }
                 },
                 "updated_at": {

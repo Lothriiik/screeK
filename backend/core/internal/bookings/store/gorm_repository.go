@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/cinema/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/bookings"
 	"github.com/google/uuid"
@@ -32,8 +32,8 @@ func NewStore(db *gorm.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetCinemaByID(ctx context.Context, id int) (*domain.Cinema, error) {
-	var cinema domain.Cinema
+func (s *Store) GetCinemaByID(ctx context.Context, id int) (*cinema.Cinema, error) {
+	var cinema cinema.Cinema
 	if err := s.db.WithContext(ctx).Preload("Rooms.Seats").First(&cinema, id).Error; err != nil {
 		return nil, err
 	}
@@ -67,8 +67,8 @@ func (s *Store) GetMoviesPlaying(ctx context.Context, city string, date string) 
 	return moviesList, nil
 }
 
-func (s *Store) GetSessionsByMovie(ctx context.Context, movieID int, city string, date string) ([]domain.Session, error) {
-	var sessions []domain.Session
+func (s *Store) GetSessionsByMovie(ctx context.Context, movieID int, city string, date string) ([]cinema.Session, error) {
+	var sessions []cinema.Session
 
 	parsedDate, err := time.Parse("2006-01-02", date)
 	if err != nil {
@@ -93,11 +93,11 @@ func (s *Store) GetSessionsByMovie(ctx context.Context, movieID int, city string
 	return sessions, nil
 }
 
-func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]domain.Seat, error) {
-	var seats []domain.Seat
+func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]cinema.Seat, error) {
+	var seats []cinema.Seat
 	var roomID int
 
-	if err := s.db.WithContext(ctx).Model(&domain.Session{}).Select("room_id").Where("id = ?", sessionID).Scan(&roomID).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&cinema.Session{}).Select("room_id").Where("id = ?", sessionID).Scan(&roomID).Error; err != nil {
 		return nil, err
 	}
 
@@ -121,8 +121,8 @@ func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]domain.
 	return seats, nil
 }
 
-func (s *Store) GetSessionByID(ctx context.Context, sessionID int) (*domain.Session, error) {
-	var session domain.Session
+func (s *Store) GetSessionByID(ctx context.Context, sessionID int) (*cinema.Session, error) {
+	var session cinema.Session
 	if err := s.db.WithContext(ctx).Preload("Room").Preload("Room.Cinema").Preload("Movie").First(&session, sessionID).Error; err != nil {
 		return nil, err
 	}
@@ -236,7 +236,7 @@ func (s *Store) CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uui
 			return ErrNotTicketOwner
 		}
 
-		var session domain.Session
+		var session cinema.Session
 		if err := tx.First(&session, ticket.SessionID).Error; err == nil {
 			if time.Now().After(session.StartTime.Add(-2 * time.Hour)) {
 				return errors.New("não é possível cancelar um ingresso menos de 2 horas antes da sessão ou após o início")
@@ -279,7 +279,7 @@ func (s *Store) GetSpecialStatusForMovies(ctx context.Context, city string, movi
 
 	type Result struct {
 		MovieID     int
-		SessionType domain.SessionType
+		SessionType cinema.SessionType
 	}
 	var results []Result
 
@@ -302,9 +302,9 @@ func (s *Store) GetSpecialStatusForMovies(ctx context.Context, city string, movi
 	}
 
 	for _, r := range results {
-		if r.SessionType == domain.SessionTypePremiere {
+		if r.SessionType == cinema.SessionTypePremiere {
 			statusMap[r.MovieID]["premiere"] = true
-		} else if r.SessionType == domain.SessionTypeRescreen {
+		} else if r.SessionType == cinema.SessionTypeRescreen {
 			statusMap[r.MovieID]["rescreening"] = true
 		}
 	}

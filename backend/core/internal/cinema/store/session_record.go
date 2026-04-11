@@ -1,8 +1,7 @@
-package domain
+package store
 
 import (
     "time"
-    "github.com/StartLivin/screek/backend/internal/movies"
 )
 
 type SessionType string
@@ -16,7 +15,7 @@ const (
 	SessionTypeShowcase   SessionType = "SHOWCASE"
 )
 
-type Session struct {
+type SessionRecord struct {
 	ID          int          `json:"id" gorm:"primaryKey;autoIncrement"`
 	MovieID     int          `json:"movie_id" gorm:"not null;index"`
 	RoomID      int          `json:"room_id" gorm:"not null;index"`
@@ -24,6 +23,6 @@ type Session struct {
 	Price       int          `json:"price" gorm:"not null"`
 	SessionType SessionType  `json:"session_type" gorm:"type:varchar(20);not null;default:'REGULAR'"`
 	IsFree      bool         `json:"is_free" gorm:"default:false"`
-	Movie       movies.Movie `json:"movie" gorm:"foreignKey:MovieID"`
-	Room        Room         `json:"room" gorm:"foreignKey:RoomID"`
+	Movie       *int 		 `json:"movie" gorm:"foreignKey:MovieID"`
+	Room        RoomRecord   `json:"room" gorm:"foreignKey:RoomID"`
 }

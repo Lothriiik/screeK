@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/StartLivin/screek/backend/internal/cinema/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/bookings"
@@ -16,7 +16,7 @@ import (
 
 type MovieResponseDTO movies.MovieDTO
 
-type SeatResponseDTO domain.Seat
+type SeatResponseDTO cinema.Seat
 
 type Handler struct {
 	service bookings.Service

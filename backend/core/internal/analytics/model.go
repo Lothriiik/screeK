@@ -3,7 +3,7 @@ package analytics
 import (
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/cinema/domain"
+	"github.com/StartLivin/screek/backend/internal/cinema"
 	"gorm.io/gorm"
 )
 
@@ -16,7 +16,7 @@ type DailyCinemaStats struct {
 	OccupancyRate float64   `json:"occupancy_rate" gorm:"not null;default:0"`
 	CreatedAt     time.Time `json:"created_at" gorm:"not null;default:now()"`
 
-	Cinema domain.Cinema `json:"cinema" gorm:"foreignKey:CinemaID"`
+	Cinema cinema.Cinema `json:"cinema" gorm:"foreignKey:CinemaID"`
 }
 
 type DailyMovieStats struct {
