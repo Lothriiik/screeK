@@ -32,7 +32,7 @@ func (h *AdminHandler) RegisterRoutes(r chi.Router, authMiddleware func(http.Han
 // @Tags Auth (Admin)
 // @Accept json
 // @Param id path string true "ID do Usuário (UUID)"
-// @Param request body UpdateRoleDTO true "Novo Papel"
+// @Param request body auth.UpdateRoleDTO true "Novo Papel"
 // @Success 200 {object} httputil.MessageResponse
 // @Router /admin/users/{id}/role [patch]
 func (h *AdminHandler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {

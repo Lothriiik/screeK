@@ -84,7 +84,7 @@ func (h *Handler) GetMoviesPlaying(w http.ResponseWriter, r *http.Request) {
 // @Param city query string true "Cidade"
 // @Param date query string true "Data"
 // @Produce json
-// @Success 200 {array} CinemaSessionsResponseDTO
+// @Success 200 {array} bookings.CinemaSessionsResponseDTO
 // @Router /bookings/{id}/sessions [get]
 func (h *Handler) GetMovieSessions(w http.ResponseWriter, r *http.Request) {
 	movieIDStr := chi.URLParam(r, "id")
@@ -143,8 +143,8 @@ func (h *Handler) GetSeatsBySession(w http.ResponseWriter, r *http.Request) {
 // @Tags Bookings
 // @Accept json
 // @Produce json
-// @Param request body ReserveRequestDTO true "Dados da reserva"
-// @Success 201 {object} ReserveResponseDTO
+// @Param request body bookings.ReserveRequestDTO true "Dados da reserva"
+// @Success 201 {object} bookings.ReserveResponseDTO
 // @Security BearerAuth
 // @Router /bookings/tickets/reserve [post]
 func (h *Handler) ReserveTickets(w http.ResponseWriter, r *http.Request) {
@@ -189,8 +189,8 @@ func (h *Handler) ReserveTickets(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path string true "ID da Transação (UUID)"
 // @Param idempotency-key header string true "Chave de Idempotência"
-// @Param request body PayRequestDTO true "Método de pagamento"
-// @Success 200 {object} PayResponseDTO
+// @Param request body bookings.PayRequestDTO true "Método de pagamento"
+// @Success 200 {object} bookings.PayResponseDTO
 // @Security BearerAuth
 // @Router /bookings/transactions/{id}/pay [post]
 func (h *Handler) PayReservation(w http.ResponseWriter, r *http.Request) {
@@ -269,7 +269,7 @@ func (h *Handler) CancelTicket(w http.ResponseWriter, r *http.Request) {
 // @Tags Bookings
 // @Param status query string false "Filtrar por status (PAID, PENDING, CANCELLED)"
 // @Produce json
-// @Success 200 {array} TicketResponseDTO
+// @Success 200 {array} bookings.TicketResponseDTO
 // @Security BearerAuth
 // @Router /bookings/users/me/tickets [get]
 func (h *Handler) GetUserTickets(w http.ResponseWriter, r *http.Request) {
@@ -295,7 +295,7 @@ func (h *Handler) GetUserTickets(w http.ResponseWriter, r *http.Request) {
 // @Tags Bookings
 // @Param id path string true "ID do Ticket (UUID)"
 // @Produce json
-// @Success 200 {object} TicketResponseDTO
+// @Success 200 {object} bookings.TicketResponseDTO
 // @Security BearerAuth
 // @Router /bookings/tickets/{id} [get]
 func (h *Handler) GetTicketDetail(w http.ResponseWriter, r *http.Request) {
@@ -325,7 +325,7 @@ func (h *Handler) GetTicketDetail(w http.ResponseWriter, r *http.Request) {
 // @Tags Admin
 // @Param id path int true "ID da Sessão"
 // @Produce json
-// @Success 200 {array} TicketResponseDTO
+// @Success 200 {array} bookings.TicketResponseDTO
 // @Security BearerAuth
 // @Router /bookings/admin/sessions/{id}/tickets [get]
 func (h *Handler) GetTicketsBySession(w http.ResponseWriter, r *http.Request) {

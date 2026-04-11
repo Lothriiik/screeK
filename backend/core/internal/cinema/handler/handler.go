@@ -50,7 +50,7 @@ func (h *ManagerHandler) RegisterRoutes(r chi.Router, authMiddleware func(http.H
 // @Description Retorna todos os cinemas cadastrados (Apenas Admin/Manager)
 // @Tags Management
 // @Produce json
-// @Success 200 {array} CinemaAdminResponseDTO
+// @Success 200 {array} cinema.CinemaAdminResponseDTO
 // @Security BearerAuth
 // @Router /admin/management/cinemas [get]
 func (h *ManagerHandler) ListCinemas(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +86,7 @@ func (h *ManagerHandler) GetCinemaDetail(w http.ResponseWriter, r *http.Request)
 // @Param cinema_id query int true "ID do Cinema"
 // @Param date query string false "Data YYYY-MM-DD"
 // @Produce json
-// @Success 200 {array} SessionAdminResponseDTO
+// @Success 200 {array} cinema.SessionAdminResponseDTO
 // @Security BearerAuth
 // @Router /admin/management/sessions [get]
 func (h *ManagerHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +109,7 @@ func (h *ManagerHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
 // @Description Cria um novo cinema no sistema (Apenas Admin)
 // @Tags Management
 // @Accept json
-// @Param request body CreateCinemaRequest true "Dados do cinema"
+// @Param request body cinema.CreateCinemaRequest true "Dados do cinema"
 // @Success 201 {object} httputil.MessageResponse
 // @Security BearerAuth
 // @Router /admin/management/cinemas [post]
@@ -134,7 +134,7 @@ func (h *ManagerHandler) CreateCinema(w http.ResponseWriter, r *http.Request) {
 // @Tags Management
 // @Accept json
 // @Param id path int true "ID do Cinema"
-// @Param request body CreateRoomRequest true "Configuração da sala"
+// @Param request body cinema.CreateRoomRequest true "Configuração da sala"
 // @Success 201 {object} httputil.MessageResponse
 // @Security BearerAuth
 // @Router /admin/management/cinemas/{id}/rooms [post]
@@ -166,7 +166,7 @@ func (h *ManagerHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 // @Description Cria uma nova sessão de filme em uma sala específica
 // @Tags Management
 // @Accept json
-// @Param request body CreateSessionRequest true "Dados da sessão"
+// @Param request body cinema.CreateSessionRequest true "Dados da sessão"
 // @Success 201 {object} httputil.MessageResponse
 // @Security BearerAuth
 // @Router /admin/management/sessions [post]
@@ -197,7 +197,7 @@ func (h *ManagerHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 // @Tags Management
 // @Accept json
 // @Param id path int true "ID do Cinema"
-// @Param request body CreateCinemaRequest true "Novos dados"
+// @Param request body cinema.CreateCinemaRequest true "Novos dados"
 // @Success 200 {object} httputil.MessageResponse
 // @Security BearerAuth
 // @Router /admin/management/cinemas/{id} [put]
@@ -243,7 +243,7 @@ func (h *ManagerHandler) DeleteCinema(w http.ResponseWriter, r *http.Request) {
 // @Tags Management
 // @Accept json
 // @Param id path int true "ID da Sala"
-// @Param request body CreateRoomRequest true "Novos dados (CinemaID opcional aqui)"
+// @Param request body cinema.CreateRoomRequest true "Novos dados (CinemaID opcional aqui)"
 // @Success 200 {object} httputil.MessageResponse
 // @Security BearerAuth
 // @Router /admin/management/rooms/{id} [put]
@@ -291,7 +291,7 @@ func (h *ManagerHandler) DeleteRoom(w http.ResponseWriter, r *http.Request) {
 // @Tags Management
 // @Accept json
 // @Param id path int true "ID da Sessão"
-// @Param request body CreateSessionRequest true "Novos dados"
+// @Param request body cinema.CreateSessionRequest true "Novos dados"
 // @Success 200 {object} httputil.MessageResponse
 // @Security BearerAuth
 // @Router /admin/management/sessions/{id} [put]

@@ -35,7 +35,7 @@ func (h *AnalyticsHandler) RegisterRoutes(r chi.Router, authMiddleware func(http
 // @Param end query string false "Data final (YYYY-MM-DD)"
 // @Param period query string false "Periodicidade (daily, monthly)"
 // @Produce json
-// @Success 200 {object} AnalyticsSummaryResponseDTO
+// @Success 200 {object} analytics.AnalyticsSummaryResponseDTO
 // @Security BearerAuth
 // @Router /admin/analytics/revenue [get]
 func (h *AnalyticsHandler) GetRevenueAnalytics(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +82,7 @@ func (h *AnalyticsHandler) GetRevenueAnalytics(w http.ResponseWriter, r *http.Re
 // @Param start query string false "Data inicial"
 // @Param end query string false "Data final"
 // @Produce json
-// @Success 200 {array} MovieStatsDTO
+// @Success 200 {array} analytics.MovieStatsDTO
 // @Security BearerAuth
 // @Router /admin/analytics/movies [get]
 func (h *AnalyticsHandler) GetMovieAnalytics(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +118,7 @@ func (h *AnalyticsHandler) GetMovieAnalytics(w http.ResponseWriter, r *http.Requ
 // @Param start query string false "Data inicial"
 // @Param end query string false "Data final"
 // @Produce json
-// @Success 200 {array} GenreStatsResponseDTO
+// @Success 200 {array} analytics.GenreStatsResponseDTO
 // @Security BearerAuth
 // @Router /admin/analytics/genres [get]
 func (h *AnalyticsHandler) GetGenreAnalytics(w http.ResponseWriter, r *http.Request) {

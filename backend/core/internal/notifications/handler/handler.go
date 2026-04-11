@@ -55,7 +55,7 @@ func (h *Handler) HandleWS(w http.ResponseWriter, r *http.Request) {
 // @Tags Notifications
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {array} Notification
+// @Success 200 {array} notifications.Notification
 // @Router /notifications [get]
 func (h *Handler) GetNotifications(w http.ResponseWriter, r *http.Request) {
 	userID, _ := r.Context().Value(httputil.UserIDKey).(uuid.UUID)

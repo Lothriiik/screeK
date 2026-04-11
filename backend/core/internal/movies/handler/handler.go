@@ -36,8 +36,8 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 // @Produce json
 // @Param q query string true "Termo de busca (ex: Batman)"
 // @Param type query string false "Tipo de busca (MOVIE, PERSON, USER, LIST)" default(MOVIE)
-// @Success 200 {array} Movie
-// @Failure 400 {object} ErrorResponse
+// @Success 200 {array} movies.Movie
+// @Failure 400 {object} movies.ErrorResponse
 // @Router /movies/search [get]
 func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
@@ -82,8 +82,8 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do Filme (TMDB ID)"
-// @Success 200 {object} Movie
-// @Failure 500 {object} ErrorResponse
+// @Success 200 {object} movies.Movie
+// @Failure 500 {object} movies.ErrorResponse
 // @Router /movies/{id} [get]
 func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
 	tmdbID, _ := strconv.Atoi(chi.URLParam(r, "id"))
@@ -103,8 +103,8 @@ func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID da Pessoa (TMDB ID)"
-// @Success 200 {object} Person
-// @Failure 500 {object} ErrorResponse
+// @Success 200 {object} movies.Person
+// @Failure 500 {object} movies.ErrorResponse
 // @Router /people/{id} [get]
 func (h *Handler) GetPersonDetails(w http.ResponseWriter, r *http.Request) {
 	tmdbID, _ := strconv.Atoi(chi.URLParam(r, "id"))
@@ -124,8 +124,8 @@ func (h *Handler) GetPersonDetails(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID da Pessoa"
-// @Success 200 {array} TMDBPersonMovieCast
-// @Failure 404 {object} ErrorResponse
+// @Success 200 {array} movies.TMDBPersonMovieCast
+// @Failure 404 {object} movies.ErrorResponse
 // @Router /people/{id}/movies [get]
 func (h *Handler) GetPersonMoviesProxy(w http.ResponseWriter, r *http.Request) {
 	tmdbID, err := strconv.Atoi(chi.URLParam(r, "id"))
@@ -150,8 +150,8 @@ func (h *Handler) GetPersonMoviesProxy(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do Filme"
-// @Success 200 {array} TMDBMovie
-// @Failure 404 {object} ErrorResponse
+// @Success 200 {array} movies.TMDBMovie
+// @Failure 404 {object} movies.ErrorResponse
 // @Router /movies/{id}/recommendations [get]
 func (h *Handler) GetRecommendationsProxy(w http.ResponseWriter, r *http.Request) {
 	movieID, err := strconv.Atoi(chi.URLParam(r, "id"))
@@ -177,8 +177,8 @@ func (h *Handler) GetRecommendationsProxy(w http.ResponseWriter, r *http.Request
 // @Produce json
 // @Param genre_id query int false "ID do Gênero (TMDB ID)"
 // @Param year query int false "Ano de Lançamento"
-// @Success 200 {array} Movie
-// @Failure 500 {object} ErrorResponse
+// @Success 200 {array} movies.Movie
+// @Failure 500 {object} movies.ErrorResponse
 // @Router /movies/discover [get]
 func (h *Handler) Discover(w http.ResponseWriter, r *http.Request) {
 	genreID, _ := strconv.Atoi(r.URL.Query().Get("genre_id"))
