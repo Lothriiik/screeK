@@ -4,7 +4,11 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"github.com/StartLivin/screek/backend/internal/movies/tmdb"
 )
+
+type TMDBMovie = tmdb.TMDBMovie
+type TMDBPersonMovieCast = tmdb.TMDBPersonMovieCast
 
 type Movie struct {
 	ID          int           `json:"id" gorm:"primaryKey;autoIncrement"`

@@ -293,7 +293,7 @@ func (h *CatalogHandler) DeleteMovieList(w http.ResponseWriter, r *http.Request)
 // @Param id path int true "TMDB ID"
 // @Success 200 {object} catalog.MovieDetailResponseDTO
 // @Security BearerAuth
-// @Router /movies/{id} [get]
+// @Router /catalog/movies/{id} [get]
 func (h *CatalogHandler) GetMovieDetail(w http.ResponseWriter, r *http.Request) {
 	movieID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 

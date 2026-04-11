@@ -243,7 +243,77 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/cinema.CinemaResponseDTO"
+                            "$ref": "#/definitions/handler.CinemaResponseDTO"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Altera os dados de um cinema existente",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Management"
+                ],
+                "summary": "Atualizar cinema (Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do Cinema",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Novos dados",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cinema.CreateCinemaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.MessageResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove um cinema do sistema (Apenas se não houver salas vinculadas)",
+                "tags": [
+                    "Management"
+                ],
+                "summary": "Excluir cinema (Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do Cinema",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.MessageResponse"
                         }
                     }
                 }
@@ -285,6 +355,78 @@ const docTemplate = `{
                 "responses": {
                     "201": {
                         "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/management/rooms/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Altera os dados da sala, mas não altera os assentos",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Management"
+                ],
+                "summary": "Atualizar sala (Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da Sala",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Novos dados (CinemaID opcional aqui)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cinema.CreateRoomRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.MessageResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove uma sala, verificado se não há sessões futuras",
+                "tags": [
+                    "Management"
+                ],
+                "summary": "Excluir sala (Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da Sala",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/httputil.MessageResponse"
                         }
@@ -370,6 +512,47 @@ const docTemplate = `{
             }
         },
         "/admin/management/sessions/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Altera horário ou preço da sessão (Apenas se não houver ingressos)",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Management"
+                ],
+                "summary": "Atualizar sessão (Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da Sessão",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Novos dados",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cinema.CreateSessionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.MessageResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -757,7 +940,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/bookings.MovieResponseDTO"
+                                "$ref": "#/definitions/handler.MovieResponseDTO"
                             }
                         }
                     }
@@ -790,7 +973,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/bookings.SeatResponseDTO"
+                                "$ref": "#/definitions/handler.SeatResponseDTO"
                             }
                         }
                     }
@@ -1077,6 +1260,65 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/httputil.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/catalog/movies/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna detalhes do filme com estatísticas sociais",
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Detalhe do Filme (ScreeK)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "TMDB ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/catalog.MovieDetailResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna todos os filmes que o usuário já assistiu (logs)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Meu Histórico",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/catalog.MovieLogResponseDTO"
+                            }
                         }
                     }
                 }
@@ -2428,7 +2670,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/catalog.WatchlistItem"
+                                "$ref": "#/definitions/catalog.WatchlistItemResponseDTO"
                             }
                         }
                     }
@@ -2704,29 +2946,6 @@ const docTemplate = `{
                 }
             }
         },
-        "bookings.MovieResponseDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "is_premiere": {
-                    "type": "boolean"
-                },
-                "is_rescreening": {
-                    "type": "boolean"
-                },
-                "poster_url": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "tmdb_id": {
-                    "type": "integer"
-                }
-            }
-        },
         "bookings.PayRequestDTO": {
             "type": "object",
             "required": [
@@ -2779,35 +2998,6 @@ const docTemplate = `{
                 },
                 "valor_total_centavos": {
                     "type": "integer"
-                }
-            }
-        },
-        "bookings.SeatResponseDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "is_occupied": {
-                    "type": "boolean"
-                },
-                "number": {
-                    "type": "integer"
-                },
-                "pos_x": {
-                    "type": "integer"
-                },
-                "pos_y": {
-                    "type": "integer"
-                },
-                "room_id": {
-                    "type": "integer"
-                },
-                "row": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
                 }
             }
         },
@@ -2942,15 +3132,13 @@ const docTemplate = `{
             ],
             "properties": {
                 "description": {
-                    "type": "string",
-                    "maxLength": 500
+                    "type": "string"
                 },
                 "is_public": {
                     "type": "boolean"
                 },
                 "title": {
-                    "type": "string",
-                    "maxLength": 100
+                    "type": "string"
                 }
             }
         },
@@ -2962,11 +3150,49 @@ const docTemplate = `{
                 },
                 "rating": {
                     "type": "number",
-                    "maximum": 5,
+                    "maximum": 10,
                     "minimum": 0
                 },
                 "watched": {
                     "type": "boolean"
+                }
+            }
+        },
+        "catalog.MovieDetailResponseDTO": {
+            "type": "object",
+            "properties": {
+                "average_rating": {
+                    "type": "number"
+                },
+                "backdrop_url": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "overview": {
+                    "type": "string"
+                },
+                "poster_url": {
+                    "type": "string"
+                },
+                "release_date": {
+                    "type": "string"
+                },
+                "runtime": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "tmdb_id": {
+                    "type": "integer"
+                },
+                "total_likes": {
+                    "type": "integer"
+                },
+                "total_reviews": {
+                    "type": "integer"
                 }
             }
         },
@@ -2993,114 +3219,42 @@ const docTemplate = `{
                 }
             }
         },
-        "catalog.WatchlistItem": {
+        "catalog.MovieLogResponseDTO": {
+            "type": "object",
+            "properties": {
+                "liked": {
+                    "type": "boolean"
+                },
+                "movie": {
+                    "$ref": "#/definitions/catalog.MovieDetailResponseDTO"
+                },
+                "movie_id": {
+                    "type": "integer"
+                },
+                "rating": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "watched": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "catalog.WatchlistItemResponseDTO": {
             "type": "object",
             "properties": {
                 "added_at": {
                     "type": "string"
                 },
                 "movie": {
-                    "$ref": "#/definitions/movies.Movie"
+                    "$ref": "#/definitions/catalog.MovieDetailResponseDTO"
                 },
                 "movie_id": {
                     "type": "integer"
-                },
-                "user": {
-                    "$ref": "#/definitions/users.User"
-                },
-                "user_id": {
-                    "type": "string"
                 }
             }
-        },
-        "cinema.Room": {
-            "type": "object",
-            "properties": {
-                "capacity": {
-                    "type": "integer"
-                },
-                "cinema_id": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "seats": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/cinema.Seat"
-                    }
-                },
-                "type": {
-                    "$ref": "#/definitions/cinema.RoomType"
-                }
-            }
-        },
-        "cinema.RoomType": {
-            "type": "string",
-            "enum": [
-                "STANDARD",
-                "IMAX",
-                "VIP"
-            ],
-            "x-enum-varnames": [
-                "RoomTypeStandard",
-                "RoomTypeIMAX",
-                "RoomTypeVIP"
-            ]
-        },
-        "cinema.Seat": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "is_occupied": {
-                    "type": "boolean"
-                },
-                "number": {
-                    "type": "integer"
-                },
-                "pos_x": {
-                    "type": "integer"
-                },
-                "pos_y": {
-                    "type": "integer"
-                },
-                "room_id": {
-                    "type": "integer"
-                },
-                "row": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "httputil.MessageResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "httputil.Role": {
-            "type": "string",
-            "enum": [
-                "USER",
-                "MANAGER",
-                "ADMIN"
-            ],
-            "x-enum-varnames": [
-                "RoleUser",
-                "RoleManager",
-                "RoleAdmin"
-            ]
         },
         "cinema.CinemaAdminResponseDTO": {
             "type": "object",
@@ -3115,41 +3269,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "cinema.CinemaResponseDTO": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "city": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "rooms": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/cinema.Room"
-                    }
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -3246,6 +3365,74 @@ const docTemplate = `{
                 }
             }
         },
+        "cinema.Room": {
+            "type": "object",
+            "properties": {
+                "capacity": {
+                    "type": "integer"
+                },
+                "cinema_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "seats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cinema.Seat"
+                    }
+                },
+                "type": {
+                    "$ref": "#/definitions/cinema.RoomType"
+                }
+            }
+        },
+        "cinema.RoomType": {
+            "type": "string",
+            "enum": [
+                "STANDARD",
+                "IMAX",
+                "VIP"
+            ],
+            "x-enum-varnames": [
+                "RoomTypeStandard",
+                "RoomTypeIMAX",
+                "RoomTypeVIP"
+            ]
+        },
+        "cinema.Seat": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "is_occupied": {
+                    "type": "boolean"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "pos_x": {
+                    "type": "integer"
+                },
+                "pos_y": {
+                    "type": "integer"
+                },
+                "room_id": {
+                    "type": "integer"
+                },
+                "row": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "cinema.SessionAdminResponseDTO": {
             "type": "object",
             "properties": {
@@ -3268,6 +3455,114 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "handler.CinemaResponseDTO": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "rooms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cinema.Room"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.MovieResponseDTO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "is_premiere": {
+                    "type": "boolean"
+                },
+                "is_rescreening": {
+                    "type": "boolean"
+                },
+                "poster_url": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "tmdb_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handler.SeatResponseDTO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "is_occupied": {
+                    "type": "boolean"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "pos_x": {
+                    "type": "integer"
+                },
+                "pos_y": {
+                    "type": "integer"
+                },
+                "room_id": {
+                    "type": "integer"
+                },
+                "row": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "httputil.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "httputil.Role": {
+            "type": "string",
+            "enum": [
+                "USER",
+                "MANAGER",
+                "ADMIN"
+            ],
+            "x-enum-varnames": [
+                "RoleUser",
+                "RoleManager",
+                "RoleAdmin"
+            ]
         },
         "movies.ErrorResponse": {
             "type": "object",
@@ -3294,6 +3589,9 @@ const docTemplate = `{
         "movies.Movie": {
             "type": "object",
             "properties": {
+                "backdrop_url": {
+                    "type": "string"
+                },
                 "credits": {
                     "type": "array",
                     "items": {
@@ -3358,29 +3656,6 @@ const docTemplate = `{
                 },
                 "role": {
                     "type": "string"
-                }
-            }
-        },
-        "movies.MovieDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "is_premiere": {
-                    "type": "boolean"
-                },
-                "is_rescreening": {
-                    "type": "boolean"
-                },
-                "poster_url": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "tmdb_id": {
-                    "type": "integer"
                 }
             }
         },
@@ -3731,7 +4006,7 @@ const docTemplate = `{
                 "favorite_movies": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/movies.Movie"
+                        "type": "integer"
                     }
                 },
                 "id": {
@@ -3786,7 +4061,7 @@ const docTemplate = `{
                 "favorite_movies": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/movies.MovieDTO"
+                        "type": "integer"
                     }
                 },
                 "id": {
@@ -3821,7 +4096,7 @@ const docTemplate = `{
                 "favorite_movies": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/movies.MovieDTO"
+                        "type": "integer"
                     }
                 },
                 "id": {
@@ -3841,9 +4116,6 @@ const docTemplate = `{
         "users.UserStats": {
             "type": "object",
             "properties": {
-                "genre": {
-                    "$ref": "#/definitions/movies.Genre"
-                },
                 "last_recalc_at": {
                     "type": "string"
                 },

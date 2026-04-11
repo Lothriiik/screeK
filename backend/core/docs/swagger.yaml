@@ -123,21 +123,6 @@ definitions:
           $ref: '#/definitions/bookings.SessionResponseDTO'
         type: array
     type: object
-  bookings.MovieResponseDTO:
-    properties:
-      id:
-        type: integer
-      is_premiere:
-        type: boolean
-      is_rescreening:
-        type: boolean
-      poster_url:
-        type: string
-      title:
-        type: string
-      tmdb_id:
-        type: integer
-    type: object
   bookings.PayRequestDTO:
     properties:
       payment_method:
@@ -173,25 +158,6 @@ definitions:
         type: string
       valor_total_centavos:
         type: integer
-    type: object
-  bookings.SeatResponseDTO:
-    properties:
-      id:
-        type: integer
-      is_occupied:
-        type: boolean
-      number:
-        type: integer
-      pos_x:
-        type: integer
-      pos_y:
-        type: integer
-      room_id:
-        type: integer
-      row:
-        type: string
-      type:
-        type: string
     type: object
   bookings.SessionResponseDTO:
     properties:
@@ -277,12 +243,10 @@ definitions:
   catalog.CreateMovieListRequest:
     properties:
       description:
-        maxLength: 500
         type: string
       is_public:
         type: boolean
       title:
-        maxLength: 100
         type: string
     required:
     - title
@@ -292,11 +256,36 @@ definitions:
       liked:
         type: boolean
       rating:
-        maximum: 5
+        maximum: 10
         minimum: 0
         type: number
       watched:
         type: boolean
+    type: object
+  catalog.MovieDetailResponseDTO:
+    properties:
+      average_rating:
+        type: number
+      backdrop_url:
+        type: string
+      id:
+        type: integer
+      overview:
+        type: string
+      poster_url:
+        type: string
+      release_date:
+        type: string
+      runtime:
+        type: integer
+      title:
+        type: string
+      tmdb_id:
+        type: integer
+      total_likes:
+        type: integer
+      total_reviews:
+        type: integer
     type: object
   catalog.MovieListResponseDTO:
     properties:
@@ -313,80 +302,30 @@ definitions:
       title:
         type: string
     type: object
-  catalog.WatchlistItem:
+  catalog.MovieLogResponseDTO:
+    properties:
+      liked:
+        type: boolean
+      movie:
+        $ref: '#/definitions/catalog.MovieDetailResponseDTO'
+      movie_id:
+        type: integer
+      rating:
+        type: number
+      updated_at:
+        type: string
+      watched:
+        type: boolean
+    type: object
+  catalog.WatchlistItemResponseDTO:
     properties:
       added_at:
         type: string
       movie:
-        $ref: '#/definitions/movies.Movie'
+        $ref: '#/definitions/catalog.MovieDetailResponseDTO'
       movie_id:
         type: integer
-      user:
-        $ref: '#/definitions/users.User'
-      user_id:
-        type: string
     type: object
-  cinema.Room:
-    properties:
-      capacity:
-        type: integer
-      cinema_id:
-        type: integer
-      id:
-        type: integer
-      name:
-        type: string
-      seats:
-        items:
-          $ref: '#/definitions/cinema.Seat'
-        type: array
-      type:
-        $ref: '#/definitions/cinema.RoomType'
-    type: object
-  cinema.RoomType:
-    enum:
-    - STANDARD
-    - IMAX
-    - VIP
-    type: string
-    x-enum-varnames:
-    - RoomTypeStandard
-    - RoomTypeIMAX
-    - RoomTypeVIP
-  cinema.Seat:
-    properties:
-      id:
-        type: integer
-      is_occupied:
-        type: boolean
-      number:
-        type: integer
-      pos_x:
-        type: integer
-      pos_y:
-        type: integer
-      room_id:
-        type: integer
-      row:
-        type: string
-      type:
-        type: string
-    type: object
-  httputil.MessageResponse:
-    properties:
-      message:
-        type: string
-    type: object
-  httputil.Role:
-    enum:
-    - USER
-    - MANAGER
-    - ADMIN
-    type: string
-    x-enum-varnames:
-    - RoleUser
-    - RoleManager
-    - RoleAdmin
   cinema.CinemaAdminResponseDTO:
     properties:
       address:
@@ -396,29 +335,6 @@ definitions:
       id:
         type: integer
       name:
-        type: string
-    type: object
-  cinema.CinemaResponseDTO:
-    properties:
-      address:
-        type: string
-      city:
-        type: string
-      created_at:
-        type: string
-      email:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      phone:
-        type: string
-      rooms:
-        items:
-          $ref: '#/definitions/cinema.Room'
-        type: array
-      updated_at:
         type: string
     type: object
   cinema.CreateCinemaRequest:
@@ -488,6 +404,52 @@ definitions:
     - session_type
     - start_time
     type: object
+  cinema.Room:
+    properties:
+      capacity:
+        type: integer
+      cinema_id:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      seats:
+        items:
+          $ref: '#/definitions/cinema.Seat'
+        type: array
+      type:
+        $ref: '#/definitions/cinema.RoomType'
+    type: object
+  cinema.RoomType:
+    enum:
+    - STANDARD
+    - IMAX
+    - VIP
+    type: string
+    x-enum-varnames:
+    - RoomTypeStandard
+    - RoomTypeIMAX
+    - RoomTypeVIP
+  cinema.Seat:
+    properties:
+      id:
+        type: integer
+      is_occupied:
+        type: boolean
+      number:
+        type: integer
+      pos_x:
+        type: integer
+      pos_y:
+        type: integer
+      room_id:
+        type: integer
+      row:
+        type: string
+      type:
+        type: string
+    type: object
   cinema.SessionAdminResponseDTO:
     properties:
       id:
@@ -503,6 +465,78 @@ definitions:
       start_time:
         type: string
     type: object
+  handler.CinemaResponseDTO:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      rooms:
+        items:
+          $ref: '#/definitions/cinema.Room'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  handler.MovieResponseDTO:
+    properties:
+      id:
+        type: integer
+      is_premiere:
+        type: boolean
+      is_rescreening:
+        type: boolean
+      poster_url:
+        type: string
+      title:
+        type: string
+      tmdb_id:
+        type: integer
+    type: object
+  handler.SeatResponseDTO:
+    properties:
+      id:
+        type: integer
+      is_occupied:
+        type: boolean
+      number:
+        type: integer
+      pos_x:
+        type: integer
+      pos_y:
+        type: integer
+      room_id:
+        type: integer
+      row:
+        type: string
+      type:
+        type: string
+    type: object
+  httputil.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  httputil.Role:
+    enum:
+    - USER
+    - MANAGER
+    - ADMIN
+    type: string
+    x-enum-varnames:
+    - RoleUser
+    - RoleManager
+    - RoleAdmin
   movies.ErrorResponse:
     properties:
       error:
@@ -519,6 +553,8 @@ definitions:
     type: object
   movies.Movie:
     properties:
+      backdrop_url:
+        type: string
       credits:
         items:
           $ref: '#/definitions/movies.MovieCredit'
@@ -562,21 +598,6 @@ definitions:
         type: integer
       role:
         type: string
-    type: object
-  movies.MovieDTO:
-    properties:
-      id:
-        type: integer
-      is_premiere:
-        type: boolean
-      is_rescreening:
-        type: boolean
-      poster_url:
-        type: string
-      title:
-        type: string
-      tmdb_id:
-        type: integer
     type: object
   movies.Person:
     properties:
@@ -808,7 +829,7 @@ definitions:
         type: string
       favorite_movies:
         items:
-          $ref: '#/definitions/movies.Movie'
+          type: integer
         type: array
       id:
         type: string
@@ -844,7 +865,7 @@ definitions:
         type: string
       favorite_movies:
         items:
-          $ref: '#/definitions/movies.MovieDTO'
+          type: integer
         type: array
       id:
         type: string
@@ -867,7 +888,7 @@ definitions:
         type: string
       favorite_movies:
         items:
-          $ref: '#/definitions/movies.MovieDTO'
+          type: integer
         type: array
       id:
         type: string
@@ -880,8 +901,6 @@ definitions:
     type: object
   users.UserStats:
     properties:
-      genre:
-        $ref: '#/definitions/movies.Genre'
       last_recalc_at:
         type: string
       top_genre_id:
@@ -1028,6 +1047,24 @@ paths:
       tags:
       - Management
   /admin/management/cinemas/{id}:
+    delete:
+      description: Remove um cinema do sistema (Apenas se não houver salas vinculadas)
+      parameters:
+      - description: ID do Cinema
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Excluir cinema (Admin)
+      tags:
+      - Management
     get:
       description: Retorna os dados completos de um cinema, incluindo salas
       parameters:
@@ -1042,10 +1079,36 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/cinema.CinemaResponseDTO'
+            $ref: '#/definitions/handler.CinemaResponseDTO'
       security:
       - BearerAuth: []
       summary: Detalhes do cinema (Admin)
+      tags:
+      - Management
+    put:
+      consumes:
+      - application/json
+      description: Altera os dados de um cinema existente
+      parameters:
+      - description: ID do Cinema
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Novos dados
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/cinema.CreateCinemaRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Atualizar cinema (Admin)
       tags:
       - Management
   /admin/management/cinemas/{id}/rooms:
@@ -1073,6 +1136,51 @@ paths:
       security:
       - BearerAuth: []
       summary: Criar sala e assentos
+      tags:
+      - Management
+  /admin/management/rooms/{id}:
+    delete:
+      description: Remove uma sala, verificado se não há sessões futuras
+      parameters:
+      - description: ID da Sala
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Excluir sala (Admin)
+      tags:
+      - Management
+    put:
+      consumes:
+      - application/json
+      description: Altera os dados da sala, mas não altera os assentos
+      parameters:
+      - description: ID da Sala
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Novos dados (CinemaID opcional aqui)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/cinema.CreateRoomRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Atualizar sala (Admin)
       tags:
       - Management
   /admin/management/sessions:
@@ -1140,6 +1248,32 @@ paths:
       security:
       - BearerAuth: []
       summary: Excluir sessão
+      tags:
+      - Management
+    put:
+      consumes:
+      - application/json
+      description: Altera horário ou preço da sessão (Apenas se não houver ingressos)
+      parameters:
+      - description: ID da Sessão
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Novos dados
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/cinema.CreateSessionRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputil.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Atualizar sessão (Admin)
       tags:
       - Management
   /admin/users/{id}/role:
@@ -1401,7 +1535,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/bookings.MovieResponseDTO'
+              $ref: '#/definitions/handler.MovieResponseDTO'
             type: array
       summary: Listar filmes em cartaz
       tags:
@@ -1424,7 +1558,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/bookings.SeatResponseDTO'
+              $ref: '#/definitions/handler.SeatResponseDTO'
             type: array
       summary: Mapa de assentos
       tags:
@@ -1577,6 +1711,42 @@ paths:
       security:
       - BearerAuth: []
       summary: Atualizar lista
+      tags:
+      - Catalog
+  /catalog/movies/{id}:
+    get:
+      description: Retorna detalhes do filme com estatísticas sociais
+      parameters:
+      - description: TMDB ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/catalog.MovieDetailResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Detalhe do Filme (ScreeK)
+      tags:
+      - Catalog
+  /history:
+    get:
+      description: Retorna todos os filmes que o usuário já assistiu (logs)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/catalog.MovieLogResponseDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Meu Histórico
       tags:
       - Catalog
   /lists:
@@ -2428,7 +2598,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/catalog.WatchlistItem'
+              $ref: '#/definitions/catalog.WatchlistItemResponseDTO'
             type: array
       security:
       - BearerAuth: []
