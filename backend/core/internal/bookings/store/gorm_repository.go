@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/cinema"
-	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/bookings"
+	"github.com/StartLivin/screek/backend/internal/cinema"
+	cinemastore "github.com/StartLivin/screek/backend/internal/cinema/store"
+	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -33,11 +34,11 @@ func NewStore(db *gorm.DB) *Store {
 }
 
 func (s *Store) GetCinemaByID(ctx context.Context, id int) (*cinema.Cinema, error) {
-	var cinema cinema.Cinema
-	if err := s.db.WithContext(ctx).Preload("Rooms.Seats").First(&cinema, id).Error; err != nil {
+	var record cinemastore.CinemaRecord
+	if err := s.db.WithContext(ctx).Preload("Rooms.Seats").First(&record, id).Error; err != nil {
 		return nil, err
 	}
-	return &cinema, nil
+	return cinemastore.ToCinemaDomain(&record), nil
 }
 
 func (s *Store) GetMoviesPlaying(ctx context.Context, city string, date string) ([]movies.Movie, error) {
@@ -60,7 +61,6 @@ func (s *Store) GetMoviesPlaying(ctx context.Context, city string, date string) 
 		  AND s.start_time < ?
 	`
 	err = s.db.WithContext(ctx).Preload("Genres").Raw(query, city, parsedDate, endOfDay).Find(&moviesList).Error
-
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (s *Store) GetMoviesPlaying(ctx context.Context, city string, date string) 
 }
 
 func (s *Store) GetSessionsByMovie(ctx context.Context, movieID int, city string, date string) ([]cinema.Session, error) {
-	var sessions []cinema.Session
+	var records []cinemastore.SessionRecord
 
 	parsedDate, err := time.Parse("2006-01-02", date)
 	if err != nil {
@@ -86,18 +86,18 @@ func (s *Store) GetSessionsByMovie(ctx context.Context, movieID int, city string
 		  AND s.start_time >= ? 
 		  AND s.start_time < ?
 	`
-	err = s.db.WithContext(ctx).Preload("Room").Preload("Room.Cinema").Raw(query, movieID, city, parsedDate, endOfDay).Find(&sessions).Error
+	err = s.db.WithContext(ctx).Preload("Room.Cinema").Raw(query, movieID, city, parsedDate, endOfDay).Find(&records).Error
 	if err != nil {
 		return nil, err
 	}
-	return sessions, nil
+	return cinemastore.ToSessionList(records), nil
 }
 
 func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]cinema.Seat, error) {
-	var seats []cinema.Seat
+	var records []cinemastore.SeatRecord
 	var roomID int
 
-	if err := s.db.WithContext(ctx).Model(&cinema.Session{}).Select("room_id").Where("id = ?", sessionID).Scan(&roomID).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&cinemastore.SessionRecord{}).Select("room_id").Where("id = ?", sessionID).Scan(&roomID).Error; err != nil {
 		return nil, err
 	}
 
@@ -112,58 +112,70 @@ func (s *Store) GetSeatsBySession(ctx context.Context, sessionID int) ([]cinema.
 		WHERE s.room_id = ?
 		ORDER BY s.row, s.number
 	`
-	err := s.db.WithContext(ctx).Raw(query, sessionID, roomID).Scan(&seats).Error
-
+	err := s.db.WithContext(ctx).Raw(query, sessionID, roomID).Scan(&records).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return seats, nil
+	return cinemastore.ToSeatList(records), nil
 }
 
 func (s *Store) GetSessionByID(ctx context.Context, sessionID int) (*cinema.Session, error) {
-	var session cinema.Session
-	if err := s.db.WithContext(ctx).Preload("Room").Preload("Room.Cinema").Preload("Movie").First(&session, sessionID).Error; err != nil {
+	var record cinemastore.SessionRecord
+	if err := s.db.WithContext(ctx).Preload("Room.Cinema").First(&record, sessionID).Error; err != nil {
 		return nil, err
 	}
-	return &session, nil
+	return cinemastore.ToSessionDomain(&record), nil
 }
 
 func (s *Store) CreateReservation(ctx context.Context, userID uuid.UUID, sessionID int, ticketsToCreate []bookings.Ticket, totalAmount int) (*bookings.Transaction, error) {
-	var transaction bookings.Transaction
+	var transactionRecord TransactionRecord
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-
 		var seatIDs []int
 		for _, t := range ticketsToCreate {
-			seatIDs = append(seatIDs, *t.SeatID)
+			if t.SeatID != nil {
+				seatIDs = append(seatIDs, *t.SeatID)
+			}
 		}
 
-		var occupiedCount int64
-		if err := tx.Model(&bookings.Ticket{}).Where("seat_id IN ? AND session_id = ? AND status != 'CANCELLED'", seatIDs, sessionID).Count(&occupiedCount).Error; err != nil {
-			return err
-		}
-		if occupiedCount > 0 {
-			return ErrSeatAlreadyTaken
+		if len(seatIDs) > 0 {
+			var occupiedCount int64
+			if err := tx.Model(&TicketRecord{}).Where("seat_id IN ? AND session_id = ? AND status != 'CANCELLED'", seatIDs, sessionID).Count(&occupiedCount).Error; err != nil {
+				return err
+			}
+			if occupiedCount > 0 {
+				return ErrSeatAlreadyTaken
+			}
 		}
 
-		transaction = bookings.Transaction{
+		transactionRecord = TransactionRecord{
 			ID:            uuid.New(),
 			UserID:        userID,
 			TotalAmount:   totalAmount,
-			Status:        bookings.TicketStatusPending,
+			Status:        TicketStatus(bookings.TicketStatusPending),
 			PaymentMethod: "NONE",
+			CreatedAt:     time.Now(),
 		}
-		if err := tx.Create(&transaction).Error; err != nil {
+		if err := tx.Create(&transactionRecord).Error; err != nil {
 			return err
 		}
 
-		for i := range ticketsToCreate {
-			ticketsToCreate[i].TransactionID = transaction.ID
-			if err := tx.Create(&ticketsToCreate[i]).Error; err != nil {
+		for _, t := range ticketsToCreate {
+			ticketRecord := TicketRecord{
+				ID:            uuid.New(),
+				TransactionID: transactionRecord.ID,
+				SessionID:     sessionID,
+				SeatID:        t.SeatID,
+				Status:        TicketStatus(bookings.TicketStatusPending),
+				Type:          TicketType(t.Type),
+				PricePaid:     t.PricePaid,
+				QRCode:        "",
+			}
+			if err := tx.Create(&ticketRecord).Error; err != nil {
 				return err
 			}
-			transaction.Tickets = append(transaction.Tickets, ticketsToCreate[i])
+			transactionRecord.Tickets = append(transactionRecord.Tickets, ticketRecord)
 		}
 
 		return nil
@@ -173,23 +185,23 @@ func (s *Store) CreateReservation(ctx context.Context, userID uuid.UUID, session
 		return nil, err
 	}
 
-	return &transaction, nil
+	return ToTransactionDomain(&transactionRecord), nil
 }
 
 func (s *Store) GetTransactionByID(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID) (*bookings.Transaction, error) {
-	var transaction bookings.Transaction
-	if err := s.db.WithContext(ctx).Preload("User").Preload("Tickets").Where("id = ? AND user_id = ?", transactionID, userID).First(&transaction).Error; err != nil {
+	var record TransactionRecord
+	if err := s.db.WithContext(ctx).Preload("Tickets").Where("id = ? AND user_id = ?", transactionID, userID).First(&record).Error; err != nil {
 		return nil, ErrTxNotFound
 	}
-	return &transaction, nil
+	return ToTransactionDomain(&record), nil
 }
 
 func (s *Store) PayTransaction(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, paymentID string) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		res := tx.Model(&bookings.Transaction{}).
-			Where("id = ? AND user_id = ? AND status = ?", transactionID, userID, bookings.TicketStatusPending).
+		res := tx.Model(&TransactionRecord{}).
+			Where("id = ? AND user_id = ? AND status = ?", transactionID, userID, TicketStatus(bookings.TicketStatusPending)).
 			Updates(map[string]interface{}{
-				"status":         bookings.TicketStatusPaid,
+				"status":         TicketStatus(bookings.TicketStatusPaid),
 				"payment_method": method,
 				"payment_id":     paymentID,
 			})
@@ -201,7 +213,7 @@ func (s *Store) PayTransaction(ctx context.Context, transactionID uuid.UUID, use
 			return ErrTransactionNotFound
 		}
 
-		var tickets []bookings.Ticket
+		var tickets []TicketRecord
 		if err := tx.Where("transaction_id = ?", transactionID).Find(&tickets).Error; err != nil {
 			return err
 		}
@@ -209,10 +221,11 @@ func (s *Store) PayTransaction(ctx context.Context, transactionID uuid.UUID, use
 		for _, ticket := range tickets {
 			qrCode := fmt.Sprintf("SCREEK-TX%s-TK%s-%d", transactionID.String()[:8], ticket.ID.String()[:8], time.Now().UnixNano())
 
-			ticket.Status = bookings.TicketStatusPaid
-			ticket.QRCode = qrCode
-
-			if err := tx.Save(&ticket).Error; err != nil {
+			err := tx.Model(&TicketRecord{}).Where("id = ?", ticket.ID).Updates(map[string]interface{}{
+				"status":  TicketStatus(bookings.TicketStatusPaid),
+				"qr_code": qrCode,
+			}).Error
+			if err != nil {
 				return err
 			}
 		}
@@ -223,11 +236,12 @@ func (s *Store) PayTransaction(ctx context.Context, transactionID uuid.UUID, use
 
 func (s *Store) CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var ticket bookings.Ticket
-		if err := tx.Where("id = ? AND status != ?", ticketID, bookings.TicketStatusCancelled).First(&ticket).Error; err != nil {
+		var ticket TicketRecord
+		if err := tx.Where("id = ? AND status != ?", ticketID, TicketStatus(bookings.TicketStatusCancelled)).First(&ticket).Error; err != nil {
 			return ErrTicketNotFound
 		}
-		var transaction bookings.Transaction
+
+		var transaction TransactionRecord
 		if err := tx.First(&transaction, ticket.TransactionID).Error; err != nil {
 			return ErrTxNotFound
 		}
@@ -236,40 +250,37 @@ func (s *Store) CancelTicket(ctx context.Context, ticketID uuid.UUID, userID uui
 			return ErrNotTicketOwner
 		}
 
-		var session cinema.Session
+		var session cinemastore.SessionRecord
 		if err := tx.First(&session, ticket.SessionID).Error; err == nil {
 			if time.Now().After(session.StartTime.Add(-2 * time.Hour)) {
 				return errors.New("não é possível cancelar um ingresso menos de 2 horas antes da sessão ou após o início")
 			}
 		}
 
-		ticket.Status = bookings.TicketStatusCancelled
-		return tx.Save(&ticket).Error
+		return tx.Model(&ticket).Update("status", TicketStatus(bookings.TicketStatusCancelled)).Error
 	})
 }
 
 func (s *Store) GetUserTickets(ctx context.Context, userID uuid.UUID, status string) ([]bookings.Ticket, error) {
-	var tickets []bookings.Ticket
+	var records []TicketRecord
 	query := s.db.WithContext(ctx).Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").Where("trx.user_id = ?", userID)
 
 	if status != "" {
 		query = query.Where("tickets.status = ?", status)
 	}
 
-	err := query.Preload("Seat").Preload("Session.Movie").Preload("Session.Room.Cinema").Find(&tickets).Error
-
-	return tickets, err
+	err := query.Find(&records).Error
+	return ToTicketList(records), err
 }
 
 func (s *Store) GetTicketDetail(ctx context.Context, ticketID uuid.UUID, userID uuid.UUID) (*bookings.Ticket, error) {
-	var ticket bookings.Ticket
+	var record TicketRecord
 	query := s.db.WithContext(ctx).
 		Joins("JOIN transactions trx ON trx.id = tickets.transaction_id").
 		Where("tickets.id = ? AND trx.user_id = ?", ticketID, userID)
 
-	err := query.Preload("Seat").Preload("Session.Movie").Preload("Session.Room.Cinema").Preload("Transaction").First(&ticket).Error
-
-	return &ticket, err
+	err := query.Preload("Transaction").First(&record).Error
+	return ToTicketDomain(&record), err
 }
 
 func (s *Store) GetSpecialStatusForMovies(ctx context.Context, city string, movieIDs []int) (map[int]map[string]bool, error) {
@@ -279,7 +290,7 @@ func (s *Store) GetSpecialStatusForMovies(ctx context.Context, city string, movi
 
 	type Result struct {
 		MovieID     int
-		SessionType cinema.SessionType
+		SessionType string
 	}
 	var results []Result
 
@@ -301,11 +312,11 @@ func (s *Store) GetSpecialStatusForMovies(ctx context.Context, city string, movi
 		statusMap[mID] = map[string]bool{"premiere": false, "rescreening": false}
 	}
 
-	for _, r := range results {
-		if r.SessionType == cinema.SessionTypePremiere {
-			statusMap[r.MovieID]["premiere"] = true
-		} else if r.SessionType == cinema.SessionTypeRescreen {
-			statusMap[r.MovieID]["rescreening"] = true
+	for _, result := range results {
+		if result.SessionType == "PREMIERE" {
+			statusMap[result.MovieID]["premiere"] = true
+		} else if result.SessionType == "RESCREENING" {
+			statusMap[result.MovieID]["rescreening"] = true
 		}
 	}
 
@@ -319,8 +330,8 @@ func (s *Store) CleanupExpiredReservations(ctx context.Context) (int64, int64, e
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		res1 := tx.Where(
 			"transaction_id IN (SELECT id FROM transactions WHERE status = ? AND created_at < ?)",
-			bookings.TicketStatusPending, cutoff,
-		).Delete(&bookings.Ticket{})
+			TicketStatus(bookings.TicketStatusPending), cutoff,
+		).Delete(&TicketRecord{})
 		if res1.Error != nil {
 			return res1.Error
 		}
@@ -328,8 +339,8 @@ func (s *Store) CleanupExpiredReservations(ctx context.Context) (int64, int64, e
 
 		res2 := tx.Where(
 			"status = ? AND created_at < ?",
-			bookings.TicketStatusPending, cutoff,
-		).Delete(&bookings.Transaction{})
+			TicketStatus(bookings.TicketStatusPending), cutoff,
+		).Delete(&TransactionRecord{})
 		if res2.Error != nil {
 			return res2.Error
 		}
@@ -342,27 +353,24 @@ func (s *Store) CleanupExpiredReservations(ctx context.Context) (int64, int64, e
 }
 
 func (s *Store) AdminCancelTicket(ctx context.Context, ticketID uuid.UUID) (*bookings.Ticket, error) {
-	var ticket bookings.Ticket
+	var record TicketRecord
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Preload("Transaction").
-			Where("id = ? AND status != ?", ticketID, bookings.TicketStatusCancelled).First(&ticket).Error; err != nil {
+			Where("id = ? AND status != ?", ticketID, TicketStatus(bookings.TicketStatusCancelled)).First(&record).Error; err != nil {
 			return ErrTicketNotFound
 		}
-		ticket.Status = bookings.TicketStatusCancelled
-		return tx.Save(&ticket).Error
+		record.Status = TicketStatus(bookings.TicketStatusCancelled)
+		return tx.Save(&record).Error
 	})
-	return &ticket, err
+	return ToTicketDomain(&record), err
 }
 
 func (s *Store) GetTicketsBySession(ctx context.Context, sessionID int) ([]bookings.Ticket, error) {
-	var tickets []bookings.Ticket
+	var records []TicketRecord
 	err := s.db.WithContext(ctx).
-		Preload("Seat").
-		Preload("Session.Movie").
-		Preload("Session.Room.Cinema").
-		Preload("Transaction.User").
+		Preload("Transaction").
 		Where("session_id = ?", sessionID).
-		Find(&tickets).Error
-	return tickets, err
+		Find(&records).Error
+	return ToTicketList(records), err
 }

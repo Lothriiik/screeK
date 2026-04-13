@@ -30,8 +30,16 @@ func ToDomain(r *UserRecord) *users.User {
 		IsActive:       r.IsActive,
 		CreatedAt:      r.CreatedAt,
 	}
-
 }
+
+func ToUserList(records []UserRecord) []users.User {
+	list := make([]users.User, len(records))
+	for i := range records {
+		list[i] = *ToDomain(&records[i])
+	}
+	return list
+}
+
 func ToRecord(d *users.User) *UserRecord {
 	if d == nil {
 		return nil
@@ -87,4 +95,12 @@ func ToStatsRecord(d *users.UserStats) *UserStatsRecord{
 		LastRecalcAt:       d.LastRecalcAt,
 		UpdatedAt:          d.UpdatedAt,
 	}
+}
+
+func ToStatsList(records []UserStatsRecord) []users.UserStats {
+	list := make([]users.UserStats, len(records))
+	for i := range records {
+		list[i] = *ToStatsDomain(&records[i])
+	}
+	return list
 }

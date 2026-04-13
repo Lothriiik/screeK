@@ -7,11 +7,15 @@ import (
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/movies"
-
+	"github.com/StartLivin/screek/backend/internal/cinema"
 )
 
 type MovieProvider interface {
 	GetMovieDetails(ctx context.Context, tmdbID int) (*movies.Movie, error)
+}
+
+type CinemaProvider interface {
+	GetCinemaByID(ctx context.Context, id int) (*cinema.Cinema, error)
 }
 
 type AnalyticsRepository interface {
@@ -29,12 +33,14 @@ type AnalyticsRepository interface {
 type AnalyticsService struct {
 	repo          AnalyticsRepository
 	movieProvider MovieProvider
+	cinemaProvider CinemaProvider
 }
 
-func NewService(repo AnalyticsRepository, movieProvider MovieProvider) *AnalyticsService {
+func NewService(repo AnalyticsRepository, movieProvider MovieProvider, cinemaProvider CinemaProvider) *AnalyticsService {
 	return &AnalyticsService{
-		repo:          repo,
-		movieProvider: movieProvider,
+		repo:           repo,
+		movieProvider:  movieProvider,
+		cinemaProvider: cinemaProvider,
 	}
 }
 
@@ -48,17 +54,22 @@ func (s *AnalyticsService) GetAnalytics(ctx context.Context, start, end time.Tim
 	var totalTickets int
 	var cinemaStats []DailyCinemaStatsResponseDTO
 
-	for _, s := range stats {
-		rev := float64(s.TotalRevenue) / 100.0
+	for _, st := range stats {
+		rev := float64(st.TotalRevenue) / 100.0
 		totalRev += rev
-		totalTickets += s.TicketsSold
+		totalTickets += st.TicketsSold
+
+		cinemaName := "Cinema Desconhecido"
+		if c, err := s.cinemaProvider.GetCinemaByID(ctx, st.CinemaID); err == nil && c != nil {
+			cinemaName = c.Name
+		}
 
 		cinemaStats = append(cinemaStats, DailyCinemaStatsResponseDTO{
-			Date:          s.Date,
-			CinemaName:    s.Cinema.Name,
+			Date:          st.Date,
+			CinemaName:    cinemaName,
 			TotalRevenue:  rev,
-			TicketsSold:   s.TicketsSold,
-			OccupancyRate: s.OccupancyRate,
+			TicketsSold:   st.TicketsSold,
+			OccupancyRate: st.OccupancyRate,
 		})
 	}
 

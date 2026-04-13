@@ -26,3 +26,6 @@ type SessionRecord struct {
 	Movie       *int 		 `json:"movie" gorm:"foreignKey:MovieID"`
 	Room        RoomRecord   `json:"room" gorm:"foreignKey:RoomID"`
 }
+
+
+

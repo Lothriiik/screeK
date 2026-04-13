@@ -16,8 +16,6 @@ type UserProvider interface {
 	GetUserByUsername(ctx context.Context, username string) (*users.User, error)
 }
 
-// NotificationProvider removed in favor of EventBus
-
 type SessionProvider interface {
 	GetSessionPostData(ctx context.Context, sessionID uint) (*PostSessionData, error)
 }
@@ -161,9 +159,15 @@ func (s *socialService) formatFeedResponse(ctx context.Context, posts []Post, li
 }
 
 func (s *socialService) mapToPostDTO(ctx context.Context, p *Post) *PostResponseDTO {
+	username := "Usuário Desconhecido"
+	user, err := s.userProvider.GetUserByID(ctx, p.UserID)
+	if err == nil && user != nil {
+		username = user.Username
+	}
+
 	dto := &PostResponseDTO{
 		ID:           p.ID,
-		Author:       p.User.Username,
+		Author:       username,
 		PostType:     string(p.PostType),
 		Content:      p.Content,
 		IsSpoiler:    p.IsSpoiler,

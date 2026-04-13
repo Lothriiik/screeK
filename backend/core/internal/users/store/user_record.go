@@ -25,6 +25,7 @@ type UserRecord struct {
 	CreatedAt      time.Time      	`json:"created_at" gorm:"not null;default:now()"`
 }
 
+
 type UserStatsRecord struct {
 	UserID       uuid.UUID `json:"user_id" gorm:"type:uuid;primaryKey"`
 	TotalMovies  int       `json:"total_movies" gorm:"not null;default:0"`
@@ -36,6 +37,7 @@ type UserStatsRecord struct {
 	User  UserRecord          `json:"-" gorm:"foreignKey:UserID"`
 	Genre *movies.Genre `json:"genre,omitempty" gorm:"foreignKey:TopGenreID"`
 }
+
 
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(&UserRecord{}, &UserStatsRecord{})

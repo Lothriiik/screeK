@@ -12,6 +12,7 @@ import (
 	"github.com/StartLivin/screek/backend/internal/cinema"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/shared/events"
+	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
 	redisclient "github.com/redis/go-redis/v9"
 )
@@ -27,6 +28,10 @@ type Mailer interface {
 
 type MovieProvider interface {
 	GetMovieDetails(ctx context.Context, tmdbID int) (*movies.Movie, error)
+}
+
+type UserProvider interface {
+	GetUserByID(ctx context.Context, id uuid.UUID) (*users.User, error)
 }
 
 type SimpleRedisClient interface {
@@ -60,16 +65,18 @@ type bookingsService struct {
 	payment       payment.Service
 	mailer        Mailer
 	movieProvider MovieProvider
+	userProvider  UserProvider
 	events        *events.EventBus
 }
 
-func NewService(store BookingsRepository, redis SimpleRedisClient, payment payment.Service, mailer Mailer, movieProvider MovieProvider, eventBus *events.EventBus) Service {
+func NewService(store BookingsRepository, redis SimpleRedisClient, payment payment.Service, mailer Mailer, movieProvider MovieProvider, userProvider UserProvider, eventBus *events.EventBus) Service {
 	return &bookingsService{
 		store:         store,
 		redisClient:   redis,
 		payment:       payment,
 		mailer:        mailer,
 		movieProvider: movieProvider,
+		userProvider:  userProvider,
 		events:        eventBus,
 	}
 }
@@ -265,11 +272,12 @@ func (s *bookingsService) PayReservation(ctx context.Context, transactionID uuid
 		}
 
 		if s.events != nil {
+			userName, userEmail := s.fetchUserInfo(ctx, userID)
 			s.events.Publish(events.EventTicketPurchased, events.Data{
 				"transaction_id": transactionID,
 				"user_id":        userID,
-				"user_name":      transaction.User.Name,
-				"user_email":     transaction.User.Email,
+				"user_name":      userName,
+				"user_email":     userEmail,
 				"is_free":        true,
 				"tickets":        transaction.Tickets,
 			})
@@ -316,44 +324,65 @@ func (s *bookingsService) GetUserTickets(ctx context.Context, userID uuid.UUID, 
 	var response []TicketResponseDTO
 	cinemasCache := make(map[int]string)
 	moviesCache := make(map[int]string)
+	sessionsCache := make(map[int]*cinema.Session)
+	seatsCache := make(map[int]*cinema.Seat)
 
 	for _, t := range tickets {
-		movieName, ok := moviesCache[t.Session.MovieID]
+		session, ok := sessionsCache[t.SessionID]
 		if !ok {
-			movie, err := s.movieProvider.GetMovieDetails(ctx, t.Session.MovieID)
+			session, _ = s.store.GetSessionByID(ctx, t.SessionID)
+			sessionsCache[t.SessionID] = session
+		}
+		if session == nil {
+			continue
+		}
+
+		movieName, ok := moviesCache[session.MovieID]
+		if !ok {
+			movie, err := s.movieProvider.GetMovieDetails(ctx, session.MovieID)
 			if err == nil && movie != nil {
 				movieName = movie.Title
 			} else {
 				movieName = "Desconhecido"
 			}
-			moviesCache[t.Session.MovieID] = movieName
+			moviesCache[session.MovieID] = movieName
 		}
-		
-		cinemaName, ok := cinemasCache[t.Session.Room.CinemaID]
+
+		cinemaName, ok := cinemasCache[session.Room.CinemaID]
 		if !ok {
-			cinema, err := s.store.GetCinemaByID(ctx, t.Session.Room.CinemaID)
-			if err == nil && cinema != nil {
-				cinemaName = cinema.Name
+			c, err := s.store.GetCinemaByID(ctx, session.Room.CinemaID)
+			if err == nil && c != nil {
+				cinemaName = c.Name
 			} else {
 				cinemaName = "Desconhecido"
 			}
-			cinemasCache[t.Session.Room.CinemaID] = cinemaName
+			cinemasCache[session.Room.CinemaID] = cinemaName
+		}
+
+		seatLabel := "Geral"
+		if t.SeatID != nil {
+			seat, ok := seatsCache[*t.SeatID]
+			if !ok {
+				seats, _ := s.store.GetSeatsBySession(ctx, t.SessionID)
+				for i := range seats {
+					seatsCache[seats[i].ID] = &seats[i]
+				}
+				seat = seatsCache[*t.SeatID]
+			}
+			if seat != nil {
+				seatLabel = fmt.Sprintf("%s%d", seat.Row, seat.Number)
+			}
 		}
 
 		dto := TicketResponseDTO{
 			ID:        t.ID,
 			MovieName: movieName,
 			Cinema:    cinemaName,
-			Date:      t.Session.StartTime.Format("02/01/2006 15:04"),
-			Room:      t.Session.Room.Name,
-			Seat: func() string {
-				if t.Seat != nil {
-					return fmt.Sprintf("%s%d", t.Seat.Row, t.Seat.Number)
-				}
-				return "Geral"
-			}(),
-			Status: string(t.Status),
-			QRCode: t.QRCode,
+			Date:      session.StartTime.Format("02/01/2006 15:04"),
+			Room:      session.Room.Name,
+			Seat:      seatLabel,
+			Status:    string(t.Status),
+			QRCode:    t.QRCode,
 		}
 		response = append(response, dto)
 	}
@@ -373,35 +402,49 @@ func (s *bookingsService) GetTicketDetail(ctx context.Context, ticketID uuid.UUI
 		return TicketResponseDTO{}, err
 	}
 
+	session, _ := s.store.GetSessionByID(ctx, ticket.SessionID)
+
 	movieName := "Desconhecido"
-	movie, err := s.movieProvider.GetMovieDetails(ctx, ticket.Session.MovieID)
-	if err == nil && movie != nil {
-		movieName = movie.Title
+	cinemaName := "Desconhecido"
+	roomName := ""
+	date := ""
+
+	if session != nil {
+		movie, err := s.movieProvider.GetMovieDetails(ctx, session.MovieID)
+		if err == nil && movie != nil {
+			movieName = movie.Title
+		}
+		c, err := s.store.GetCinemaByID(ctx, session.Room.CinemaID)
+		if err == nil && c != nil {
+			cinemaName = c.Name
+		}
+		roomName = session.Room.Name
+		date = session.StartTime.Format("02/01/2006 15:04")
 	}
 
-	cinemaName := "Desconhecido"
-	cinema, err := s.store.GetCinemaByID(ctx, ticket.Session.Room.CinemaID)
-	if err == nil && cinema != nil {
-		cinemaName = cinema.Name
+	seatLabel := "Geral"
+	if ticket.SeatID != nil {
+		seats, _ := s.store.GetSeatsBySession(ctx, ticket.SessionID)
+		for _, seat := range seats {
+			if seat.ID == *ticket.SeatID {
+				seatLabel = fmt.Sprintf("%s%d", seat.Row, seat.Number)
+				break
+			}
+		}
 	}
 
 	dto := TicketResponseDTO{
 		ID:        ticket.ID,
 		MovieName: movieName,
 		Cinema:    cinemaName,
-		Date:      ticket.Session.StartTime.Format("02/01/2006 15:04"),
-		Room:      ticket.Session.Room.Name,
-		Seat: func() string {
-			if ticket.Seat != nil {
-				return fmt.Sprintf("%s%d", ticket.Seat.Row, ticket.Seat.Number)
-			}
-			return "Geral"
-		}(),
-		Status: string(ticket.Status),
-		QRCode: ticket.QRCode,
+		Date:      date,
+		Room:      roomName,
+		Seat:      seatLabel,
+		Status:    string(ticket.Status),
+		QRCode:    ticket.QRCode,
 	}
 
-	return dto, err
+	return dto, nil
 }
 
 func (s *bookingsService) ConfirmPaymentWebhook(ctx context.Context, transactionID uuid.UUID, userID uuid.UUID, method string, paymentID string) error {
@@ -416,11 +459,12 @@ func (s *bookingsService) ConfirmPaymentWebhook(ctx context.Context, transaction
 	}
 
 	if s.events != nil {
+		userName, userEmail := s.fetchUserInfo(ctx, userID)
 		s.events.Publish(events.EventTicketPurchased, events.Data{
 			"transaction_id": transactionID,
 			"user_id":        userID,
-			"user_name":      transaction.User.Name,
-			"user_email":     transaction.User.Email,
+			"user_name":      userName,
+			"user_email":     userEmail,
 			"is_free":        false,
 			"payment_id":     paymentID,
 			"tickets":        transaction.Tickets,
@@ -503,29 +547,6 @@ func (s *bookingsService) AdminCancelSession(ctx context.Context, sessionID int)
 	return nil
 }
 
-func (s *bookingsService) mapTicketToDTO(t Ticket, movieName, cinemaName string) TicketResponseDTO {
-	return TicketResponseDTO{
-		ID:        t.ID,
-		MovieName: movieName,
-		Cinema:    cinemaName,
-		Date:      t.Session.StartTime.Format("02/01/2006 15:04"),
-		Room:      t.Session.Room.Name,
-		Seat: func() string {
-			if t.Seat != nil {
-				return fmt.Sprintf("%s%d", t.Seat.Row, t.Seat.Number)
-			}
-			return "Geral"
-		}(),
-		Status: string(t.Status),
-		QRCode: t.QRCode,
-		User: &UserBookingDTO{
-			ID:    t.Transaction.User.ID.String(),
-			Email: t.Transaction.User.Email,
-			Name:  t.Transaction.User.Name,
-		},
-	}
-}
-
 func (s *bookingsService) GetTicketsBySession(ctx context.Context, sessionID int) ([]TicketResponseDTO, error) {
 	tickets, err := s.store.GetTicketsBySession(ctx, sessionID)
 	if err != nil {
@@ -536,22 +557,75 @@ func (s *bookingsService) GetTicketsBySession(ctx context.Context, sessionID int
 		return []TicketResponseDTO{}, nil
 	}
 
-	firstTicket := tickets[0]
+	session, _ := s.store.GetSessionByID(ctx, sessionID)
+
 	movieName := "Desconhecido"
-	movie, err := s.movieProvider.GetMovieDetails(ctx, firstTicket.Session.MovieID)
-	if err == nil && movie != nil {
-		movieName = movie.Title
-	}
 	cinemaName := "Desconhecido"
-	cinema, err := s.store.GetCinemaByID(ctx, firstTicket.Session.Room.CinemaID)
-	if err == nil && cinema != nil {
-		cinemaName = cinema.Name
+	roomName := ""
+	var startTime time.Time
+
+	if session != nil {
+		movie, err := s.movieProvider.GetMovieDetails(ctx, session.MovieID)
+		if err == nil && movie != nil {
+			movieName = movie.Title
+		}
+		c, err := s.store.GetCinemaByID(ctx, session.Room.CinemaID)
+		if err == nil && c != nil {
+			cinemaName = c.Name
+		}
+		roomName = session.Room.Name
+		startTime = session.StartTime
+	}
+
+	seatsMap := make(map[int]*cinema.Seat)
+	seats, _ := s.store.GetSeatsBySession(ctx, sessionID)
+	for i := range seats {
+		seatsMap[seats[i].ID] = &seats[i]
 	}
 
 	var response []TicketResponseDTO
 	for _, t := range tickets {
-		response = append(response, s.mapTicketToDTO(t, movieName, cinemaName))
+		seatLabel := "Geral"
+		if t.SeatID != nil {
+			if seat, ok := seatsMap[*t.SeatID]; ok {
+				seatLabel = fmt.Sprintf("%s%d", seat.Row, seat.Number)
+			}
+		}
+
+		userDTO := s.fetchUserBookingDTO(ctx, t.Transaction.UserID)
+
+		response = append(response, TicketResponseDTO{
+			ID:        t.ID,
+			MovieName: movieName,
+			Cinema:    cinemaName,
+			Date:      startTime.Format("02/01/2006 15:04"),
+			Room:      roomName,
+			Seat:      seatLabel,
+			Status:    string(t.Status),
+			QRCode:    t.QRCode,
+			User:      userDTO,
+		})
 	}
 
 	return response, nil
+}
+
+func (s *bookingsService) fetchUserInfo(ctx context.Context, userID uuid.UUID) (string, string) {
+	user, err := s.userProvider.GetUserByID(ctx, userID)
+	if err != nil || user == nil {
+		return "Desconhecido", ""
+	}
+	return user.Name, user.Email
+}
+
+func (s *bookingsService) fetchUserBookingDTO(ctx context.Context, userID uuid.UUID) *UserBookingDTO {
+	user, err := s.userProvider.GetUserByID(ctx, userID)
+	if err != nil || user == nil {
+		return nil
+	}
+	return &UserBookingDTO{
+		ID:    user.ID.String(),
+		Email: user.Email,
+		Name:  user.Name,
+	}
 }

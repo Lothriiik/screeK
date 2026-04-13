@@ -11,3 +11,5 @@ type SeatRecord struct {
 	Room       RoomRecord   `json:"-" gorm:"foreignKey:RoomID"`
 	IsOccupied bool   		`json:"is_occupied" gorm:"-"`
 }
+
+

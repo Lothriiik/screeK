@@ -3,10 +3,7 @@ package bookings
 import (
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/cinema"
-	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type TicketType string
@@ -26,33 +23,25 @@ const (
 )
 
 type Transaction struct {
-	ID            uuid.UUID    `json:"id" gorm:"type:uuid;primaryKey"`
-	UserID        uuid.UUID    `json:"user_id" gorm:"type:uuid;not null;index:idx_tx_user_status,composite:user"`
-	TotalAmount   int          `json:"total_amount" gorm:"not null"`
-	Status        TicketStatus `json:"status" gorm:"type:varchar(20);not null;index:idx_tx_user_status,composite:status"`
-	PaymentMethod string       `json:"payment_method" gorm:"not null"`
-	PaymentID     string       `json:"payment_id" gorm:"index"`
-	User          users.User   `json:"user" gorm:"foreignKey:UserID"`
-	Tickets       []Ticket     `json:"tickets" gorm:"foreignKey:TransactionID"`
-	CreatedAt     time.Time    `json:"created_at" gorm:"not null;default:now()"`
+	ID            uuid.UUID    `json:"id"`
+	UserID        uuid.UUID    `json:"user_id"`
+	TotalAmount   int          `json:"total_amount"`
+	Status        TicketStatus `json:"status"`
+	PaymentMethod string       `json:"payment_method"`
+	PaymentID     string       `json:"payment_id"`
+	Tickets       []uuid.UUID    	   `json:"tickets"`
+	CreatedAt     time.Time    `json:"created_at"`
 }
 
 type Ticket struct {
-	ID            uuid.UUID      `json:"id" gorm:"type:uuid;primaryKey"`
-	TransactionID uuid.UUID      `json:"transaction_id" gorm:"type:uuid;not null;index"`
-	SessionID     int            `json:"session_id" gorm:"not null;index:idx_tickets_session_seat_status,composite:session"`
-	SeatID        *int           `json:"seat_id" gorm:"index:idx_tickets_session_seat_status,composite:seat"`
-	Status        TicketStatus   `json:"status" gorm:"type:varchar(20);not null;index:idx_tickets_session_seat_status,composite:status"`
-	Type          TicketType     `json:"type" gorm:"type:varchar(20);not null;default:'STANDARD'"`
-	PricePaid     int            `json:"price_paid" gorm:"not null;default:0"`
-	QRCode        string         `json:"qr_code" gorm:"not null;unique"`
-	Transaction   Transaction    `json:"-" gorm:"foreignKey:TransactionID"`
-	Session       cinema.Session `json:"session" gorm:"foreignKey:SessionID"`
-	Seat          *cinema.Seat   `json:"seat" gorm:"foreignKey:SeatID"`
+	ID            uuid.UUID      `json:"id"`
+	TransactionID uuid.UUID      `json:"transaction_id"`
+	SessionID     int            `json:"session_id"`
+	SeatID        *int           `json:"seat_id"`
+	Status        TicketStatus   `json:"status"`
+	Type          TicketType     `json:"type"`
+	PricePaid     int            `json:"price_paid"`
+	QRCode        string         `json:"qr_code"`
+	Transaction   Transaction    `json:"-"`
 }
 
-func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(
-		&Transaction{}, &Ticket{},
-	)
-}

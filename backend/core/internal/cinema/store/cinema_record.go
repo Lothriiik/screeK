@@ -27,6 +27,7 @@ type CinemaRecord struct {
 	Rooms 	  []RoomRecord 	 `json:"rooms,omitempty" gorm:"foreignKey:CinemaID"`
 }
 
+
 type RoomRecord struct {
 	ID       int      	  `json:"id" gorm:"primaryKey;autoIncrement"`
 	CinemaID int      	  `json:"cinema_id" gorm:"not null;index"`
@@ -37,11 +38,14 @@ type RoomRecord struct {
 	Seats  	 []SeatRecord `json:"seats,omitempty" gorm:"foreignKey:RoomID"`
 }
 
+
 type CinemaManagerRecord struct {
 	UserID    uuid.UUID `gorm:"type:uuid;primaryKey"`
 	CinemaID  int       `gorm:"primaryKey"`
 	CreatedAt time.Time `gorm:"not null;default:now()"`
 }
+
+
 
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(&CinemaRecord{}, &RoomRecord{}, &CinemaManagerRecord{}, &SeatRecord{}, &SessionRecord{})

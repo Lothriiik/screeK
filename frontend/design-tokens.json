@@ -1,287 +1,176 @@
 {
+    "$metadata": {
+        "name": "ScreeK Design System v4",
+        "version": "4.0.0",
+        "description": "Design System tokens — Light & Dark mode. Outfit for headings, Inter for body.",
+        "tokenSetOrder": ["global", "light", "dark", "semantic"]
+    },
     "global": {
         "color": {
             "primary": {
                 "value": "#7E2553",
                 "type": "color",
-                "description": "Primary brand color - Pink Eggplant (Siesta Tan)"
+                "description": "Primary brand color"
             },
             "secondary": {
                 "value": "#FF5C80",
                 "type": "color",
-                "description": "Secondary brand color - Stellar Strawberry (Siesta Tan)"
+                "description": "Secondary brand color"
             },
             "tertiary": {
                 "value": "#85A3B2",
                 "type": "color",
-                "description": "Tertiary brand color - Grauzone (Siesta Tan)"
-            },
-            "background": {
-                "value": "#1E3442",
-                "type": "color",
-                "description": "Background color - Blue Whale (Siesta Tan)"
-            },
-            "text": {
-                "value": "#E9D8C8",
-                "type": "color",
-                "description": "Text color - Siesta Tan"
-            },
-            "accent": {
-                "value": "#142838",
-                "type": "color",
-                "description": "Accent color - Hel Set Black (Siesta Tan)"
+                "description": "Tertiary brand color"
             },
             "success": {
-                "value": "#22c55e",
-                "type": "color"
-            },
-            "warning": {
-                "value": "#f59e0b",
-                "type": "color"
-            },
-            "danger": {
-                "value": "#ef4444",
+                "value": "#16A34A",
                 "type": "color"
             },
             "info": {
-                "value": "#3b82f6",
+                "value": "#3B82F6",
+                "type": "color"
+            },
+            "warning": {
+                "value": "#DBA212",
+                "type": "color"
+            },
+            "error": {
+                "value": "#DC2626",
                 "type": "color"
             }
         },
         "fontFamilies": {
-            "sans": {
+            "heading": {
+                "value": "Outfit",
+                "type": "fontFamilies",
+                "description": "Used for h1–h6 headings"
+            },
+            "body": {
                 "value": "Inter",
-                "type": "fontFamilies"
+                "type": "fontFamilies",
+                "description": "Used for body text, labels, inputs"
             }
         },
         "fontWeights": {
-            "regular": {
-                "value": "400",
-                "type": "fontWeights"
-            },
-            "medium": {
-                "value": "500",
-                "type": "fontWeights"
-            },
-            "bold": {
-                "value": "700",
-                "type": "fontWeights"
-            },
-            "black": {
-                "value": "900",
-                "type": "fontWeights"
-            }
+            "regular": { "value": "400", "type": "fontWeights" },
+            "medium": { "value": "500", "type": "fontWeights" },
+            "semibold": { "value": "600", "type": "fontWeights" },
+            "bold": { "value": "700", "type": "fontWeights" },
+            "extrabold": { "value": "800", "type": "fontWeights" },
+            "black": { "value": "900", "type": "fontWeights" }
         },
         "fontSize": {
-            "xs": {
-                "value": "12",
-                "type": "fontSizes"
-            },
-            "sm": {
-                "value": "14",
-                "type": "fontSizes"
-            },
-            "base": {
-                "value": "16",
-                "type": "fontSizes"
-            },
-            "lg": {
-                "value": "18",
-                "type": "fontSizes"
-            },
-            "xl": {
-                "value": "20",
-                "type": "fontSizes"
-            },
-            "2xl": {
-                "value": "24",
-                "type": "fontSizes"
-            },
-            "3xl": {
-                "value": "30",
-                "type": "fontSizes"
-            },
-            "4xl": {
-                "value": "36",
-                "type": "fontSizes"
-            },
-            "5xl": {
-                "value": "48",
-                "type": "fontSizes"
-            },
-            "6xl": {
-                "value": "60",
-                "type": "fontSizes"
-            }
+            "xs": { "value": "12", "type": "fontSizes" },
+            "sm": { "value": "14", "type": "fontSizes" },
+            "base": { "value": "16", "type": "fontSizes" },
+            "lg": { "value": "18", "type": "fontSizes" },
+            "xl": { "value": "20", "type": "fontSizes" },
+            "2xl": { "value": "24", "type": "fontSizes" },
+            "3xl": { "value": "32", "type": "fontSizes" },
+            "4xl": { "value": "40", "type": "fontSizes" },
+            "5xl": { "value": "48", "type": "fontSizes" },
+            "6xl": { "value": "56", "type": "fontSizes" }
         },
         "lineHeights": {
-            "none": {
-                "value": "1",
-                "type": "lineHeights"
-            },
-            "tight": {
-                "value": "1.25",
-                "type": "lineHeights"
-            },
-            "normal": {
-                "value": "1.5",
-                "type": "lineHeights"
-            },
-            "relaxed": {
-                "value": "1.75",
-                "type": "lineHeights"
-            }
+            "none": { "value": "1", "type": "lineHeights" },
+            "tight": { "value": "1.25", "type": "lineHeights" },
+            "normal": { "value": "1.5", "type": "lineHeights" },
+            "relaxed": { "value": "1.75", "type": "lineHeights" }
         },
         "letterSpacing": {
-            "tighter": {
-                "value": "-0.05em",
-                "type": "letterSpacing"
-            },
-            "tight": {
-                "value": "-0.025em",
-                "type": "letterSpacing"
-            },
-            "normal": {
-                "value": "0",
-                "type": "letterSpacing"
-            },
-            "wide": {
-                "value": "0.025em",
-                "type": "letterSpacing"
-            },
-            "wider": {
-                "value": "0.05em",
-                "type": "letterSpacing"
-            },
-            "widest": {
-                "value": "0.1em",
-                "type": "letterSpacing"
-            }
+            "tighter": { "value": "-0.05em", "type": "letterSpacing" },
+            "tight": { "value": "-0.025em", "type": "letterSpacing" },
+            "normal": { "value": "0", "type": "letterSpacing" },
+            "wide": { "value": "0.025em", "type": "letterSpacing" },
+            "wider": { "value": "0.05em", "type": "letterSpacing" },
+            "widest": { "value": "0.1em", "type": "letterSpacing" }
         },
         "spacing": {
-            "0": {
-                "value": "0",
-                "type": "spacing"
-            },
-            "8": {
-                "value": "8",
-                "type": "spacing"
-            },
-            "16": {
-                "value": "16",
-                "type": "spacing"
-            },
-            "24": {
-                "value": "24",
-                "type": "spacing"
-            },
-            "32": {
-                "value": "32",
-                "type": "spacing"
-            },
-            "40": {
-                "value": "40",
-                "type": "spacing"
-            },
-            "48": {
-                "value": "48",
-                "type": "spacing"
-            },
-            "56": {
-                "value": "56",
-                "type": "spacing"
-            },
-            "64": {
-                "value": "64",
-                "type": "spacing"
-            },
-            "72": {
-                "value": "72",
-                "type": "spacing"
-            },
-            "80": {
-                "value": "80",
-                "type": "spacing"
-            },
-            "96": {
-                "value": "96",
-                "type": "spacing"
-            },
-            "128": {
-                "value": "128",
-                "type": "spacing"
-            }
+            "0": { "value": "0", "type": "spacing" },
+            "8": { "value": "8", "type": "spacing" },
+            "16": { "value": "16", "type": "spacing" },
+            "24": { "value": "24", "type": "spacing" },
+            "32": { "value": "32", "type": "spacing" },
+            "40": { "value": "40", "type": "spacing" },
+            "48": { "value": "48", "type": "spacing" },
+            "56": { "value": "56", "type": "spacing" },
+            "64": { "value": "64", "type": "spacing" },
+            "72": { "value": "72", "type": "spacing" },
+            "80": { "value": "80", "type": "spacing" },
+            "96": { "value": "96", "type": "spacing" },
+            "128": { "value": "128", "type": "spacing" }
         },
         "borderRadius": {
             "none": {
                 "value": "0",
                 "type": "borderRadius",
-                "description": "V3 Brutalist - No rounded corners"
+                "description": "Brutalist — no rounded corners"
             }
         },
         "borderWidth": {
-            "2": {
-                "value": "2",
-                "type": "borderWidth"
-            },
-            "4": {
-                "value": "4",
-                "type": "borderWidth",
-                "description": "V3 Brutalist - Primary"
-            },
-            "8": {
-                "value": "8",
-                "type": "borderWidth",
-                "description": "V3 Brutalist - Accent"
-            }
+            "2": { "value": "2", "type": "borderWidth" },
+            "4": { "value": "4", "type": "borderWidth", "description": "Primary border" },
+            "8": { "value": "8", "type": "borderWidth", "description": "Accent border" }
         },
         "opacity": {
-            "40": {
+            "border": {
                 "value": "0.4",
-                "type": "opacity"
+                "type": "opacity",
+                "description": "Border opacity for both themes"
+            }
+        }
+    },
+    "light": {
+        "color": {
+            "background": {
+                "value": "#E9D8C8",
+                "type": "color",
+                "description": "Light mode background"
+            },
+            "text": {
+                "value": "#190207",
+                "type": "color",
+                "description": "Light mode text"
+            },
+            "border": {
+                "value": "#19020766",
+                "type": "color",
+                "description": "Light mode border — #190207 at 40%"
+            }
+        }
+    },
+    "dark": {
+        "color": {
+            "background": {
+                "value": "#190207",
+                "type": "color",
+                "description": "Dark mode background"
+            },
+            "text": {
+                "value": "#E9D8C8",
+                "type": "color",
+                "description": "Dark mode text"
+            },
+            "border": {
+                "value": "#E9D8C866",
+                "type": "color",
+                "description": "Dark mode border — #E9D8C8 at 40%"
             }
         }
     },
     "semantic": {
         "button": {
             "primary": {
-                "background": {
-                    "value": "{color.primary}",
-                    "type": "color"
-                },
-                "text": {
-                    "value": "{color.text}",
-                    "type": "color"
-                },
-                "borderWidth": {
-                    "value": "{borderWidth.4}",
-                    "type": "borderWidth"
-                },
-                "paddingX": {
-                    "value": "{spacing.24}",
-                    "type": "spacing"
-                },
-                "paddingY": {
-                    "value": "{spacing.16}",
-                    "type": "spacing"
-                }
+                "background": { "value": "{color.primary}", "type": "color" },
+                "text": { "value": "{color.text}", "type": "color" },
+                "borderWidth": { "value": "{borderWidth.4}", "type": "borderWidth" },
+                "paddingX": { "value": "{spacing.24}", "type": "spacing" },
+                "paddingY": { "value": "{spacing.16}", "type": "spacing" }
             }
         },
         "card": {
-            "borderWidth": {
-                "value": "{borderWidth.4}",
-                "type": "borderWidth"
-            },
-            "padding": {
-                "value": "{spacing.24}",
-                "type": "spacing"
-            }
+            "borderWidth": { "value": "{borderWidth.4}", "type": "borderWidth" },
+            "padding": { "value": "{spacing.24}", "type": "spacing" }
         }
-    },
-    "$metadata": {
-        "tokenSetOrder": [
-            "global",
-            "semantic"
-        ]
     }
 }

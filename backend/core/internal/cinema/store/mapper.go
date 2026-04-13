@@ -227,3 +227,36 @@ func ToManagerRecord(d *cinema.CinemaManager) *CinemaManagerRecord {
 		CreatedAt:  d.CreatedAt,
 	}
 }
+
+func ToSessionList(r []SessionRecord) []cinema.Session {
+	list := make([]cinema.Session, len(r))
+	for i := range r {
+		list[i] = *ToSessionDomain(&r[i])
+	}
+	return list
+}
+
+func ToSeatList(r []SeatRecord) []cinema.Seat {
+	list := make([]cinema.Seat, len(r))
+	for i := range r {
+		list[i] = *ToSeatDomain(&r[i])
+	}
+	return list
+}
+
+func ToCinemaList(r []CinemaRecord) []cinema.Cinema {
+	list := make([]cinema.Cinema, len(r))
+	for i := range r {
+		list[i] = *ToCinemaDomain(&r[i])
+	}
+	return list
+}
+
+func ToRoomList(r []RoomRecord) []cinema.Room {
+	list := make([]cinema.Room, len(r))
+	for i := range r {
+		list[i] = *ToRoomDomain(&r[i])
+	}
+	return list
+}
+

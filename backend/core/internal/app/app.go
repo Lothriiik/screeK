@@ -158,13 +158,14 @@ func (app *Application) mount() {
 
 	authSvc := auth.NewAuthService(userStore, jwtService, app.redis, resendClient)
 	mgmtSvc := cinema.NewService(mgmtStore, movieService, app.events)
-	analyticsSvc := analytics.NewService(analyticsStore, movieService)
+	analyticsSvc := analytics.NewService(analyticsStore, movieService, mgmtSvc)
 	catalogSvc := catalog.NewService(catalogStore, userService, movieService)
 	socialSvc := social.NewService(socialStore, userStore, app.events, sessionAdapter)
-	bookingSvc := bookings.NewService(bookingStore, app.redis, paymentSvc, resendClient, movieService, app.events)
+	bookingSvc := bookings.NewService(bookingStore, app.redis, paymentSvc, resendClient, movieService, userService, app.events)
 
 	userAdapter.svc = userService
-	listAdapter.svc = catalogSvc
+	listAdapter.catalogSvc = catalogSvc
+	listAdapter.userSvc = userService
 	sessionAdapter.svc = bookingSvc
 	sessionAdapter.movieSvc = movieService
 	sessionAdapter.mgmtSvc = mgmtSvc
@@ -233,19 +234,19 @@ func (app *Application) Run() error {
 	if err := cinemastore.AutoMigrate(app.db); err != nil {
 		return err
 	}
-	if err := bookings.AutoMigrate(app.db); err != nil {
+	if err := bookingstore.AutoMigrate(app.db); err != nil {
 		return err
 	}
-	if err := catalog.AutoMigrate(app.db); err != nil {
+	if err := catalogstore.AutoMigrate(app.db); err != nil {
 		return err
 	}
-	if err := social.AutoMigrate(app.db); err != nil {
+	if err := socialstore.AutoMigrate(app.db); err != nil {
 		return err
 	}
-	if err := analytics.AutoMigrate(app.db); err != nil {
+	if err := analyticalstore.AutoMigrate(app.db); err != nil {
 		return err
 	}
-	if err := notifications.AutoMigrate(app.db); err != nil {
+	if err := notifstore.AutoMigrate(app.db); err != nil {
 		return err
 	}
 
@@ -327,21 +328,27 @@ func (a *userSearchAdapter) SearchUsers(ctx context.Context, query string) ([]mo
 }
 
 type listSearchAdapter struct {
-	svc *catalog.CatalogService
+	catalogSvc *catalog.CatalogService
+	userSvc    *users.UserService
 }
 
 func (a *listSearchAdapter) SearchLists(ctx context.Context, query string) ([]movies.ListSearchResult, error) {
-	lists, err := a.svc.SearchLists(ctx, query)
+	lists, err := a.catalogSvc.SearchLists(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	var results []movies.ListSearchResult
 	for _, l := range lists {
+		username := "Usuário Desconhecido"
+		if user, err := a.userSvc.GetUserByID(ctx, l.UserID); err == nil && user != nil {
+			username = user.Username
+		}
+
 		results = append(results, movies.ListSearchResult{
 			ID:          l.ID,
 			Title:       l.Title,
 			Description: l.Description,
-			Username:    l.User.Username,
+			Username:    username,
 		})
 	}
 	return results, nil

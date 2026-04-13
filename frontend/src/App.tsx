@@ -5,74 +5,36 @@ import PublicPrototypeV3 from './screens/PublicPrototypeV3'
 import SystemDesign from './screens/SystemDesign'
 import UIKitReference from './screens/UIKitReference'
 
+type View = 'home' | 'v1' | 'v2' | 'v3' | 'sys' | 'uikit'
+
 export default function App() {
-  const [showUIKitRef, setShowUIKitRef] = useState(false);
-  const [prototypeVersion, setPrototypeVersion] = useState<1 | 2 | 3 | 4>(1);
+  const [view, setView] = useState<View>('home');
+
+  const btnClass = (v: View) =>
+    `px-3 py-1.5 font-bold text-xs backdrop-blur border transition-colors shadow-xl ${
+      view === v
+        ? 'bg-primary-500 text-white border-primary-500'
+        : 'bg-black/80 text-white/60 border-white/10 hover:text-white'
+    }`
 
   return (
-    <div className="theme-siesta-tan">
+    <div>
       <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 items-end">
-
-        <button
-          onClick={() => setShowUIKitRef(!showUIKitRef)}
-          className="bg-primary-400/80 text-white px-4 py-2 rounded-full font-bold text-xs backdrop-blur border border-primary-400/50 hover:bg-primary-400 transition-colors shadow-2xl"
-        >
-          {showUIKitRef ? 'Back to Prototype' : 'View UI Kit Ref'}
-        </button>
-
-        {!showUIKitRef && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPrototypeVersion(1)}
-              className={`px-3 py-1.5 rounded-full font-bold text-xs backdrop-blur border transition-colors shadow-xl ${prototypeVersion === 1
-                ? 'bg-primary-400 text-white border-primary-400'
-                : 'bg-black/80 text-white/60 border-white/10 hover:text-white'
-                }`}
-            >
-              V1
-            </button>
-            <button
-              onClick={() => setPrototypeVersion(2)}
-              className={`px-3 py-1.5 rounded-full font-bold text-xs backdrop-blur border transition-colors shadow-xl ${prototypeVersion === 2
-                ? 'bg-tertiary-400 text-black border-tertiary-400'
-                : 'bg-black/80 text-white/60 border-white/10 hover:text-white'
-                }`}
-            >
-              V2
-            </button>
-            <button
-              onClick={() => setPrototypeVersion(3)}
-              className={`px-3 py-1.5 rounded-full font-bold text-xs backdrop-blur border transition-colors shadow-xl ${prototypeVersion === 3
-                ? 'bg-secondary-400 text-white border-secondary-400'
-                : 'bg-black/80 text-white/60 border-white/10 hover:text-white'
-                }`}
-            >
-              V3
-            </button>
-            <button
-              onClick={() => setPrototypeVersion(4 as any)}
-              className={`px-3 py-1.5 rounded-full font-bold text-xs backdrop-blur border transition-colors shadow-xl ${prototypeVersion === 4
-                ? 'bg-pink-500 text-white border-pink-500'
-                : 'bg-black/80 text-white/60 border-white/10 hover:text-white'
-                }`}
-            >
-              SYS
-            </button>
-          </div>
-        )}
+        <div className="flex gap-1.5 flex-wrap justify-end">
+          <button onClick={() => setView('home')} className={btnClass('home')}>HOME</button>
+          <button onClick={() => setView('v1')} className={btnClass('v1')}>V1</button>
+          <button onClick={() => setView('v2')} className={btnClass('v2')}>V2</button>
+          <button onClick={() => setView('v3')} className={btnClass('v3')}>V3</button>
+          <button onClick={() => setView('sys')} className={btnClass('sys')}>SYS</button>
+          <button onClick={() => setView('uikit')} className={btnClass('uikit')}>UIKIT</button>
+        </div>
       </div>
 
-      {showUIKitRef ? (
-        <UIKitReference />
-      ) : prototypeVersion === 1 ? (
-        <PublicPrototype />
-      ) : prototypeVersion === 2 ? (
-        <PublicPrototypeV2 />
-      ) : prototypeVersion === 3 ? (
-        <PublicPrototypeV3 />
-      ) : (
-        <SystemDesign />
-      )}
+      {view === 'v1' && <PublicPrototype />}
+      {view === 'v2' && <PublicPrototypeV2 />}
+      {view === 'v3' && <PublicPrototypeV3 />}
+      {view === 'sys' && <SystemDesign />}
+      {view === 'uikit' && <UIKitReference />}
     </div>
   )
 }

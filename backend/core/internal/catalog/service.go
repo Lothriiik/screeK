@@ -105,10 +105,17 @@ func (s *CatalogService) GetWatchlist(ctx context.Context, userID uuid.UUID) ([]
 
 	var dtos []WatchlistItemResponseDTO
 	for _, item := range items {
+		movie, _ := s.movieProvider.GetMovieDetails(ctx, int(item.MovieID))
+		
+		var movieDTO MovieDetailResponseDTO
+		if movie != nil {
+			movieDTO = s.mapMovieToDTO(*movie)
+		}
+
 		dtos = append(dtos, WatchlistItemResponseDTO{
 			MovieID: item.MovieID,
 			AddedAt: item.AddedAt.Format("02/01/2006 15:04"),
-			Movie:   s.mapMovieToDTO(item.Movie),
+			Movie:   movieDTO,
 		})
 	}
 	return dtos, nil
@@ -258,13 +265,20 @@ func (s *CatalogService) GetMyHistory(ctx context.Context, userID uuid.UUID) ([]
 
 	var dtos []MovieLogResponseDTO
 	for _, log := range logs {
+		movie, _ := s.movieProvider.GetMovieDetails(ctx, int(log.MovieID))
+		
+		var movieDTO MovieDetailResponseDTO
+		if movie != nil {
+			movieDTO = s.mapMovieToDTO(*movie)
+		}
+
 		dtos = append(dtos, MovieLogResponseDTO{
 			MovieID:   log.MovieID,
 			Watched:   log.Watched,
 			Rating:    log.Rating,
 			Liked:     log.Liked,
 			UpdatedAt: log.UpdatedAt.Format("02/01/2006 15:04"),
-			Movie:     s.mapMovieToDTO(log.Movie),
+			Movie:     movieDTO,
 		})
 	}
 	return dtos, nil

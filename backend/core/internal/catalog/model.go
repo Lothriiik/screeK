@@ -3,68 +3,45 @@ package catalog
 import (
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/movies"
-	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type MovieLog struct {
-	UserID    uuid.UUID    `json:"user_id" gorm:"type:uuid;primaryKey"`
-	MovieID   uint         `json:"movie_id" gorm:"primaryKey;autoIncrement:false"`
-	Watched   bool         `json:"watched" gorm:"not null"`
-	Rating    float64      `json:"rating" gorm:"not null"`
-	Liked     bool         `json:"liked" gorm:"not null"`
-	CreatedAt time.Time    `json:"created_at" gorm:"not null;default:now()"`
-	UpdatedAt time.Time    `json:"updated_at" gorm:"not null;default:now()"`
-
-	User  users.User   `json:"user" gorm:"foreignKey:UserID"`
-	Movie movies.Movie `json:"movie" gorm:"foreignKey:MovieID"`
+	UserID    uuid.UUID `json:"user_id"`
+	MovieID   uint      `json:"movie_id"`
+	Watched   bool      `json:"watched"`
+	Rating    float64   `json:"rating"`
+	Liked     bool      `json:"liked"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type MovieList struct {
-	ID          uint            `json:"id" gorm:"primaryKey;autoIncrement"`
-	UserID      uuid.UUID       `json:"user_id" gorm:"type:uuid;not null"`
-	Title       string          `json:"title" gorm:"not null"`
-	IsPublic    bool            `json:"is_public" gorm:"not null;default:true"`
-	Description string          `json:"description" gorm:"not null"`
-	CreatedAt   time.Time       `json:"created_at" gorm:"not null;default:now()"`
-	
-	User  users.User      `json:"user" gorm:"foreignKey:UserID"`
-	Items []MovieListItem `json:"items" gorm:"foreignKey:ListID"`
+	ID          uint            `json:"id"`
+	UserID      uuid.UUID       `json:"user_id"`
+	Title       string          `json:"title"`
+	IsPublic    bool            `json:"is_public"`
+	Description string          `json:"description"`
+	Items       []MovieListItem `json:"items"`
+	CreatedAt   time.Time       `json:"created_at"`
 }
 
 type MovieListItem struct {
-	ID      uint         `json:"id" gorm:"primaryKey;autoIncrement"`
-	ListID  uint         `json:"list_id" gorm:"not null"`
-	MovieID uint         `json:"movie_id" gorm:"not null"`
-	AddedAt time.Time    `json:"added_at" gorm:"not null;default:now()"`
-	
-	List  MovieList    `json:"list" gorm:"foreignKey:ListID"`
-	Movie movies.Movie `json:"movie" gorm:"foreignKey:MovieID"`
+	ID      uint      `json:"id"`
+	ListID  uint      `json:"list_id"`
+	MovieID uint      `json:"movie_id"`
+	AddedAt time.Time `json:"added_at"`
 }
 
 type WatchlistItem struct {
-	UserID  uuid.UUID    `json:"user_id" gorm:"type:uuid;primaryKey"`
-	MovieID uint         `json:"movie_id" gorm:"primaryKey;autoIncrement:false"`
-	AddedAt time.Time    `json:"added_at" gorm:"not null;default:now()"`
-	
-	User  users.User   `json:"user" gorm:"foreignKey:UserID"`
-	Movie movies.Movie `json:"movie" gorm:"foreignKey:MovieID"`
+	UserID  uuid.UUID `json:"user_id"`
+	MovieID uint      `json:"movie_id"`
+	AddedAt time.Time `json:"added_at"`
 }
 
 type MovieStats struct {
-	MovieID       uint    `json:"movie_id" gorm:"primaryKey"`
+	MovieID       uint    `json:"movie_id"`
 	AverageRating float64 `json:"average_rating"`
 	TotalReviews  int     `json:"total_reviews"`
 	TotalLikes    int     `json:"total_likes"`
-}
-
-func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(
-		&MovieLog{},
-		&MovieList{}, &MovieListItem{},
-		&WatchlistItem{},
-		&MovieStats{},
-	)
 }

@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/StartLivin/screek/backend/internal/analytics"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"github.com/StartLivin/screek/backend/internal/analytics"
 )
+
+var _ analytics.AnalyticsRepository = (*Store)(nil)
 
 type Store struct {
 	db *gorm.DB
@@ -52,20 +54,32 @@ func (s *Store) UpsertDailyStats(ctx context.Context, stats []analytics.DailyCin
 	if len(stats) == 0 {
 		return nil
 	}
+
+	records := make([]DailyCinemaStatsRecord, len(stats))
+	for i, st := range stats {
+		records[i] = DailyCinemaStatsRecord{
+			Date:          st.Date,
+			CinemaID:      st.CinemaID,
+			TotalRevenue:  st.TotalRevenue,
+			TicketsSold:   st.TicketsSold,
+			OccupancyRate: st.OccupancyRate,
+			CreatedAt:     st.CreatedAt,
+		}
+	}
+
 	return s.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "date"}, {Name: "cinema_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"total_revenue", "tickets_sold", "occupancy_rate"}),
-	}).Create(&stats).Error
+	}).Create(&records).Error
 }
 
 func (s *Store) GetStatsByDateRange(ctx context.Context, start, end time.Time) ([]analytics.DailyCinemaStats, error) {
-	var stats []analytics.DailyCinemaStats
+	var records []DailyCinemaStatsRecord
 	err := s.db.WithContext(ctx).
-		Preload("Cinema").
 		Where("date BETWEEN ? AND ?", start, end).
 		Order("date DESC, total_revenue DESC").
-		Find(&stats).Error
-	return stats, err
+		Find(&records).Error
+	return ToDailyCinemaStatsList(records), err
 }
 
 func (s *Store) CalculateDailyMovieStats(ctx context.Context, date time.Time) ([]analytics.DailyMovieStats, error) {
@@ -89,10 +103,22 @@ func (s *Store) UpsertDailyMovieStats(ctx context.Context, stats []analytics.Dai
 	if len(stats) == 0 {
 		return nil
 	}
+	
+	records := make([]DailyMovieStatsRecord, len(stats))
+	for i, st := range stats {
+		records[i] = DailyMovieStatsRecord{
+			Date:         st.Date,
+			MovieID:      st.MovieID,
+			TotalRevenue: st.TotalRevenue,
+			TicketsSold:  st.TicketsSold,
+			CreatedAt:    st.CreatedAt,
+		}
+	}
+
 	return s.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "date"}, {Name: "movie_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"total_revenue", "tickets_sold"}),
-	}).Create(&stats).Error
+	}).Create(&records).Error
 }
 
 func (s *Store) GetTopMoviesByDateRange(ctx context.Context, start, end time.Time, limit int) ([]analytics.DailyMovieStats, error) {
