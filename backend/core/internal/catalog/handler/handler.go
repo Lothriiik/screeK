@@ -50,7 +50,7 @@ func (h *CatalogHandler) RegisterRoutes(r chi.Router, authMiddleware func(http.H
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do Filme (TMDB)"
-// @Param request body catalog.LogMovieRequest true "Dados do Log"
+// @Param request body LogMovieRequestDTO true "Dados do Log"
 // @Success 200 {object} httputil.MessageResponse
 // @Security BearerAuth
 // @Router /movies/{id}/log [post]
@@ -90,7 +90,7 @@ func (h *CatalogHandler) LogMovie(w http.ResponseWriter, r *http.Request) {
 // @Description Salva um filme na lista de desejos do usuário
 // @Tags Catalog
 // @Accept json
-// @Param request body catalog.AddWatchlistRequest true "ID do Filme"
+// @Param request body AddWatchlistRequestDTO true "ID do Filme"
 // @Success 201 {object} httputil.MessageResponse
 // @Security BearerAuth
 // @Router /watchlist [post]
@@ -129,7 +129,7 @@ func (h *CatalogHandler) RemoveFromWatchlist(w http.ResponseWriter, r *http.Requ
 // @Description Retorna todos os filmes salvos na lista de desejos do usuário autenticado
 // @Tags Catalog
 // @Produce json
-// @Success 200 {array} catalog.WatchlistItemResponseDTO
+// @Success 200 {array} WatchlistItemResponseDTO
 // @Security BearerAuth
 // @Router /watchlist [get]
 func (h *CatalogHandler) GetWatchlist(w http.ResponseWriter, r *http.Request) {
@@ -161,8 +161,8 @@ func (h *CatalogHandler) GetWatchlist(w http.ResponseWriter, r *http.Request) {
 // @Tags Catalog
 // @Accept json
 // @Produce json
-// @Param request body catalog.CreateMovieListRequest true "Dados da lista"
-// @Success 201 {object} catalog.MovieListResponseDTO
+// @Param request body CreateMovieListRequestDTO true "Dados da lista"
+// @Success 201 {object} MovieListResponseDTO
 // @Security BearerAuth
 // @Router /lists [post]
 func (h *CatalogHandler) CreateMovieList(w http.ResponseWriter, r *http.Request) {
@@ -201,7 +201,7 @@ func (h *CatalogHandler) CreateMovieList(w http.ResponseWriter, r *http.Request)
 // @Description Retorna todas as listas personalizadas criadas pelo usuário
 // @Tags Catalog
 // @Produce json
-// @Success 200 {array} catalog.MovieListResponseDTO
+// @Success 200 {array} MovieListResponseDTO
 // @Security BearerAuth
 // @Router /lists/me [get]
 func (h *CatalogHandler) GetMyMovieLists(w http.ResponseWriter, r *http.Request) {
@@ -219,7 +219,7 @@ func (h *CatalogHandler) GetMyMovieLists(w http.ResponseWriter, r *http.Request)
 // @Tags Catalog
 // @Param id path int true "ID da Lista"
 // @Produce json
-// @Success 200 {object} catalog.MovieListResponseDTO
+// @Success 200 {object} MovieListResponseDTO
 // @Security BearerAuth
 // @Router /lists/{id} [get]
 func (h *CatalogHandler) GetMovieListDetail(w http.ResponseWriter, r *http.Request) {
@@ -238,7 +238,7 @@ func (h *CatalogHandler) GetMovieListDetail(w http.ResponseWriter, r *http.Reque
 // @Tags Catalog
 // @Accept json
 // @Param id path int true "ID da Lista"
-// @Param request body catalog.AddMovieToListRequest true "ID do Filme"
+// @Param request body AddMovieToListRequestDTO true "ID do Filme"
 // @Success 200 {object} httputil.MessageResponse
 // @Security BearerAuth
 // @Router /lists/{id}/movies [post]
@@ -283,7 +283,7 @@ func (h *CatalogHandler) RemoveMovieFromList(w http.ResponseWriter, r *http.Requ
 // @Accept json
 // @Produce json
 // @Param id path int true "ID da Lista"
-// @Param request body catalog.CreateMovieListRequest true "Novos dados"
+// @Param request body CreateMovieListRequestDTO true "Novos dados"
 // @Success 200 {object} httputil.MessageResponse
 // @Security BearerAuth
 // @Router /catalog/lists/{id} [put]
@@ -305,7 +305,7 @@ func (h *CatalogHandler) UpdateMovieList(w http.ResponseWriter, r *http.Request)
 	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Lista atualizada!"})
 }
 
-// @Summary Detalhe da lista
+// @Summary Excluir lista
 // @Description Remove permanentemente uma lista personalizada
 // @Tags Catalog
 // @Param id path int true "ID da Lista"
@@ -327,7 +327,7 @@ func (h *CatalogHandler) DeleteMovieList(w http.ResponseWriter, r *http.Request)
 // @Description Retorna detalhes do filme com estatísticas sociais
 // @Tags Catalog
 // @Param id path int true "TMDB ID"
-// @Success 200 {object} catalog.MovieDetailResponseDTO
+// @Success 200 {object} MovieDetailResponseDTO
 // @Security BearerAuth
 // @Router /catalog/movies/{id} [get]
 func (h *CatalogHandler) GetMovieDetail(w http.ResponseWriter, r *http.Request) {
@@ -346,7 +346,7 @@ func (h *CatalogHandler) GetMovieDetail(w http.ResponseWriter, r *http.Request) 
 // @Description Retorna todos os filmes que o usuário já assistiu (logs)
 // @Tags Catalog
 // @Produce json
-// @Success 200 {array} catalog.MovieLogResponseDTO
+// @Success 200 {array} MovieLogResponseDTO
 // @Security BearerAuth
 // @Router /history [get]
 func (h *CatalogHandler) GetMyHistory(w http.ResponseWriter, r *http.Request) {
