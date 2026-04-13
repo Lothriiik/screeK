@@ -21,8 +21,8 @@ type CatalogProvider interface {
 }
 
 type Service struct {
-	matcher  MovieMatcher
-	catalog  CatalogProvider
+	matcher MovieMatcher
+	catalog CatalogProvider
 }
 
 func NewService(matcher MovieMatcher, catalog CatalogProvider) *Service {
@@ -33,9 +33,9 @@ func NewService(matcher MovieMatcher, catalog CatalogProvider) *Service {
 }
 
 type ImportSummary struct {
-	Total    int `json:"total"`
-	Success  int `json:"success"`
-	Failed   int `json:"failed"`
+	Total   int `json:"total"`
+	Success int `json:"success"`
+	Failed  int `json:"failed"`
 }
 
 func (s *Service) ImportWatchedCSV(ctx context.Context, userID uuid.UUID, reader io.Reader) (*ImportSummary, error) {

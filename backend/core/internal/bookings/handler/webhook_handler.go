@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/StartLivin/screek/backend/internal/bookings/infra/payment"
 	"github.com/StartLivin/screek/backend/internal/bookings"
+	"github.com/StartLivin/screek/backend/internal/bookings/infra/payment"
 	"github.com/google/uuid"
 )
 

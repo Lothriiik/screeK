@@ -9,15 +9,15 @@ import (
 )
 
 type NotificationRecord struct {
-	ID        uint                `gorm:"primaryKey;autoIncrement"`
-	UserID    uuid.UUID           `gorm:"type:uuid;not null"`
-	Type      string              `gorm:"not null"`
-	Title     string              `gorm:"not null"`
-	Message   string              `gorm:"not null"`
-	IsRead    bool                `gorm:"not null;default:false"`
-	Link      string              `gorm:"not null"`
-	CreatedAt time.Time           `gorm:"not null;default:now()"`
-	
+	ID        uint      `gorm:"primaryKey;autoIncrement"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null"`
+	Type      string    `gorm:"not null"`
+	Title     string    `gorm:"not null"`
+	Message   string    `gorm:"not null"`
+	IsRead    bool      `gorm:"not null;default:false"`
+	Link      string    `gorm:"not null"`
+	CreatedAt time.Time `gorm:"not null;default:now()"`
+
 	User userstore.UserRecord `gorm:"foreignKey:UserID"`
 }
 

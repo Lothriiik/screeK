@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/cinema"
+	"github.com/StartLivin/screek/backend/internal/movies"
 )
 
 type MovieProvider interface {
@@ -23,7 +23,7 @@ type AnalyticsRepository interface {
 	GetTopMoviesByDateRange(ctx context.Context, start, end time.Time, limit int) ([]DailyMovieStats, error)
 	GetGenreStats(ctx context.Context, start, end time.Time) (map[string]float64, error)
 	GetRevenueTrends(ctx context.Context, start, end time.Time, period string) ([]DailyCinemaStats, error)
-	
+
 	CalculateDailyStats(ctx context.Context, date time.Time) ([]DailyCinemaStats, error)
 	UpsertDailyStats(ctx context.Context, stats []DailyCinemaStats) error
 	CalculateDailyMovieStats(ctx context.Context, date time.Time) ([]DailyMovieStats, error)
@@ -31,8 +31,8 @@ type AnalyticsRepository interface {
 }
 
 type AnalyticsService struct {
-	repo          AnalyticsRepository
-	movieProvider MovieProvider
+	repo           AnalyticsRepository
+	movieProvider  MovieProvider
 	cinemaProvider CinemaProvider
 }
 

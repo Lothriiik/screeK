@@ -3,16 +3,16 @@ package movies
 import (
 	"time"
 
-	"gorm.io/gorm"
 	"github.com/StartLivin/screek/backend/internal/movies/tmdb"
+	"gorm.io/gorm"
 )
 
 type TMDBMovie = tmdb.TMDBMovie
 type TMDBPersonMovieCast = tmdb.TMDBPersonMovieCast
 
 type Movie struct {
-	ID          int           `json:"id" gorm:"primaryKey;autoIncrement"`
-	TMDBID      int           `json:"tmdb_id" gorm:"not null;uniqueIndex"`
+	ID               int           `json:"id" gorm:"primaryKey;autoIncrement"`
+	TMDBID           int           `json:"tmdb_id" gorm:"not null;uniqueIndex"`
 	Title            string        `json:"title" gorm:"not null"`
 	Overview         string        `json:"overview" gorm:"not null"`
 	PosterURL        string        `json:"poster_url" gorm:"not null"`
@@ -23,8 +23,8 @@ type Movie struct {
 	Runtime          int           `json:"runtime" gorm:"not null"`
 	OriginalLanguage string        `json:"original_language"`
 	SpokenLanguages  string        `json:"spoken_languages"`
-	Genres      []Genre       `json:"genres" gorm:"many2many:movie_genres;"`
-	Credits     []MovieCredit `json:"credits" gorm:"foreignKey:MovieID;references:ID"`
+	Genres           []Genre       `json:"genres" gorm:"many2many:movie_genres;"`
+	Credits          []MovieCredit `json:"credits" gorm:"foreignKey:MovieID;references:ID"`
 }
 
 type Genre struct {

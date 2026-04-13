@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/StartLivin/screek/backend/internal/shared/httputil"
-	"github.com/StartLivin/screek/backend/internal/notifications/realtime"
 	"github.com/StartLivin/screek/backend/internal/notifications"
+	"github.com/StartLivin/screek/backend/internal/notifications/realtime"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/auth/jwt"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/redis/go-redis/v9"
 )
 

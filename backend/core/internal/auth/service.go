@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/StartLivin/screek/backend/internal/auth/jwt"
 	"github.com/StartLivin/screek/backend/internal/shared/crypto"
 	"github.com/StartLivin/screek/backend/internal/shared/email"
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/users"
-	"github.com/StartLivin/screek/backend/internal/auth/jwt"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )

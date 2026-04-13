@@ -25,26 +25,26 @@ type UserDTO struct {
 }
 
 type UserDetailsDTO struct {
-	ID             uuid.UUID         `json:"id"`
-	Name           string            `json:"name"`
-	Username       string            `json:"username"`
-	Bio            string            `json:"bio"`
-	AvatarURL      string            `json:"avatar_url"`
-	Pronouns       string            `json:"pronouns"`
-	DefaultCity    string            `json:"default_city"`
-	FavoriteMovies []int			 `json:"favorite_movies"`
+	ID             uuid.UUID `json:"id"`
+	Name           string    `json:"name"`
+	Username       string    `json:"username"`
+	Bio            string    `json:"bio"`
+	AvatarURL      string    `json:"avatar_url"`
+	Pronouns       string    `json:"pronouns"`
+	DefaultCity    string    `json:"default_city"`
+	FavoriteMovies []int     `json:"favorite_movies"`
 }
 
 type UserMeDetailsDTO struct {
-	ID             uuid.UUID         `json:"id"`
-	Name           string            `json:"name"`
-	Username       string            `json:"username"`
-	Email          string            `json:"email"`
-	Bio            string            `json:"bio"`
-	AvatarURL      string            `json:"avatar_url"`
-	Pronouns       string            `json:"pronouns"`
-	DefaultCity    string            `json:"default_city"`
-	FavoriteMovies []int 			 `json:"favorite_movies"`
+	ID             uuid.UUID `json:"id"`
+	Name           string    `json:"name"`
+	Username       string    `json:"username"`
+	Email          string    `json:"email"`
+	Bio            string    `json:"bio"`
+	AvatarURL      string    `json:"avatar_url"`
+	Pronouns       string    `json:"pronouns"`
+	DefaultCity    string    `json:"default_city"`
+	FavoriteMovies []int     `json:"favorite_movies"`
 }
 
 type UpdateUserDTO struct {

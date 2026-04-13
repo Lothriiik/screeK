@@ -103,7 +103,7 @@ func (s *Store) UpsertDailyMovieStats(ctx context.Context, stats []analytics.Dai
 	if len(stats) == 0 {
 		return nil
 	}
-	
+
 	records := make([]DailyMovieStatsRecord, len(stats))
 	for i, st := range stats {
 		records[i] = DailyMovieStatsRecord{

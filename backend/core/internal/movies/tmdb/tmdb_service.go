@@ -22,9 +22,9 @@ type TMDBClient struct {
 func NewTMDBClient(token string) *TMDBClient {
 	st := gobreaker.Settings{
 		Name:        "TMDB-API",
-		MaxRequests: 1,               
-		Interval:    60 * time.Second, 
-		Timeout:     30 * time.Second, 
+		MaxRequests: 1,
+		Interval:    60 * time.Second,
+		Timeout:     30 * time.Second,
 		ReadyToTrip: func(counts gobreaker.Counts) bool {
 			return counts.ConsecutiveFailures > 5
 		},
@@ -72,16 +72,16 @@ type TMDBPeopleResponse struct {
 }
 
 type TMDBMovieDetails struct {
-	ID          int              `json:"id"`
-	Title       string           `json:"title"`
-	Overview    string           `json:"overview"`
-	PosterPath  string           `json:"poster_path"`
+	ID               int                  `json:"id"`
+	Title            string               `json:"title"`
+	Overview         string               `json:"overview"`
+	PosterPath       string               `json:"poster_path"`
 	ReleaseDate      string               `json:"release_date"`
 	Runtime          int                  `json:"runtime"`
 	OriginalLanguage string               `json:"original_language"`
 	SpokenLanguages  []TMDBSpokenLanguage `json:"spoken_languages"`
 	Genres           []TMDBGenre          `json:"genres"`
-	Credits     TMDBMovieCredits `json:"credits"`
+	Credits          TMDBMovieCredits     `json:"credits"`
 }
 
 type TMDBGenre struct {
@@ -115,14 +115,14 @@ type TMDBCrew struct {
 }
 
 type TMDBPersonDetails struct {
-	ID           int      `json:"id"`
-	Name         string   `json:"name"`
-	Biography    string   `json:"biography"`
-	Birthday     string   `json:"birthday"`
-	Deathday     *string  `json:"deathday"`
-	PlaceOfBirth string   `json:"place_of_birth"`
-	ProfilePath  string   `json:"profile_path"`
-	KnownFor     string   `json:"known_for_department"`
+	ID           int     `json:"id"`
+	Name         string  `json:"name"`
+	Biography    string  `json:"biography"`
+	Birthday     string  `json:"birthday"`
+	Deathday     *string `json:"deathday"`
+	PlaceOfBirth string  `json:"place_of_birth"`
+	ProfilePath  string  `json:"profile_path"`
+	KnownFor     string  `json:"known_for_department"`
 }
 
 type TMDBPersonCredits struct {
@@ -130,14 +130,14 @@ type TMDBPersonCredits struct {
 }
 
 type TMDBPersonMovieCast struct {
-	ID               int     `json:"id"`
-	Title            string  `json:"title"`
-	OriginalTitle    string  `json:"original_title"`
-	Character        string  `json:"character"`
-	Overview         string  `json:"overview"`
-	PosterPath       string  `json:"poster_path"`
-	ReleaseDate      string  `json:"release_date"`
-	VoteAverage      float64 `json:"vote_average"`
+	ID            int     `json:"id"`
+	Title         string  `json:"title"`
+	OriginalTitle string  `json:"original_title"`
+	Character     string  `json:"character"`
+	Overview      string  `json:"overview"`
+	PosterPath    string  `json:"poster_path"`
+	ReleaseDate   string  `json:"release_date"`
+	VoteAverage   float64 `json:"vote_average"`
 }
 
 func (c *TMDBClient) doRequest(ctx context.Context, endpoint string) (*http.Response, error) {

@@ -36,14 +36,14 @@ func (c *Client) readPump() {
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()
-	
+
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { 
+	c.conn.SetPongHandler(func(string) error {
 		c.conn.SetReadDeadline(time.Now().Add(pongWait))
-		return nil 
+		return nil
 	})
-	
+
 	for {
 		_, _, err := c.conn.ReadMessage()
 		if err != nil {
@@ -61,7 +61,7 @@ func (c *Client) writePump() {
 		ticker.Stop()
 		c.conn.Close()
 	}()
-	
+
 	for {
 		select {
 		case message, ok := <-c.send:
@@ -86,7 +86,7 @@ func (c *Client) writePump() {
 			if err := w.Close(); err != nil {
 				return
 			}
-			
+
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -102,14 +102,14 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, userID uuid.UUID)
 		log.Println("Erro ao dar upgrade no WS:", err)
 		return
 	}
-	
+
 	client := &Client{
 		hub:    hub,
 		conn:   conn,
 		send:   make(chan []byte, 256),
 		userID: userID,
 	}
-	
+
 	client.hub.register <- client
 
 	go client.writePump()

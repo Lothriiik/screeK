@@ -13,31 +13,31 @@ import (
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/analytics"
+	analyticalhandler "github.com/StartLivin/screek/backend/internal/analytics/handler"
 	analyticalstore "github.com/StartLivin/screek/backend/internal/analytics/store"
-    analyticalhandler "github.com/StartLivin/screek/backend/internal/analytics/handler"
 	"github.com/StartLivin/screek/backend/internal/auth"
 	authhandler "github.com/StartLivin/screek/backend/internal/auth/handler"
-    authjwt "github.com/StartLivin/screek/backend/internal/auth/jwt"
+	authjwt "github.com/StartLivin/screek/backend/internal/auth/jwt"
 	"github.com/StartLivin/screek/backend/internal/bookings"
-	bookingstore "github.com/StartLivin/screek/backend/internal/bookings/store"
-    bookinghandler "github.com/StartLivin/screek/backend/internal/bookings/handler"
+	bookinghandler "github.com/StartLivin/screek/backend/internal/bookings/handler"
 	"github.com/StartLivin/screek/backend/internal/bookings/infra/payment"
+	bookingstore "github.com/StartLivin/screek/backend/internal/bookings/store"
 	"github.com/StartLivin/screek/backend/internal/catalog"
+	cataloghandler "github.com/StartLivin/screek/backend/internal/catalog/handler"
 	catalogstore "github.com/StartLivin/screek/backend/internal/catalog/store"
-    cataloghandler "github.com/StartLivin/screek/backend/internal/catalog/handler"
 	"github.com/StartLivin/screek/backend/internal/cinema"
-	cinemastore "github.com/StartLivin/screek/backend/internal/cinema/store"
 	cinemahandler "github.com/StartLivin/screek/backend/internal/cinema/handler"
+	cinemastore "github.com/StartLivin/screek/backend/internal/cinema/store"
 	"github.com/StartLivin/screek/backend/internal/imports/letterboxd"
 	lbxdhandler "github.com/StartLivin/screek/backend/internal/imports/letterboxd/handler"
 	"github.com/StartLivin/screek/backend/internal/movies"
+	moviehandler "github.com/StartLivin/screek/backend/internal/movies/handler"
 	moviestore "github.com/StartLivin/screek/backend/internal/movies/store"
-    moviehandler "github.com/StartLivin/screek/backend/internal/movies/handler"
-    movietmdb "github.com/StartLivin/screek/backend/internal/movies/tmdb"
+	movietmdb "github.com/StartLivin/screek/backend/internal/movies/tmdb"
 	"github.com/StartLivin/screek/backend/internal/notifications"
-    notifhandler "github.com/StartLivin/screek/backend/internal/notifications/handler"
+	notifhandler "github.com/StartLivin/screek/backend/internal/notifications/handler"
+	"github.com/StartLivin/screek/backend/internal/notifications/realtime"
 	notifstore "github.com/StartLivin/screek/backend/internal/notifications/store"
-    "github.com/StartLivin/screek/backend/internal/notifications/realtime"
 	"github.com/StartLivin/screek/backend/internal/shared/config"
 	"github.com/StartLivin/screek/backend/internal/shared/database"
 	"github.com/StartLivin/screek/backend/internal/shared/email"
@@ -46,14 +46,13 @@ import (
 	"github.com/StartLivin/screek/backend/internal/shared/jobs"
 	"github.com/StartLivin/screek/backend/internal/shared/redis"
 	"github.com/StartLivin/screek/backend/internal/social"
+	socialhandler "github.com/StartLivin/screek/backend/internal/social/handler"
 	socialstore "github.com/StartLivin/screek/backend/internal/social/store"
-    socialhandler "github.com/StartLivin/screek/backend/internal/social/handler"
 	"github.com/StartLivin/screek/backend/internal/users"
+	userhandler "github.com/StartLivin/screek/backend/internal/users/handler"
 	userstore "github.com/StartLivin/screek/backend/internal/users/store"
-    userhandler "github.com/StartLivin/screek/backend/internal/users/handler"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/google/uuid"
 	redisclient "github.com/redis/go-redis/v9"
 	"github.com/rs/cors"
 	"gorm.io/gorm"
@@ -63,13 +62,15 @@ import (
 )
 
 type Application struct {
-	config config.Config
-	db     *gorm.DB
-	redis  *redisclient.Client
-	router *chi.Mux
-	hub    *realtime.Hub
-	jobs   *jobs.JobRunner
-	events *events.EventBus
+	config    config.Config
+	db        *gorm.DB
+	redis     *redisclient.Client
+	router    *chi.Mux
+	hub       *realtime.Hub
+	jobs      *jobs.JobRunner
+	events    *events.EventBus
+	userSvc   *users.UserService
+	socialSvc social.Service
 }
 
 func NewApplication(cfg config.Config) *Application {
@@ -159,9 +160,12 @@ func (app *Application) mount() {
 	authSvc := auth.NewAuthService(userStore, jwtService, app.redis, resendClient)
 	mgmtSvc := cinema.NewService(mgmtStore, movieService, app.events)
 	analyticsSvc := analytics.NewService(analyticsStore, movieService, mgmtSvc)
-	catalogSvc := catalog.NewService(catalogStore, userService, movieService)
+	catalogSvc := catalog.NewService(catalogStore, &catalogUserAdapter{svc: userService}, &catalogMovieAdapter{svc: movieService})
 	socialSvc := social.NewService(socialStore, userStore, app.events, sessionAdapter)
 	bookingSvc := bookings.NewService(bookingStore, app.redis, paymentSvc, resendClient, movieService, userService, app.events)
+
+	app.userSvc = userService
+	app.socialSvc = socialSvc
 
 	userAdapter.svc = userService
 	listAdapter.catalogSvc = catalogSvc
@@ -184,7 +188,7 @@ func (app *Application) mount() {
 	letterboxdSvc := letterboxd.NewService(movieService, catalogSvc)
 	letterboxdHandler := lbxdhandler.NewHandler(letterboxdSvc)
 
-	app.registerEventHandlers(notifService, mgmtSvc)
+	app.registerEventHandlers(notifService, mgmtSvc, socialSvc)
 
 	app.router.Mount("/api/v1", app.buildRoutes(
 		authHandler,
@@ -423,31 +427,25 @@ func (app *Application) buildRoutes(
 	return r
 }
 
-func (app *Application) registerEventHandlers(notifSvc *notifications.NotificationService, mgmtSvc *cinema.CinemaService) {
-	app.events.Subscribe(events.EventPostLiked, func(data events.Data) {
-		userID := data["user_id"].(uuid.UUID)
-		senderName := data["sender_name"].(string)
-		postID := data["post_id"].(int)
-		notifSvc.Notify(context.Background(), userID, "LIKE", "Novo Like", senderName+" curtiu seu post!", fmt.Sprintf("/posts/%d", postID))
+func (app *Application) registerEventHandlers(notifSvc *notifications.NotificationService, mgmtSvc *cinema.CinemaService, socialSvc social.Service) {
+	app.events.Subscribe(events.EventPostLiked, func(payload any) {
+		evt := payload.(events.PostLikedEvent)
+		notifSvc.Notify(context.Background(), evt.OwnerID, "LIKE", "Novo Like", evt.LikerName+" curtiu seu post!", fmt.Sprintf("/posts/%d", evt.PostID))
 	})
 
-	app.events.Subscribe(events.EventUserFollowed, func(data events.Data) {
-		userID := data["user_id"].(uuid.UUID)
-		senderName := data["sender_name"].(string)
-		notifSvc.Notify(context.Background(), userID, "FOLLOW", "Novo Seguidor", senderName+" começou a seguir você", fmt.Sprintf("/u/%s", senderName))
+	app.events.Subscribe(events.EventUserFollowed, func(payload any) {
+		evt := payload.(events.UserFollowedEvent)
+		notifSvc.Notify(context.Background(), evt.FolloweeID, "FOLLOW", "Novo Seguidor", evt.FollowerName+" começou a seguir você", fmt.Sprintf("/u/%s", evt.FollowerName))
 	})
 
-	app.events.Subscribe(events.EventCommentAdded, func(data events.Data) {
-		userID := data["user_id"].(uuid.UUID)
-		senderName := data["sender_name"].(string)
-		postID := data["post_id"].(int)
-		notifSvc.Notify(context.Background(), userID, "COMMENT", "Novo Comentário", senderName+" respondeu ao seu post", fmt.Sprintf("/posts/%d", postID))
+	app.events.Subscribe(events.EventCommentAdded, func(payload any) {
+		evt := payload.(events.CommentAddedEvent)
+		notifSvc.Notify(context.Background(), evt.ParentOwnerID, "COMMENT", "Novo Comentário", evt.UserName+" respondeu ao seu post", fmt.Sprintf("/posts/%d", evt.PostID))
 	})
 
-	app.events.Subscribe(events.EventSessionScheduled, func(data events.Data) {
-		sessionID := data["session_id"].(int)
-
-		matches, err := mgmtSvc.GetWatchlistMatchesForSession(context.Background(), int(sessionID))
+	app.events.Subscribe(events.EventSessionScheduled, func(payload any) {
+		evt := payload.(events.SessionScheduledEvent)
+		matches, err := mgmtSvc.GetWatchlistMatchesForSession(context.Background(), evt.SessionID)
 		if err != nil {
 			return
 		}
@@ -455,22 +453,19 @@ func (app *Application) registerEventHandlers(notifSvc *notifications.Notificati
 		notifSvc.ProcessWatchlistMatches(context.Background(), matches)
 	})
 
-	app.events.Subscribe(events.EventTicketPurchased, func(data events.Data) {
-		userEmail := data["user_email"].(string)
-		userName := data["user_name"].(string)
-		tickets := data["tickets"].([]bookings.Ticket)
+	app.events.Subscribe(events.EventTicketPurchased, func(payload any) {
+		evt := payload.(events.TicketPurchasedEvent)
 
 		bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		for _, t := range tickets {
+		for _, t := range evt.Tickets {
 			if app.config.ResendKey != "" {
 				resend := email.NewResendClient(app.config.ResendKey)
-				resend.SendTicketEmail(bgCtx, userEmail, userName, t.QRCode)
+				resend.SendTicketEmail(bgCtx, evt.UserEmail, evt.UserName, t.QRCode)
 			}
 		}
 
-		userID := data["user_id"].(uuid.UUID)
-		notifSvc.Notify(bgCtx, userID, "PURCHASE", "Compra Confirmada", "Seus ingressos já estão disponíveis!", "/users/me/tickets")
+		notifSvc.Notify(bgCtx, evt.UserID, "PURCHASE", "Compra Confirmada", "Seus ingressos já estão disponíveis!", "/users/me/tickets")
 	})
 }

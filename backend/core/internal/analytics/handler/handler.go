@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/analytics"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/go-chi/chi/v5"
 )
 

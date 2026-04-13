@@ -14,7 +14,7 @@ type Config struct {
 	TMDBToken           string
 	JWTSecret           string
 	RedisURL            string
-	StripeKey           string 
+	StripeKey           string
 	StripeWebhookSecret string
 	ResendKey           string
 }

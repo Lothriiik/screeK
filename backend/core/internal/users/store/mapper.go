@@ -12,7 +12,7 @@ func ToDomain(r *UserRecord) *users.User {
 
 	var favMovieIDs []int
 	for _, movie := range r.FavoriteMovies {
-		favMovieIDs = append(favMovieIDs, movie.ID) 
+		favMovieIDs = append(favMovieIDs, movie.ID)
 	}
 
 	return &users.User{
@@ -73,27 +73,27 @@ func ToStatsDomain(r *UserStatsRecord) *users.UserStats {
 	}
 
 	return &users.UserStats{
-		UserID:            	r.UserID,
-		TotalMovies:       	r.TotalMovies,
-		TotalMinutes:       r.TotalMinutes,
-		TopGenreID:         r.TopGenreID,
-		LastRecalcAt:       r.LastRecalcAt,
-		UpdatedAt:          r.UpdatedAt,
+		UserID:       r.UserID,
+		TotalMovies:  r.TotalMovies,
+		TotalMinutes: r.TotalMinutes,
+		TopGenreID:   r.TopGenreID,
+		LastRecalcAt: r.LastRecalcAt,
+		UpdatedAt:    r.UpdatedAt,
 	}
 }
 
-func ToStatsRecord(d *users.UserStats) *UserStatsRecord{
+func ToStatsRecord(d *users.UserStats) *UserStatsRecord {
 	if d == nil {
-			return nil
+		return nil
 	}
 
 	return &UserStatsRecord{
-		UserID:            	d.UserID,
-		TotalMovies:       	d.TotalMovies,
-		TotalMinutes:       d.TotalMinutes,
-		TopGenreID:         d.TopGenreID,
-		LastRecalcAt:       d.LastRecalcAt,
-		UpdatedAt:          d.UpdatedAt,
+		UserID:       d.UserID,
+		TotalMovies:  d.TotalMovies,
+		TotalMinutes: d.TotalMinutes,
+		TopGenreID:   d.TopGenreID,
+		LastRecalcAt: d.LastRecalcAt,
+		UpdatedAt:    d.UpdatedAt,
 	}
 }
 

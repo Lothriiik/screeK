@@ -22,7 +22,7 @@ func Logger(next http.Handler) http.Handler {
 
 		interceptor := &responseWriterInterceptor{
 			ResponseWriter: w,
-			statusCode:     http.StatusOK, 
+			statusCode:     http.StatusOK,
 		}
 
 		next.ServeHTTP(interceptor, r)

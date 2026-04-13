@@ -124,7 +124,7 @@ func (s *bookingsService) GetMovieSessionsGroupedByCinema(ctx context.Context, m
 
 	for _, session := range sessions {
 		cinemaID := session.Room.CinemaID
-		
+
 		cinObj, ok := cinemasCache[cinemaID]
 		if !ok {
 			c, err := s.store.GetCinemaByID(ctx, cinemaID)
@@ -273,13 +273,24 @@ func (s *bookingsService) PayReservation(ctx context.Context, transactionID uuid
 
 		if s.events != nil {
 			userName, userEmail := s.fetchUserInfo(ctx, userID)
-			s.events.Publish(events.EventTicketPurchased, events.Data{
-				"transaction_id": transactionID,
-				"user_id":        userID,
-				"user_name":      userName,
-				"user_email":     userEmail,
-				"is_free":        true,
-				"tickets":        transaction.Tickets,
+			var eventItems []events.TicketPurchasedItem
+			tickets, _ := s.store.GetUserTickets(ctx, userID, string(TicketStatusPaid))
+			for _, t := range tickets {
+				if t.TransactionID == transactionID {
+					eventItems = append(eventItems, events.TicketPurchasedItem{
+						TicketID: t.ID,
+						QRCode:   t.QRCode,
+					})
+				}
+			}
+
+			s.events.Publish(events.EventTicketPurchased, events.TicketPurchasedEvent{
+				TransactionID: transactionID,
+				UserID:        userID,
+				UserName:      userName,
+				UserEmail:     userEmail,
+				IsFree:        true,
+				Tickets:       eventItems,
 			})
 		}
 		return "FREE", nil
@@ -460,14 +471,25 @@ func (s *bookingsService) ConfirmPaymentWebhook(ctx context.Context, transaction
 
 	if s.events != nil {
 		userName, userEmail := s.fetchUserInfo(ctx, userID)
-		s.events.Publish(events.EventTicketPurchased, events.Data{
-			"transaction_id": transactionID,
-			"user_id":        userID,
-			"user_name":      userName,
-			"user_email":     userEmail,
-			"is_free":        false,
-			"payment_id":     paymentID,
-			"tickets":        transaction.Tickets,
+		var eventItems []events.TicketPurchasedItem
+		for _, t := range transaction.Tickets {
+			ticket, err := s.store.GetTicketDetail(ctx, t, userID)
+			if err == nil {
+				eventItems = append(eventItems, events.TicketPurchasedItem{
+					TicketID: t,
+					QRCode:   ticket.QRCode,
+				})
+			}
+		}
+
+		s.events.Publish(events.EventTicketPurchased, events.TicketPurchasedEvent{
+			TransactionID: transactionID,
+			UserID:        userID,
+			UserName:      userName,
+			UserEmail:     userEmail,
+			IsFree:        false,
+			PaymentID:     paymentID,
+			Tickets:       eventItems,
 		})
 	}
 

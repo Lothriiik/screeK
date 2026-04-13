@@ -3,8 +3,8 @@ package handler
 import (
 	"net/http"
 
-	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/imports/letterboxd"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )

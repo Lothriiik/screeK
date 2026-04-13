@@ -135,7 +135,7 @@ func (s *Store) ListSessions(ctx context.Context, cinemaID int, date string) ([]
 	}
 
 	err := query.Preload("Movie").Preload("Room").Order("sessions.start_time asc").Find(&records).Error
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -160,7 +160,7 @@ func (s *Store) GetSessionsByRoom(ctx context.Context, roomID int, startTime tim
 		Where("room_id = ? AND start_time >= ? AND start_time < ?", roomID, startRange, endRange).
 		Preload("Movie").
 		Find(&records).Error
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 

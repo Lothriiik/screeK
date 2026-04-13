@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/StartLivin/screek/backend/internal/bookings"
 	"github.com/StartLivin/screek/backend/internal/cinema"
 	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
-	"github.com/StartLivin/screek/backend/internal/bookings"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )

@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
-	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/catalog"
+	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -67,16 +68,20 @@ func (h *CatalogHandler) LogMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req catalog.LogMovieRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var reqDTO LogMovieRequestDTO
+	if err := json.NewDecoder(r.Body).Decode(&reqDTO); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "JSON inválido"})
 		return
 	}
-
-	if err := h.svc.LogMovie(r.Context(), userID, uint(movieID), req); err != nil {
-		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
-		return
-	}
+	
+	if err := h.svc.LogMovie(r.Context(), userID, uint(movieID), catalog.LogMovieRequest{
+        Watched: reqDTO.Watched,
+        Rating:  reqDTO.Rating,
+        Liked:   reqDTO.Liked,
+    }); err != nil {
+        httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
+        return
+    }
 
 	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Atividade salva com sucesso!"})
 }
@@ -91,7 +96,7 @@ func (h *CatalogHandler) LogMovie(w http.ResponseWriter, r *http.Request) {
 // @Router /watchlist [post]
 func (h *CatalogHandler) AddToWatchlist(w http.ResponseWriter, r *http.Request) {
 	userID, _ := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
-	var req catalog.AddWatchlistRequest
+	var req AddWatchlistRequestDTO
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "Payload inválido"})
 		return
@@ -129,12 +134,26 @@ func (h *CatalogHandler) RemoveFromWatchlist(w http.ResponseWriter, r *http.Requ
 // @Router /watchlist [get]
 func (h *CatalogHandler) GetWatchlist(w http.ResponseWriter, r *http.Request) {
 	userID, _ := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
+
 	items, err := h.svc.GetWatchlist(r.Context(), userID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, httputil.ErrorResponse{Error: err.Error()})
 		return
 	}
-	httputil.WriteJSON(w, http.StatusOK, items)
+
+	dtos := make([]WatchlistItemResponseDTO, len(items))
+	for i, item := range items {
+		dtos[i] = WatchlistItemResponseDTO{
+			AddedAt: item.AddedAt.Format(time.RFC3339),
+			Movie: MovieSummaryDTO{
+				ID:          int(item.MovieID),
+				Title:       item.Title,
+				PosterURL:   item.PosterURL,
+				ReleaseYear: item.ReleaseYear,
+			},
+		}
+	}
+	httputil.WriteJSON(w, http.StatusOK, dtos)
 }
 
 // @Summary Criar lista de filmes
@@ -148,17 +167,34 @@ func (h *CatalogHandler) GetWatchlist(w http.ResponseWriter, r *http.Request) {
 // @Router /lists [post]
 func (h *CatalogHandler) CreateMovieList(w http.ResponseWriter, r *http.Request) {
 	userID, _ := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
-	var req catalog.CreateMovieListRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+
+	var reqDTO CreateMovieListRequestDTO
+	if err := json.NewDecoder(r.Body).Decode(&reqDTO); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "Payload inválido"})
 		return
 	}
-	list, err := h.svc.CreateMovieList(r.Context(), userID, req)
+
+	list, err := h.svc.CreateMovieList(r.Context(), userID, catalog.CreateMovieListRequest{
+		Title:       reqDTO.Title,
+		Description: reqDTO.Description,
+		IsPublic:    reqDTO.IsPublic,
+		MovieIDs:    reqDTO.MovieIDs,
+	})
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
 		return
 	}
-	httputil.WriteJSON(w, http.StatusCreated, list)
+
+	dto := MovieListResponseDTO{
+		ID:          list.ID,
+		Title:       list.Title,
+		Description: list.Description,
+		IsPublic:    list.IsPublic,
+		ItemCount:   len(reqDTO.MovieIDs),
+		CreatedAt:   list.CreatedAt.Format("2006-01-02"),
+	}
+
+	httputil.WriteJSON(w, http.StatusCreated, dto)
 }
 
 // @Summary Minhas listas
@@ -209,7 +245,7 @@ func (h *CatalogHandler) GetMovieListDetail(w http.ResponseWriter, r *http.Reque
 func (h *CatalogHandler) AddMovieToList(w http.ResponseWriter, r *http.Request) {
 	listID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	userID, _ := r.Context().Value(httputil.UserIDKey).(uuid.UUID)
-	var req catalog.AddMovieToListRequest
+	var req AddMovieToListRequestDTO
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "Payload inválido"})
 		return

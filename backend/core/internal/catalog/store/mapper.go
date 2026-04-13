@@ -46,7 +46,7 @@ func ToMovieListDomain(r *MovieListRecord) *catalog.MovieList {
 	if r == nil {
 		return nil
 	}
-	
+
 	items := make([]catalog.MovieListItem, len(r.Items))
 	for i, item := range r.Items {
 		items[i] = catalog.MovieListItem{
@@ -139,4 +139,3 @@ func ToMovieStatsList(records []MovieStatsRecord) []catalog.MovieStats {
 	}
 	return list
 }
-

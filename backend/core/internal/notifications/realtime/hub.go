@@ -10,9 +10,9 @@ type Hub struct {
 	clients map[uuid.UUID][]*Client
 
 	register chan *Client
-	
+
 	unregister chan *Client
-	
+
 	mu sync.RWMutex
 }
 
@@ -31,7 +31,7 @@ func (h *Hub) Run() {
 			h.mu.Lock()
 			h.clients[client.userID] = append(h.clients[client.userID], client)
 			h.mu.Unlock()
-			
+
 		case client := <-h.unregister:
 			h.mu.Lock()
 			if clients, ok := h.clients[client.userID]; ok {
@@ -54,7 +54,7 @@ func (h *Hub) Run() {
 func (h *Hub) SendToUser(userID uuid.UUID, message []byte) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	if clients, ok := h.clients[userID]; ok {
 		for _, client := range clients {
 			select {

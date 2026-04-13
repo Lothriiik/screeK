@@ -31,10 +31,10 @@ type ListSearchResult struct {
 }
 
 type MovieService struct {
-	tmdb         TMDBService
-	store        MoviesRepository
-	userSearch   UserSearchProvider
-	listSearch   ListSearchProvider
+	tmdb       TMDBService
+	store      MoviesRepository
+	userSearch UserSearchProvider
+	listSearch ListSearchProvider
 }
 
 func NewService(tmdb TMDBService, store MoviesRepository, userSearch UserSearchProvider, listSearch ListSearchProvider) *MovieService {

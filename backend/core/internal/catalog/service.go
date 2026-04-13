@@ -4,38 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/StartLivin/screek/backend/internal/movies"
-	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/google/uuid"
 )
-
-type UserProvider interface {
-	GetUserByID(ctx context.Context, id uuid.UUID) (*users.User, error)
-	IncrementStats(ctx context.Context, userID uuid.UUID, movies int, minutes int) error
-}
-
-type MovieProvider interface {
-	GetMovieDetails(ctx context.Context, tmdbID int) (*movies.Movie, error)
-}
-
-type CatalogRepository interface {
-	UpsertMovieLog(ctx context.Context, log *MovieLog) error
-	AddToWatchlist(ctx context.Context, item *WatchlistItem) error
-	RemoveFromWatchlist(ctx context.Context, userID uuid.UUID, movieID uint) error
-	GetWatchlist(ctx context.Context, userID uuid.UUID) ([]WatchlistItem, error)
-	
-	CreateMovieList(ctx context.Context, list *MovieList) error
-	UpdateMovieList(ctx context.Context, list *MovieList) error
-	GetMovieLists(ctx context.Context, userID uuid.UUID) ([]MovieList, error)
-	GetMovieListByID(ctx context.Context, listID uint) (*MovieList, error)
-	AddMovieToList(ctx context.Context, listID uint, movieID uint) error
-	RemoveMovieFromList(ctx context.Context, listID uint, movieID uint) error
-	DeleteMovieList(ctx context.Context, listID uint) error
-	SearchLists(ctx context.Context, query string) ([]MovieList, error)
-	GetMovieStats(ctx context.Context, movieID uint) (*MovieStats, error)
-	GetUserLogs(ctx context.Context, userID uuid.UUID) ([]MovieLog, error)
-	GetMovieLog(ctx context.Context, userID uuid.UUID, movieID uint) (*MovieLog, error)
-}
 
 type CatalogService struct {
 	repo          CatalogRepository
@@ -64,13 +34,12 @@ func (s *CatalogService) LogMovie(ctx context.Context, userID uuid.UUID, movieID
 		Liked:   req.Liked,
 	}
 
-	// Verificar se já existia um log assistido para não duplicar estatísticas
 	alreadyWatched := false
 	existing, _ := s.repo.GetMovieLog(ctx, userID, movieID)
 	if existing != nil && existing.Watched {
 		alreadyWatched = true
 	}
-	
+
 	if err := s.repo.UpsertMovieLog(ctx, log); err != nil {
 		return err
 	}
@@ -81,7 +50,7 @@ func (s *CatalogService) LogMovie(ctx context.Context, userID uuid.UUID, movieID
 		if err == nil && movie != nil {
 			runtime = movie.Runtime
 		}
-		
+
 		_ = s.userProvider.IncrementStats(ctx, userID, 1, runtime)
 	}
 
@@ -97,31 +66,32 @@ func (s *CatalogService) RemoveFromWatchlist(ctx context.Context, userID uuid.UU
 	return s.repo.RemoveFromWatchlist(ctx, userID, movieID)
 }
 
-func (s *CatalogService) GetWatchlist(ctx context.Context, userID uuid.UUID) ([]WatchlistItemResponseDTO, error) {
+func (s *CatalogService) GetWatchlist(ctx context.Context, userID uuid.UUID) ([]WatchlistRichItem, error) {
 	items, err := s.repo.GetWatchlist(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	var dtos []WatchlistItemResponseDTO
+	var richItems []WatchlistRichItem
+
 	for _, item := range items {
-		movie, _ := s.movieProvider.GetMovieDetails(ctx, int(item.MovieID))
-		
-		var movieDTO MovieDetailResponseDTO
-		if movie != nil {
-			movieDTO = s.mapMovieToDTO(*movie)
+		rich := WatchlistRichItem{
+			MovieID: item.MovieID,
+			AddedAt: item.AddedAt,
 		}
 
-		dtos = append(dtos, WatchlistItemResponseDTO{
-			MovieID: item.MovieID,
-			AddedAt: item.AddedAt.Format("02/01/2006 15:04"),
-			Movie:   movieDTO,
-		})
+		movie, err := s.movieProvider.GetMovieDetails(ctx, int(item.MovieID))
+		if err == nil && movie != nil {
+			rich.Title = movie.Title
+			rich.PosterURL = movie.PosterURL
+			rich.ReleaseYear = movie.ReleaseDate.Year()
+		}
+		richItems = append(richItems, rich)
 	}
-	return dtos, nil
+	return richItems, nil
 }
 
-func (s *CatalogService) CreateMovieList(ctx context.Context, userID uuid.UUID, req CreateMovieListRequest) (*MovieListResponseDTO, error) {
+func (s *CatalogService) CreateMovieList(ctx context.Context, userID uuid.UUID, req CreateMovieListRequest) (*MovieList, error) {
 	list := &MovieList{
 		UserID:      userID,
 		Title:       req.Title,
@@ -133,13 +103,13 @@ func (s *CatalogService) CreateMovieList(ctx context.Context, userID uuid.UUID, 
 		return nil, err
 	}
 
-	return &MovieListResponseDTO{
-		ID:          list.ID,
-		Title:       list.Title,
-		Description: list.Description,
-		IsPublic:    list.IsPublic,
-		CreatedAt:   list.CreatedAt.Format("02/01/2006"),
-	}, nil
+	for _, movieID := range req.MovieIDs {
+		err := s.repo.AddMovieToList(ctx, list.ID, movieID)
+		if err != nil {
+			return nil, ErrAddMovieToList
+		}
+	}
+	return list, nil
 }
 
 func (s *CatalogService) UpdateMovieList(ctx context.Context, userID uuid.UUID, listID uint, req CreateMovieListRequest) error {
@@ -159,24 +129,24 @@ func (s *CatalogService) UpdateMovieList(ctx context.Context, userID uuid.UUID, 
 	return s.repo.UpdateMovieList(ctx, list)
 }
 
-func (s *CatalogService) GetMyMovieLists(ctx context.Context, userID uuid.UUID) ([]MovieListResponseDTO, error) {
+func (s *CatalogService) GetMyMovieLists(ctx context.Context, userID uuid.UUID) ([]MovieListSummary, error) {
 	lists, err := s.repo.GetMovieLists(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	var dtos []MovieListResponseDTO
+	var summaries []MovieListSummary
 	for _, l := range lists {
-		dtos = append(dtos, MovieListResponseDTO{
+		summaries = append(summaries, MovieListSummary{
 			ID:          l.ID,
 			Title:       l.Title,
 			Description: l.Description,
 			IsPublic:    l.IsPublic,
 			ItemCount:   len(l.Items),
-			CreatedAt:   l.CreatedAt.Format("02/01/2006"),
+			CreatedAt:   l.CreatedAt,
 		})
 	}
-	return dtos, nil
+	return summaries, nil
 }
 
 func (s *CatalogService) GetMovieListDetail(ctx context.Context, listID uint, requesterID uuid.UUID) (*MovieList, error) {
@@ -229,70 +199,66 @@ func (s *CatalogService) SearchLists(ctx context.Context, query string) ([]Movie
 	return s.repo.SearchLists(ctx, query)
 }
 
-func (s *CatalogService) GetMovieDetail(ctx context.Context, tmdbID int) (*MovieDetailResponseDTO, error) {
+func (s *CatalogService) GetMovieDetail(ctx context.Context, tmdbID int) (*MovieDetailSummary, error) {
 	movie, err := s.movieProvider.GetMovieDetails(ctx, tmdbID)
 	if err != nil {
 		return nil, err
 	}
 
 	stats, _ := s.repo.GetMovieStats(ctx, uint(movie.ID))
-	
-	dto := &MovieDetailResponseDTO{
-		ID:            movie.ID,
-		TMDBID:        movie.TMDBID,
-		Title:         movie.Title,
-		Overview:      movie.Overview,
-		PosterURL:     movie.PosterURL,
-		BackdropURL:   movie.BackdropURL,
-		ReleaseDate:   movie.ReleaseDate.Format("2006-01-02"),
-		Runtime:       movie.Runtime,
-	}
 
-	if stats != nil {
-		dto.AverageRating = stats.AverageRating
-		dto.TotalReviews = stats.TotalReviews
-		dto.TotalLikes = stats.TotalLikes
-	}
-
-	return dto, nil
-}
-
-func (s *CatalogService) GetMyHistory(ctx context.Context, userID uuid.UUID) ([]MovieLogResponseDTO, error) {
-	logs, err := s.repo.GetUserLogs(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	var dtos []MovieLogResponseDTO
-	for _, log := range logs {
-		movie, _ := s.movieProvider.GetMovieDetails(ctx, int(log.MovieID))
-		
-		var movieDTO MovieDetailResponseDTO
-		if movie != nil {
-			movieDTO = s.mapMovieToDTO(*movie)
-		}
-
-		dtos = append(dtos, MovieLogResponseDTO{
-			MovieID:   log.MovieID,
-			Watched:   log.Watched,
-			Rating:    log.Rating,
-			Liked:     log.Liked,
-			UpdatedAt: log.UpdatedAt.Format("02/01/2006 15:04"),
-			Movie:     movieDTO,
-		})
-	}
-	return dtos, nil
-}
-
-func (s *CatalogService) mapMovieToDTO(movie movies.Movie) MovieDetailResponseDTO {
-	return MovieDetailResponseDTO{
+	summaries := &MovieDetailSummary{
 		ID:          movie.ID,
 		TMDBID:      movie.TMDBID,
 		Title:       movie.Title,
 		Overview:    movie.Overview,
 		PosterURL:   movie.PosterURL,
 		BackdropURL: movie.BackdropURL,
-		ReleaseDate: movie.ReleaseDate.Format("2006-01-02"),
+		ReleaseDate: movie.ReleaseDate,
 		Runtime:     movie.Runtime,
 	}
+
+	if stats != nil {
+		summaries.AverageRating = stats.AverageRating
+		summaries.TotalReviews = stats.TotalReviews
+		summaries.TotalLikes = stats.TotalLikes
+	}
+
+	return summaries, nil
+}
+
+func (s *CatalogService) GetMyHistory(ctx context.Context, userID uuid.UUID) ([]MovieLogSummary, error) {
+	logs, err := s.repo.GetUserLogs(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var summaries []MovieLogSummary
+	for _, log := range logs {
+		movie, _ := s.movieProvider.GetMovieDetails(ctx, int(log.MovieID))
+
+		var movieSummary MovieDetailSummary
+		if movie != nil {
+			movieSummary = MovieDetailSummary{
+				ID:          movie.ID,
+				TMDBID:      movie.TMDBID,
+				Title:       movie.Title,
+				Overview:    movie.Overview,
+				PosterURL:   movie.PosterURL,
+				BackdropURL: movie.BackdropURL,
+				ReleaseDate: movie.ReleaseDate,
+				Runtime:     movie.Runtime,
+			}
+		}
+
+		summaries = append(summaries, MovieLogSummary{
+			MovieID:   log.MovieID,
+			Watched:   log.Watched,
+			Rating:    log.Rating,
+			Liked:     log.Liked,
+			UpdatedAt: log.UpdatedAt,
+			Movie:     movieSummary,
+		})
+	}
+	return summaries, nil
 }

@@ -32,7 +32,7 @@ func CleanupDB(t *testing.T, db *gorm.DB) {
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// Desabilita as triggers para evitar problemas de FK durante o truncate
 		tx.Exec("SET CONSTRAINTS ALL DEFERRED")
-		
+
 		// Busca todas as tabelas do esquema public
 		var tables []string
 		tx.Raw("SELECT tablename FROM pg_tables WHERE schemaname = 'public'").Scan(&tables)

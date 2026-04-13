@@ -7,41 +7,41 @@ import (
 )
 
 type MovieLog struct {
-	UserID    uuid.UUID `json:"user_id"`
-	MovieID   uint      `json:"movie_id"`
-	Watched   bool      `json:"watched"`
-	Rating    float64   `json:"rating"`
-	Liked     bool      `json:"liked"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	UserID    uuid.UUID
+	MovieID   uint
+	Watched   bool
+	Rating    float64
+	Liked     bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type MovieList struct {
-	ID          uint            `json:"id"`
-	UserID      uuid.UUID       `json:"user_id"`
-	Title       string          `json:"title"`
-	IsPublic    bool            `json:"is_public"`
-	Description string          `json:"description"`
-	Items       []MovieListItem `json:"items"`
-	CreatedAt   time.Time       `json:"created_at"`
+	ID          uint
+	UserID      uuid.UUID
+	Title       string
+	IsPublic    bool
+	Description string
+	Items       []MovieListItem
+	CreatedAt   time.Time
 }
 
 type MovieListItem struct {
-	ID      uint      `json:"id"`
-	ListID  uint      `json:"list_id"`
-	MovieID uint      `json:"movie_id"`
-	AddedAt time.Time `json:"added_at"`
+	ID      uint
+	ListID  uint
+	MovieID uint
+	AddedAt time.Time
 }
 
 type WatchlistItem struct {
-	UserID  uuid.UUID `json:"user_id"`
-	MovieID uint      `json:"movie_id"`
-	AddedAt time.Time `json:"added_at"`
+	UserID  uuid.UUID
+	MovieID uint
+	AddedAt time.Time
 }
 
 type MovieStats struct {
-	MovieID       uint    `json:"movie_id"`
-	AverageRating float64 `json:"average_rating"`
-	TotalReviews  int     `json:"total_reviews"`
-	TotalLikes    int     `json:"total_likes"`
+	MovieID       uint
+	AverageRating float64
+	TotalReviews  int
+	TotalLikes    int
 }

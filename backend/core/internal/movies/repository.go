@@ -4,8 +4,6 @@ import (
 	"context"
 	movietmdb "github.com/StartLivin/screek/backend/internal/movies/tmdb"
 )
-	
-
 
 type MoviesRepository interface {
 	SaveMovie(ctx context.Context, movie *Movie) error

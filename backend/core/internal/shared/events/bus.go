@@ -18,9 +18,7 @@ const (
 	EventSessionScheduled EventType = "session.scheduled"
 )
 
-type Data map[string]interface{}
-
-type Handler func(Data)
+type Handler func(payload any)
 
 type EventBus struct {
 	mu       sync.RWMutex
@@ -39,13 +37,13 @@ func (eb *EventBus) Subscribe(eventType EventType, handler Handler) {
 	eb.handlers[eventType] = append(eb.handlers[eventType], handler)
 }
 
-func (eb *EventBus) Publish(eventType EventType, data Data) {
+func (eb *EventBus) Publish(eventType EventType, payload any) {
 	eb.mu.RLock()
 	defer eb.mu.RUnlock()
 
 	if handlers, ok := eb.handlers[eventType]; ok {
 		for _, handler := range handlers {
-			go handler(data)
+			go handler(payload)
 		}
 	}
 }

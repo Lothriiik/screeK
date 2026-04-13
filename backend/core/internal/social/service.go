@@ -3,7 +3,6 @@ package social
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/StartLivin/screek/backend/internal/shared/events"
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
@@ -196,12 +195,12 @@ func (s *socialService) ReplyToPost(ctx context.Context, userID uuid.UUID, paren
 		if parent != nil && parent.UserID != userID {
 			replier, _ := s.userProvider.GetUserByID(ctx, userID)
 			if replier != nil {
-				s.events.Publish(events.EventCommentAdded, events.Data{
-					"user_id":     parent.UserID,
-					"sender_id":   userID,
-					"sender_name": replier.Username,
-					"post_id":     parentID,
-					"message":     fmt.Sprintf("%s respondeu ao seu post", replier.Username),
+				s.events.Publish(events.EventCommentAdded, events.CommentAddedEvent{
+					PostID:        parentID,
+					UserID:        userID,
+					UserName:      replier.Username,
+					ParentID:      parentID,
+					ParentOwnerID: parent.UserID,
 				})
 			}
 		}
@@ -216,12 +215,11 @@ func (s *socialService) ToggleLike(ctx context.Context, userID uuid.UUID, postID
 		if err == nil && post.UserID != userID {
 			liker, _ := s.userProvider.GetUserByID(ctx, userID)
 			if liker != nil {
-				s.events.Publish(events.EventPostLiked, events.Data{
-					"user_id":     post.UserID,
-					"sender_id":   userID,
-					"sender_name": liker.Username,
-					"post_id":     postID,
-					"message":     fmt.Sprintf("%s curtiu seu post!", liker.Username),
+				s.events.Publish(events.EventPostLiked, events.PostLikedEvent{
+					PostID:    postID,
+					OwnerID:   post.UserID,
+					LikerID:   userID,
+					LikerName: liker.Username,
 				})
 			}
 		}
@@ -239,11 +237,10 @@ func (s *socialService) ToggleFollow(ctx context.Context, followerID uuid.UUID, 
 	if err == nil && isFollowing {
 		follower, _ := s.userProvider.GetUserByID(ctx, followerID)
 		if follower != nil {
-			s.events.Publish(events.EventUserFollowed, events.Data{
-				"user_id":     followee.ID,
-				"sender_id":   followerID,
-				"sender_name": follower.Username,
-				"message":     fmt.Sprintf("%s começou a seguir você", follower.Username),
+			s.events.Publish(events.EventUserFollowed, events.UserFollowedEvent{
+				FollowerID:   followerID,
+				FollowerName: follower.Username,
+				FolloweeID:   followee.ID,
 			})
 		}
 	}

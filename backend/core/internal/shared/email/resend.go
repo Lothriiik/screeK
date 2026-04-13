@@ -21,12 +21,12 @@ func NewResendClient(apiKey string) *ResendClient {
 
 func (r *ResendClient) SendTicketEmail(ctx context.Context, to, userName, qrCode string) error {
 	params := &resend.SendEmailRequest{
-		From:    "screeK <onboarding@resend.dev>", 
+		From:    "screeK <onboarding@resend.dev>",
 		To:      []string{to},
 		Subject: "Seu ingresso screeK está garantido! 🍿",
 		Html:    fmt.Sprintf("<p>Olá %s,</p><p>Sua compra foi aprovada! Aqui está o QRCode do seu ingresso:</p><p><strong>%s</strong></p><p>Apresente este código na entrada da Sessão.</p>", userName, qrCode),
 	}
-	
+
 	_, err := r.client.Emails.SendWithContext(ctx, params)
 	return err
 }

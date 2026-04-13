@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
-	"github.com/StartLivin/screek/backend/internal/users" 
+	"github.com/StartLivin/screek/backend/internal/users"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )

@@ -49,11 +49,11 @@ func (s *Store) SearchUsers(ctx context.Context, query string) ([]users.User, er
 		return nil, result.Error
 	}
 	var usersList []users.User
-	
-	for _, r := range record { 
-		usersList = append(usersList, *ToDomain(&r)) 
+
+	for _, r := range record {
+		usersList = append(usersList, *ToDomain(&r))
 	}
-	
+
 	return usersList, nil
 }
 
@@ -80,7 +80,7 @@ func (s *Store) RemoveFavorite(ctx context.Context, userID uuid.UUID, movieID in
 }
 
 func (s *Store) GetUserByUsername(ctx context.Context, username string) (*users.User, error) {
-	var record UserRecord 
+	var record UserRecord
 
 	result := s.db.WithContext(ctx).Where("username = ?", username).First(&record)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -91,11 +91,11 @@ func (s *Store) GetUserByUsername(ctx context.Context, username string) (*users.
 		return nil, result.Error
 	}
 
-	return ToDomain(&record), nil 
+	return ToDomain(&record), nil
 }
 
 func (s *Store) GetUserByEmail(ctx context.Context, email string) (*users.User, error) {
-	var record UserRecord 
+	var record UserRecord
 
 	result := s.db.WithContext(ctx).Where("email = ?", email).First(&record)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -106,7 +106,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*users.User, 
 		return nil, result.Error
 	}
 
-	return ToDomain(&record), nil 
+	return ToDomain(&record), nil
 }
 
 func (s *Store) EmailExists(ctx context.Context, email string) (bool, error) {
@@ -136,7 +136,7 @@ func (s *Store) GetUserStats(ctx context.Context, userID uuid.UUID) (*users.User
 		return nil, err
 	}
 
-	return ToStatsDomain(&record), nil 
+	return ToStatsDomain(&record), nil
 }
 
 func (s *Store) UpdateUserStats(ctx context.Context, stats *users.UserStats) error {

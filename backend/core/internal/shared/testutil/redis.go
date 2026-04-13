@@ -19,7 +19,7 @@ func SetupTestRedis(t *testing.T) *redis.Client {
 
 	client := redis.NewClient(&redis.Options{
 		Addr: addr,
-		DB:   1, 
+		DB:   1,
 	})
 
 	err := client.Ping(context.Background()).Err()

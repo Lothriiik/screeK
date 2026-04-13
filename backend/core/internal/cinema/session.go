@@ -1,7 +1,7 @@
 package cinema
 
 import (
-    "time"
+	"time"
 )
 
 type SessionType string
@@ -16,12 +16,12 @@ const (
 )
 
 type Session struct {
-	ID          int          `json:"id"`
-	MovieID     int          `json:"movie_id"`
-	RoomID      int          `json:"room_id"`
-	StartTime   time.Time    `json:"start_time"`
-	Price       int          `json:"price"`
-	SessionType SessionType  `json:"session_type"`
-	IsFree      bool         `json:"is_free"`
-	Room        Room         `json:"room"`
+	ID          int         `json:"id"`
+	MovieID     int         `json:"movie_id"`
+	RoomID      int         `json:"room_id"`
+	StartTime   time.Time   `json:"start_time"`
+	Price       int         `json:"price"`
+	SessionType SessionType `json:"session_type"`
+	IsFree      bool        `json:"is_free"`
+	Room        Room        `json:"room"`
 }

@@ -9,10 +9,10 @@ import (
 type PostType string
 
 const (
-	PostTypeText         PostType = "TEXT"          
-	PostTypeReview       PostType = "REVIEW"        
-	PostTypeSessionShare PostType = "SESSION_SHARE" 
-	PostTypeRepost       PostType = "REPOST"        
+	PostTypeText         PostType = "TEXT"
+	PostTypeReview       PostType = "REVIEW"
+	PostTypeSessionShare PostType = "SESSION_SHARE"
+	PostTypeRepost       PostType = "REPOST"
 )
 
 type Post struct {
@@ -21,8 +21,8 @@ type Post struct {
 	PostType     PostType  `json:"post_type"`
 	Content      string    `json:"content"`
 	IsSpoiler    bool      `json:"is_spoiler"`
-	ReferenceID  *uint     `json:"reference_id"` 
-	ParentID     *uint     `json:"parent_id"`    
+	ReferenceID  *uint     `json:"reference_id"`
+	ParentID     *uint     `json:"parent_id"`
 	LikesCount   int       `json:"likes_count"`
 	RepliesCount int       `json:"replies_count"`
 	CreatedAt    time.Time `json:"created_at"`
