@@ -43,4 +43,3 @@ type MovieLogSummary struct {
 	UpdatedAt time.Time
 	Movie     MovieDetailSummary
 }
-

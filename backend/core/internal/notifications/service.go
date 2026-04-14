@@ -7,8 +7,8 @@ import (
 	"log"
 	"log/slog"
 
-	"github.com/StartLivin/screek/backend/internal/cinema"
 	"github.com/StartLivin/screek/backend/internal/notifications/realtime"
+	"github.com/StartLivin/screek/backend/internal/shared/types"
 	"github.com/google/uuid"
 )
 
@@ -60,7 +60,7 @@ func (s *NotificationService) MarkAllAsRead(ctx context.Context, userID uuid.UUI
 	return s.repo.MarkAllAsRead(ctx, userID)
 }
 
-func (s *NotificationService) ProcessWatchlistMatches(ctx context.Context, matches []cinema.WatchlistMatch) error {
+func (s *NotificationService) ProcessWatchlistMatches(ctx context.Context, matches []types.WatchlistMatch) error {
 	for _, m := range matches {
 		title := "Filme em Reexibição!"
 		message := fmt.Sprintf("O filme '%s' está em REEXIBIÇÃO em %s. Garanta seu ingresso!", m.MovieTitle, m.City)

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/StartLivin/screek/backend/internal/shared/types"
 	"github.com/google/uuid"
 )
-
 
 type CinemaRepository interface {
 	CreateCinema(ctx context.Context, cinema *Cinema) error
@@ -29,8 +29,8 @@ type CinemaRepository interface {
 	GetSession(ctx context.Context, sessionID int) (*Session, error)
 	DeleteSession(ctx context.Context, sessionID int) error
 	GetSessionBookingsCount(ctx context.Context, sessionID int) (int, error)
-	GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error)
-	GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]WatchlistMatch, error)
+	GetWatchlistMatches(ctx context.Context) ([]types.WatchlistMatch, error)
+	GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]types.WatchlistMatch, error)
 
 	IsManagerOfCinema(ctx context.Context, userID uuid.UUID, cinemaID int) (bool, error)
 }

@@ -15,24 +15,35 @@ const (
 )
 
 type Cinema struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	Address   string    `json:"address"`
-	City      string    `json:"city"`
-	Phone     string    `json:"phone"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Rooms     []Room    `json:"rooms,omitempty"`
+	ID        int
+	Name      string
+	Address   string
+	City      string
+	Phone     string
+	Email     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Rooms     []Room
 }
 
 type Room struct {
-	ID       int      `json:"id"`
-	CinemaID int      `json:"cinema_id"`
-	Name     string   `json:"name"`
-	Capacity int      `json:"capacity"`
-	Type     RoomType `json:"type"`
-	Seats    []Seat   `json:"seats,omitempty"`
+	ID       int
+	CinemaID int
+	Name     string
+	Capacity int
+	Type     RoomType
+	Seats    []Seat
+}
+
+type Seat struct {
+	ID         int
+	RoomID     int
+	Row        string
+	Number     int
+	PosX       int
+	PosY       int
+	Type       string
+	IsOccupied bool
 }
 
 type CinemaManager struct {

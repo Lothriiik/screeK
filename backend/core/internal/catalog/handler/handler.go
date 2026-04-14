@@ -73,15 +73,15 @@ func (h *CatalogHandler) LogMovie(w http.ResponseWriter, r *http.Request) {
 		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: "JSON inválido"})
 		return
 	}
-	
+
 	if err := h.svc.LogMovie(r.Context(), userID, uint(movieID), catalog.LogMovieRequest{
-        Watched: reqDTO.Watched,
-        Rating:  reqDTO.Rating,
-        Liked:   reqDTO.Liked,
-    }); err != nil {
-        httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
-        return
-    }
+		Watched: reqDTO.Watched,
+		Rating:  reqDTO.Rating,
+		Liked:   reqDTO.Liked,
+	}); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, httputil.ErrorResponse{Error: err.Error()})
+		return
+	}
 
 	httputil.WriteJSON(w, http.StatusOK, httputil.MessageResponse{Message: "Atividade salva com sucesso!"})
 }

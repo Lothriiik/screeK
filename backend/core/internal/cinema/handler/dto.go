@@ -1,8 +1,6 @@
-package cinema
+package handler
 
 import (
-	"time"
-
 	"github.com/StartLivin/screek/backend/internal/shared/validation"
 )
 
@@ -14,15 +12,15 @@ type CinemaAdminResponseDTO struct {
 }
 
 type SessionAdminResponseDTO struct {
-	ID          int       `json:"id"`
-	MovieTitle  string    `json:"movie_title"`
-	RoomName    string    `json:"room_name"`
-	StartTime   time.Time `json:"start_time"`
-	Price       int       `json:"price"`
-	SessionType string    `json:"session_type"`
+	ID          int    `json:"id"`
+	MovieTitle  string `json:"movie_title"`
+	RoomName    string `json:"room_name"`
+	StartTime   string `json:"start_time"`
+	Price       int    `json:"price"`
+	SessionType string `json:"session_type"`
 }
 
-type CreateCinemaRequest struct {
+type CreateCinemaRequestDTO struct {
 	Name    string `json:"name" validate:"required"`
 	Address string `json:"address" validate:"required"`
 	City    string `json:"city" validate:"required"`
@@ -30,29 +28,29 @@ type CreateCinemaRequest struct {
 	Email   string `json:"email" validate:"required,email"`
 }
 
-type CreateRoomRequest struct {
+type CreateRoomRequestDTO struct {
 	CinemaID int    `json:"cinema_id" validate:"required"`
 	Name     string `json:"name" validate:"required"`
 	Capacity int    `json:"capacity" validate:"required,min=1"`
 	Type     string `json:"type" validate:"required,oneof=STANDARD IMAX VIP"`
 }
 
-type CreateSessionRequest struct {
-	MovieID     int       `json:"movie_id" validate:"required"`
-	RoomID      int       `json:"room_id" validate:"required"`
-	StartTime   time.Time `json:"start_time" validate:"required"`
-	Price       int       `json:"price" validate:"required,min=0"`
-	SessionType string    `json:"session_type" validate:"required,oneof=REGULAR PREMIERE RESCREENING FESTIVAL UNIVERSITY SHOWCASE"`
+type CreateSessionRequestDTO struct {
+	MovieID     int    `json:"movie_id" validate:"required"`
+	RoomID      int    `json:"room_id" validate:"required"`
+	StartTime   string `json:"start_time" validate:"required"`
+	Price       int    `json:"price" validate:"required,min=0"`
+	SessionType string `json:"session_type" validate:"required,oneof=REGULAR PREMIERE RESCREENING FESTIVAL UNIVERSITY SHOWCASE"`
 }
 
-func (d *CreateCinemaRequest) Validate() error {
+func (d *CreateCinemaRequestDTO) Validate() error {
 	return validation.Validate.Struct(d)
 }
 
-func (d *CreateRoomRequest) Validate() error {
+func (d *CreateRoomRequestDTO) Validate() error {
 	return validation.Validate.Struct(d)
 }
 
-func (d *CreateSessionRequest) Validate() error {
+func (d *CreateSessionRequestDTO) Validate() error {
 	return validation.Validate.Struct(d)
 }

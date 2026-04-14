@@ -158,7 +158,7 @@ func (app *Application) mount() {
 	notifService := notifications.NewService(notifStore, app.hub)
 
 	authSvc := auth.NewAuthService(userStore, jwtService, app.redis, resendClient)
-	mgmtSvc := cinema.NewService(mgmtStore, movieService, app.events)
+	mgmtSvc := cinema.NewService(mgmtStore, &cinemaMovieAdapter{svc: movieService}, app.events)
 	analyticsSvc := analytics.NewService(analyticsStore, movieService, mgmtSvc)
 	catalogSvc := catalog.NewService(catalogStore, &catalogUserAdapter{svc: userService}, &catalogMovieAdapter{svc: movieService})
 	socialSvc := social.NewService(socialStore, userStore, app.events, sessionAdapter)

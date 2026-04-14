@@ -2,24 +2,14 @@ package cinema
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/movies"
 	"github.com/StartLivin/screek/backend/internal/shared/events"
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
+	"github.com/StartLivin/screek/backend/internal/shared/types"
 	"github.com/google/uuid"
 )
-
-var (
-	ErrSessionOverlap   = errors.New("conflito de horário: a sala já possui uma sessão neste período")
-	ErrNotCinemaManager = errors.New("acesso negado: você não é gerente deste cinema")
-)
-
-type MovieProvider interface {
-	GetMovieDetails(ctx context.Context, tmdbID int) (*movies.Movie, error)
-}
 
 type CinemaService struct {
 	repo          CinemaRepository
@@ -37,7 +27,7 @@ func NewService(repo CinemaRepository, movieProvider MovieProvider, events *even
 
 func (s *CinemaService) CreateCinema(ctx context.Context, role httputil.Role, req CreateCinemaRequest) error {
 	if role != httputil.RoleAdmin {
-		return errors.New("apenas administradores podem criar cinemas")
+		return ErrAdminOnly
 	}
 
 	cinema := &Cinema{
@@ -90,7 +80,7 @@ func (s *CinemaService) CreateRoom(ctx context.Context, userID uuid.UUID, role h
 func (s *CinemaService) CreateSession(ctx context.Context, userID uuid.UUID, role httputil.Role, req CreateSessionRequest) error {
 	room, err := s.repo.GetRoomByID(ctx, req.RoomID)
 	if err != nil {
-		return errors.New("sala não encontrada")
+		return ErrRoomNotFound
 	}
 
 	isManager, err := func() (bool, error) {
@@ -108,7 +98,7 @@ func (s *CinemaService) CreateSession(ctx context.Context, userID uuid.UUID, rol
 
 	movie, err := s.movieProvider.GetMovieDetails(ctx, req.MovieID)
 	if err != nil {
-		return errors.New("filme não encontrado")
+		return ErrMovieNotFound
 	}
 
 	session := &Session{
@@ -140,12 +130,12 @@ func (s *CinemaService) CreateSession(ctx context.Context, userID uuid.UUID, rol
 func (s *CinemaService) DeleteSession(ctx context.Context, userID uuid.UUID, role httputil.Role, sessionID int) error {
 	session, err := s.repo.GetSession(ctx, sessionID)
 	if err != nil {
-		return errors.New("sessão não encontrada")
+		return ErrSessionNotFound
 	}
 
 	room, err := s.repo.GetRoomByID(ctx, session.RoomID)
 	if err != nil {
-		return errors.New("sala associada não encontrada")
+		return ErrRoomNotFound
 	}
 
 	isManager, err := func() (bool, error) {
@@ -166,27 +156,24 @@ func (s *CinemaService) DeleteSession(ctx context.Context, userID uuid.UUID, rol
 		return err
 	}
 	if count > 0 {
-		return errors.New("não é possível excluir uma sessão que já possui ingressos vendidos")
+		return ErrSessionHasBookings
 	}
 
 	return s.repo.DeleteSession(ctx, sessionID)
 }
 
-func (s *CinemaService) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]WatchlistMatch, error) {
+func (s *CinemaService) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]types.WatchlistMatch, error) {
 	return s.repo.GetWatchlistMatchesForSession(ctx, sessionID)
 }
 
 func (s *CinemaService) UpdateCinema(ctx context.Context, role httputil.Role, id int, req CreateCinemaRequest) error {
 	if role != httputil.RoleAdmin {
-		return errors.New("apenas administradores podem editar cinemas")
-	}
-	if err := req.Validate(); err != nil {
-		return err
+		return ErrAdminOnly
 	}
 
 	cinema, err := s.repo.GetCinemaByID(ctx, id)
 	if err != nil {
-		return errors.New("cinema não encontrado")
+		return ErrCinemaNotFound
 	}
 
 	cinema.Name = req.Name
@@ -200,25 +187,28 @@ func (s *CinemaService) UpdateCinema(ctx context.Context, role httputil.Role, id
 
 func (s *CinemaService) DeleteCinema(ctx context.Context, role httputil.Role, id int) error {
 	if role != httputil.RoleAdmin {
-		return errors.New("apenas administradores podem excluir cinemas")
+		return ErrAdminOnly
 	}
-
 	cinema, err := s.repo.GetCinemaByID(ctx, id)
 	if err != nil {
-		return errors.New("cinema não encontrado")
+		return ErrCinemaNotFound
 	}
-
-	if len(cinema.Rooms) > 0 {
-		return errors.New("não é possível excluir um cinema que possui salas vinculadas")
+	for _, room := range cinema.Rooms {
+		sessions, _ := s.repo.GetSessionsByRoom(ctx, room.ID, time.Now())
+		for _, sess := range sessions {
+			count, _ := s.repo.GetSessionBookingsCount(ctx, sess.ID)
+			if count > 0 {
+				return ErrSessionHasBookings
+			}
+		}
 	}
-
 	return s.repo.DeleteCinema(ctx, id)
 }
 
 func (s *CinemaService) UpdateRoom(ctx context.Context, userID uuid.UUID, role httputil.Role, roomID int, req CreateRoomRequest) error {
 	room, err := s.repo.GetRoomByID(ctx, roomID)
 	if err != nil {
-		return errors.New("sala não encontrada")
+		return ErrRoomNotFound
 	}
 
 	if role != httputil.RoleAdmin {
@@ -226,10 +216,6 @@ func (s *CinemaService) UpdateRoom(ctx context.Context, userID uuid.UUID, role h
 		if err != nil || !isManager {
 			return ErrNotCinemaManager
 		}
-	}
-
-	if err := req.Validate(); err != nil {
-		return err
 	}
 
 	room.Name = req.Name
@@ -242,7 +228,7 @@ func (s *CinemaService) UpdateRoom(ctx context.Context, userID uuid.UUID, role h
 func (s *CinemaService) DeleteRoom(ctx context.Context, userID uuid.UUID, role httputil.Role, roomID int) error {
 	room, err := s.repo.GetRoomByID(ctx, roomID)
 	if err != nil {
-		return errors.New("sala não encontrada")
+		return ErrRoomNotFound
 	}
 
 	if role != httputil.RoleAdmin {
@@ -258,7 +244,7 @@ func (s *CinemaService) DeleteRoom(ctx context.Context, userID uuid.UUID, role h
 	}
 
 	if len(sessions) > 0 {
-		return errors.New("não é possível excluir uma sala com sessões futuras agendadas")
+		return ErrRoomHasSessions
 	}
 
 	return s.repo.DeleteRoom(ctx, roomID)
@@ -267,12 +253,12 @@ func (s *CinemaService) DeleteRoom(ctx context.Context, userID uuid.UUID, role h
 func (s *CinemaService) UpdateSession(ctx context.Context, userID uuid.UUID, role httputil.Role, sessionID int, req CreateSessionRequest) error {
 	session, err := s.repo.GetSession(ctx, sessionID)
 	if err != nil {
-		return errors.New("sessão não encontrada")
+		return ErrSessionNotFound
 	}
 
 	room, err := s.repo.GetRoomByID(ctx, session.RoomID)
 	if err != nil {
-		return errors.New("sala não encontrada")
+		return ErrRoomNotFound
 	}
 
 	if role != httputil.RoleAdmin {
@@ -287,15 +273,11 @@ func (s *CinemaService) UpdateSession(ctx context.Context, userID uuid.UUID, rol
 		return err
 	}
 	if count > 0 {
-		return errors.New("não é possível editar uma sessão que já possui ingressos vendidos")
-	}
-
-	if err := req.Validate(); err != nil {
-		return err
+		return ErrSessionHasBookings
 	}
 
 	if req.StartTime.Before(time.Now()) {
-		return errors.New("não é possível atualizar para uma data no passado")
+		return ErrSessionInPast
 	}
 
 	session.MovieID = req.MovieID
@@ -307,7 +289,7 @@ func (s *CinemaService) UpdateSession(ctx context.Context, userID uuid.UUID, rol
 
 	movie, err := s.movieProvider.GetMovieDetails(ctx, req.MovieID)
 	if err != nil {
-		return errors.New("filme não encontrado")
+		return ErrMovieNotFound
 	}
 
 	return s.repo.UpdateSessionWithOverlapCheck(ctx, session, movie.Runtime)
@@ -317,15 +299,15 @@ func (s *CinemaService) GetCinemaByID(ctx context.Context, id int) (*Cinema, err
 	return s.repo.GetCinemaByID(ctx, id)
 }
 
-func (s *CinemaService) ListCinemas(ctx context.Context) ([]CinemaAdminResponseDTO, error) {
+func (s *CinemaService) ListCinemas(ctx context.Context) ([]CinemaSummary, error) {
 	cinemas, err := s.repo.ListCinemas(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []CinemaAdminResponseDTO
+	var response []CinemaSummary
 	for _, c := range cinemas {
-		response = append(response, CinemaAdminResponseDTO{
+		response = append(response, CinemaSummary{
 			ID:      c.ID,
 			Name:    c.Name,
 			City:    c.City,
@@ -335,13 +317,13 @@ func (s *CinemaService) ListCinemas(ctx context.Context) ([]CinemaAdminResponseD
 	return response, nil
 }
 
-func (s *CinemaService) ListSessions(ctx context.Context, cinemaID int, date string) ([]SessionAdminResponseDTO, error) {
+func (s *CinemaService) ListSessions(ctx context.Context, cinemaID int, date string) ([]SessionSummary, error) {
 	sessions, err := s.repo.ListSessions(ctx, cinemaID, date)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []SessionAdminResponseDTO
+	var response []SessionSummary
 	for _, sess := range sessions {
 
 		movie, _ := s.movieProvider.GetMovieDetails(ctx, sess.MovieID)
@@ -350,7 +332,7 @@ func (s *CinemaService) ListSessions(ctx context.Context, cinemaID int, date str
 			movieTitle = movie.Title
 		}
 
-		response = append(response, SessionAdminResponseDTO{
+		response = append(response, SessionSummary{
 			ID:          sess.ID,
 			MovieTitle:  movieTitle,
 			RoomName:    sess.Room.Name,
@@ -362,6 +344,6 @@ func (s *CinemaService) ListSessions(ctx context.Context, cinemaID int, date str
 	return response, nil
 }
 
-func (s *CinemaService) GetWatchlistMatches(ctx context.Context) ([]WatchlistMatch, error) {
+func (s *CinemaService) GetWatchlistMatches(ctx context.Context) ([]types.WatchlistMatch, error) {
 	return s.repo.GetWatchlistMatches(ctx)
 }

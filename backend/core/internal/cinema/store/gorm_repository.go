@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/StartLivin/screek/backend/internal/cinema"
+	"github.com/StartLivin/screek/backend/internal/shared/types"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -273,8 +274,8 @@ func (s *Store) IsManagerOfCinema(ctx context.Context, userID uuid.UUID, cinemaI
 	return count > 0, err
 }
 
-func (s *Store) GetWatchlistMatches(ctx context.Context) ([]cinema.WatchlistMatch, error) {
-	var matches []cinema.WatchlistMatch
+func (s *Store) GetWatchlistMatches(ctx context.Context) ([]types.WatchlistMatch, error) {
+	var matches []types.WatchlistMatch
 
 	query := `
 		SELECT DISTINCT 
@@ -298,8 +299,8 @@ func (s *Store) GetWatchlistMatches(ctx context.Context) ([]cinema.WatchlistMatc
 	return matches, err
 }
 
-func (s *Store) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]cinema.WatchlistMatch, error) {
-	var matches []cinema.WatchlistMatch
+func (s *Store) GetWatchlistMatchesForSession(ctx context.Context, sessionID int) ([]types.WatchlistMatch, error) {
+	var matches []types.WatchlistMatch
 
 	query := `
 		SELECT 
