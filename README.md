@@ -1,5 +1,3 @@
-# 🎬 screeK
-
 <img width="1440" height="1024" alt="Desktop - 2" src="https://github.com/user-attachments/assets/f7b5d4c4-6967-4aa5-ad02-bb95b848eb86" />
 
 
