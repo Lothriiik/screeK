@@ -1,14 +1,17 @@
 # 🎬 screeK
 
+<img width="1440" height="1024" alt="Desktop - 2" src="https://github.com/user-attachments/assets/f7b5d4c4-6967-4aa5-ad02-bb95b848eb86" />
+
+
 > **O ecossistema perfeito para verdadeiros amantes de cinema. Descubra filmes, avalie, acompanhe seus amigos e compre seu ingresso — tudo no mesmo lugar.**
 
-O **screeK** é uma plataforma que resolve a fragmentação da experiência do cinéfilo. Unificando a busca por metadados (TMDB), a interação social (Reviews/Feed) e a compra garantida de ingressos com **Locking de Assentos**, o projeto demonstra uma arquitetura robusta voltada para consistência e performance.
+O **screeK** é uma plataforma que resolve a fragmentação da experiência do cinéfilo. Unificando a busca por metadados (TMDB), a interação social (Reviews/Feed) e a compra garantida de ingressos.
 
 ---
 
 ## 🎯 Objetivo do Projeto
 - **Para o Usuário:** Unificar a jornada de ida ao cinema em um único app social e transacional.
-- **Para o Desenvolvedor:** Validar a performance e consistência transacional usando **Go**, implementando travas precisas (Locking) via **Redis** para evitar double-booking, servindo como um portfólio técnico de alto nível.
+- **Para o Desenvolvedor:** Validar a performance e consistência transacional usando **Go**, servindo como um portfólio.
 
 ---
 
