@@ -1,4 +1,5 @@
-<img width="1440" height="1024" alt="Desktop - 2" src="https://github.com/user-attachments/assets/f7b5d4c4-6967-4aa5-ad02-bb95b848eb86" />
+<img width="947" height="706" alt="Desktop - 11" src="https://github.com/user-attachments/assets/0cc43f29-3fba-4c54-9318-decf263b5531" />
+
 
 
 > **O ecossistema perfeito para verdadeiros amantes de cinema. Descubra filmes, avalie, acompanhe seus amigos e compre seu ingresso — tudo no mesmo lugar.**
