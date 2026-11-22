@@ -35,7 +35,7 @@ export function ProfileStats() {
       </header>
 
       <main className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-8">
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto border-b-2 border-foreground/15 pb-2">
           {(['week', 'month', 'all'] as StatsPeriod[]).map((key) => (
             <button key={key} type="button" onClick={() => setPeriod(key)} className={`whitespace-nowrap border-2 px-4 py-2 text-xs font-black uppercase ${period === key ? 'border-primary bg-primary text-primary-foreground shadow-[2px_2px_0px_0px_var(--border)]' : 'border-transparent text-foreground/60 hover:border-foreground/30'}`}>
               {key === 'week' ? 'Esta semana' : key === 'month' ? 'Este mês' : 'Geral'}

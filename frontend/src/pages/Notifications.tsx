@@ -63,7 +63,7 @@ export function Notifications() {
     <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. HEADER ─── */}
-      <section className="bg-background px-4 sm:px-0 py-6">
+      <section className="bg-background page-divider px-4 sm:px-0 py-6">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -92,7 +92,7 @@ export function Notifications() {
           </div>
 
           {/* Filter Subtabs */}
-          <div className="flex items-center gap-2 pb-1">
+          <div className="flex items-center gap-2 border-b-2 border-foreground/20 pb-1">
             <button
               type="button"
               onClick={() => setFilter('ALL')}
@@ -137,7 +137,7 @@ export function Notifications() {
             {/* HOJE */}
             {grouped.today.length > 0 && (
               <section className="space-y-3">
-                <div className="flex items-center gap-2 pb-1.5">
+                <div className="flex items-center gap-2 border-b-2 border-foreground/20 pb-1.5">
                   <span className="text-xs font-black uppercase tracking-wider text-primary">Hoje</span>
                   <span className="text-xs text-foreground/40">({grouped.today.length})</span>
                 </div>
@@ -153,7 +153,7 @@ export function Notifications() {
             {/* ONTEM */}
             {grouped.yesterday.length > 0 && (
               <section className="space-y-3">
-                <div className="flex items-center gap-2 pb-1.5">
+                <div className="flex items-center gap-2 border-b-2 border-foreground/20 pb-1.5">
                   <span className="text-xs font-black uppercase tracking-wider text-foreground/60">Ontem</span>
                   <span className="text-xs text-foreground/40">({grouped.yesterday.length})</span>
                 </div>
@@ -169,7 +169,7 @@ export function Notifications() {
             {/* ESTA SEMANA */}
             {grouped.this_week.length > 0 && (
               <section className="space-y-3">
-                <div className="flex items-center gap-2 pb-1.5">
+                <div className="flex items-center gap-2 border-b-2 border-foreground/20 pb-1.5">
                   <span className="text-xs font-black uppercase tracking-wider text-foreground/60">Esta Semana</span>
                   <span className="text-xs text-foreground/40">({grouped.this_week.length})</span>
                 </div>

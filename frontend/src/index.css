@@ -135,6 +135,22 @@
     }
 }
 
+/* Inset page separators so they align with the shared content gutter. */
+.page-divider {
+  position: relative;
+}
+.page-divider::after {
+  content: '';
+  position: absolute;
+  left: max(1rem, calc((100vw - 72rem) / 2));
+  right: max(1rem, calc((100vw - 72rem) / 2));
+  bottom: 0;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 /* ===== Utilities ===== */
 .scrollbar-hide {
     -ms-overflow-style: none;

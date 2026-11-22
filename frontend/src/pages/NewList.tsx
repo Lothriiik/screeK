@@ -65,7 +65,7 @@ export function NewList() {
     <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. HEADER ─── */}
-      <section className="bg-background px-4 sm:px-0 py-6">
+      <section className="bg-background page-divider px-4 sm:px-0 py-6">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           
           <button
@@ -93,7 +93,7 @@ export function NewList() {
           
           {/* Metadata Section */}
           <div className="bg-background border-4 border-foreground/40 shadow-[6px_6px_0px_0px_var(--border)] p-6 space-y-5">
-            <h2 className="text-base font-black uppercase text-foreground pb-2">
+            <h2 className="text-base font-black uppercase text-foreground border-b-2 border-foreground/10 pb-2">
               1. Detalhes da Coleção
             </h2>
 

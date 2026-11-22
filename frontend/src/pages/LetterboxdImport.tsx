@@ -111,7 +111,7 @@ export function LetterboxdImport() {
 
   return (
     <div className="bg-background text-foreground font-display">
-      <section className="bg-background px-4 sm:px-0 py-8">
+      <section className="bg-background page-divider px-4 sm:px-0 py-8">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <Brain size={24} weight="bold" className="text-secondary" />

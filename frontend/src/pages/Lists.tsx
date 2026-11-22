@@ -70,7 +70,7 @@ export function Lists() {
     <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. HEADER & ACTION BAR ─── */}
-      <section className="bg-background px-4 sm:px-0 py-8">
+      <section className="bg-background page-divider px-4 sm:px-0 py-8">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -103,7 +103,7 @@ export function Lists() {
           </div>
 
           {/* Subtabs */}
-          <div className="flex items-center gap-2 pb-1">
+          <div className="flex items-center gap-2 border-b-2 border-foreground/20 pb-1">
             <button
               type="button"
               onClick={() => setActiveTab('all')}

@@ -58,7 +58,7 @@ export function ManagementCinemas() {
     <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. TOP HEADER & METRICS ─── */}
-      <section className="bg-background px-4 sm:px-0 py-6">
+      <section className="bg-background page-divider px-4 sm:px-0 py-6">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
           <div className="flex flex-wrap items-center justify-between gap-4">

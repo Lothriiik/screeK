@@ -156,7 +156,7 @@ export function Search() {
     <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. BIG SEARCH HERO BAR ─── */}
-      <section className="bg-background px-4 sm:px-0 py-8">
+      <section className="bg-background page-divider px-4 sm:px-0 py-8">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
           <div className="space-y-1">
@@ -221,7 +221,7 @@ export function Search() {
           </div>
 
           {/* 3 Main Tabs (Filmes, Pessoas, Usuários) */}
-          <div className="flex items-center gap-2 pt-2 pb-1 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 border-b-2 border-foreground/20 pt-2 pb-1 overflow-x-auto scrollbar-none">
             <button
               type="button"
               onClick={() => handleTabChange('movies')}
@@ -298,7 +298,7 @@ export function Search() {
         {activeTab === 'movies' && (
           <div className="space-y-6">
             {/* Quick Status Sub-Filter */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-foreground/10 pb-3">
               <div className="flex flex-wrap items-center gap-2">
                 {[
                   { key: 'ALL', label: 'Todos os Filmes' },
@@ -377,7 +377,7 @@ export function Search() {
         {/* ─── TAB 2: PESSOAS (ATORES & DIRETORES) ─── */}
         {activeTab === 'people' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between pb-2">
+            <div className="flex items-center justify-between border-b-2 border-foreground/10 pb-2">
               <span className="text-xs font-bold text-foreground/60">
                 {filteredPeople.length} {filteredPeople.length === 1 ? 'pessoa encontrada' : 'pessoas encontradas'}
               </span>
@@ -427,7 +427,7 @@ export function Search() {
         {/* ─── TAB 3: USUÁRIOS (COMUNIDADE) ─── */}
         {activeTab === 'users' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between pb-2">
+            <div className="flex items-center justify-between border-b-2 border-foreground/10 pb-2">
               <span className="text-xs font-bold text-foreground/60">
                 {filteredUsers.length} {filteredUsers.length === 1 ? 'usuário encontrado' : 'usuários encontrados'}
               </span>
@@ -464,7 +464,7 @@ export function Search() {
         {/* ─── TAB 4: LISTAS ─── */}
         {activeTab === 'lists' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between pb-2">
+            <div className="flex items-center justify-between border-b-2 border-foreground/10 pb-2">
               <span className="text-xs font-bold text-foreground/60">
                 {filteredLists.length} {filteredLists.length === 1 ? 'lista encontrada' : 'listas encontradas'}
               </span>
@@ -532,7 +532,7 @@ export function Search() {
         {/* ─── TAB 5: CINEMAS ─── */}
         {activeTab === 'cinemas' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between pb-2">
+            <div className="flex items-center justify-between border-b-2 border-foreground/10 pb-2">
               <span className="text-xs font-bold text-foreground/60">
                 {filteredCinemas.length} {filteredCinemas.length === 1 ? 'cinema encontrado' : 'cinemas encontrados'}
               </span>

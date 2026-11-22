@@ -96,7 +96,7 @@ export function Settings() {
     <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. HEADER ─── */}
-      <section className="bg-background px-4 sm:px-0 py-8">
+      <section className="bg-background page-divider px-4 sm:px-0 py-8">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           <Link
             to="/profile"

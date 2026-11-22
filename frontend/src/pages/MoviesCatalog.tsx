@@ -253,7 +253,7 @@ export function MoviesCatalog() {
 
   return (
     <div className="bg-background text-foreground font-display">
-      <section className="bg-background px-4 sm:px-0 py-3">
+      <section className="bg-background page-divider px-4 sm:px-0 py-3">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 mx-auto space-y-3">
           
           <div className="flex flex-wrap items-center justify-between gap-4">
