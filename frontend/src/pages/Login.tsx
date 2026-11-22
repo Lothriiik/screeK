@@ -6,7 +6,9 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { X as XIcon, Lock, MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react';
 import { authService } from '../services/authService';
+import { IS_MOCK_MODE } from '../services/api';
 import { useAuthStore, type UserRole } from '../stores/authStore';
+import { MOCK_ADMIN_USER } from '../mocks/users';
 
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -59,13 +61,34 @@ export const Login = ({ onClose }: LoginProps = {}) => {
     if (onClose) {
       onClose();
     } else {
-      navigate('/');
+      const redirect = searchParams.get('redirect');
+      navigate(redirect?.startsWith('/') && !redirect.startsWith('//') ? redirect : '/');
     }
+  };
+
+  const loginAsAdmin = (customUsername?: string) => {
+    const adminToken = 'mock-admin-token-screek';
+    const refreshToken = 'mock-admin-refresh-screek';
+    const userToSet = {
+      ...MOCK_ADMIN_USER,
+      username: customUsername?.trim() || MOCK_ADMIN_USER.username,
+      name: customUsername?.trim() ? customUsername.trim() : MOCK_ADMIN_USER.name,
+    };
+    setTokens(adminToken, refreshToken);
+    setAuth(userToSet, adminToken, refreshToken);
+    toast.success('Login realizado com sucesso! Bem-vindo(a).');
+    handleClose();
   };
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       setLoading(true);
+
+      if (IS_MOCK_MODE) {
+        loginAsAdmin(data.username);
+        return;
+      }
+
       const tokens = await authService.login(data);
       setTokens(tokens.access_token, tokens.refresh_token);
       try {
@@ -76,13 +99,14 @@ export const Login = ({ onClose }: LoginProps = {}) => {
         throw error;
       }
       toast.success('Login realizado com sucesso! Bem-vindo(a).');
-      if (onClose) {
-        onClose();
-      } else {
-        const redirect = searchParams.get('redirect');
-        navigate(redirect?.startsWith('/') && !redirect.startsWith('//') ? redirect : '/');
-      }
+      handleClose();
     } catch (err: any) {
+      // Se não há conexão com o backend local (offline / Vercel sem API), faz login como Admin automaticamente
+      if (!err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network')) {
+        loginAsAdmin(data.username);
+        return;
+      }
+
       const message = err.response?.data?.error || 'Erro ao realizar login. Tente novamente.';
       toast.error(message);
     } finally {
@@ -96,9 +120,16 @@ export const Login = ({ onClose }: LoginProps = {}) => {
         <div>
           <h1 className="text-lg sm:text-xl text-primary font-display font-extrabold uppercase tracking-wide">Login</h1>
         </div>
-        {onClose && <button type="button" onClick={handleClose} className="border-4 hover:bg-foreground/30 border-primary h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center ml-auto cursor-pointer" title="Fechar">
-          <XIcon size={18} className="text-primary" />
-        </button>}
+        {onClose && (
+          <button
+            type="button"
+            onClick={handleClose}
+            className="border-4 hover:bg-foreground/30 border-primary h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center ml-auto cursor-pointer"
+            title="Fechar"
+          >
+            <XIcon size={18} className="text-primary" />
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-5 sm:p-6">
@@ -127,9 +158,9 @@ export const Login = ({ onClose }: LoginProps = {}) => {
         </div>
 
         <div className="justify-between mt-3">
-          <Link 
-            to="/forgot-password" 
-            onClick={onClose} 
+          <Link
+            to="/forgot-password"
+            onClick={onClose}
             className="transition-colors text-primary font-black text-xs sm:text-sm text-decoration-line: underline hover:text-primary-hover transition-all"
           >
             Esqueceu sua senha ?
@@ -146,7 +177,6 @@ export const Login = ({ onClose }: LoginProps = {}) => {
       </form>
     </div>
   );
-
 
   if (onClose) {
     return cardContent;

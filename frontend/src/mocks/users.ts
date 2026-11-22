@@ -82,3 +82,25 @@ export const MOCK_USERS: UserProfile[] = [
     is_following: false,
   },
 ];
+
+export const MOCK_ADMIN_USER = {
+  id: 'usr-admin',
+  username: 'admin',
+  name: 'Administrador screeK',
+  email: 'admin@screek.com',
+  role: 'ADMIN' as const,
+  avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+  bio: 'Acesso Geral de Demonstração screeK. Controle irrestrito de exibidores, ingressos e catálogo.',
+  pronouns: 'ele/dele',
+  location: 'São Paulo, SP',
+  default_city: 'São Paulo, SP',
+  is_active: true,
+  watched_count: 980,
+  reviews_count: 350,
+  lists_count: 28,
+  followers_count: 2450,
+  following_count: 512,
+  favorite_movie_ids: ['speed-racer', 'chainsaw-man', 'dune-part-two', 'shin-godzilla'],
+  is_following: false,
+};
+
