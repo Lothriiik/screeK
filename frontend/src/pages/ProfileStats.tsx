@@ -20,7 +20,7 @@ export function ProfileStats() {
   const maxGenreCount = Math.max(...stats.top_genres.map((item) => item.count));
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 font-display">
+    <div className="bg-background text-foreground font-display">
       <header className="border-b-4 border-foreground/30 px-4 py-8 sm:px-8">
         <div className="mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>

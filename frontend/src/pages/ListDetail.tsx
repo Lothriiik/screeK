@@ -89,7 +89,7 @@ export function ListDetail() {
   // Handle 404 if list does not exist
   if (!list) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 text-center font-display">
+      <div className="bg-background text-foreground flex flex-col items-center justify-center p-6 text-center font-display">
         <div className="max-w-md space-y-4 border-4 border-foreground/30 p-8 shadow-[6px_6px_0px_0px_var(--border)] bg-background">
           <BookmarksSimple size={48} weight="bold" className="text-foreground/40 mx-auto" />
           <h2 className="text-2xl font-black uppercase text-foreground">Lista Não Encontrada</h2>
@@ -155,7 +155,7 @@ export function ListDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 font-display">
+    <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. LIST HERO BANNER ─── */}
       <section className="bg-background border-b-4 border-foreground/40 px-4 sm:px-0 py-8 relative shadow-sm">

@@ -223,7 +223,7 @@ export function MovieDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20 font-display">
+    <div className="bg-background text-foreground pb-20 font-display">
       {/* ─── 1. HERO BACKDROP SECTION ─── */}
       <section className="relative w-full overflow-hidden border-b-4 border-foreground/40 bg-tertiary">
         {/* Backdrop Background Image */}

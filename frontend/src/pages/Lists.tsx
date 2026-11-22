@@ -67,7 +67,7 @@ export function Lists() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 font-display">
+    <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. HEADER & ACTION BAR ─── */}
       <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-8">

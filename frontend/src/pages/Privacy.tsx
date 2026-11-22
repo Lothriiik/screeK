@@ -3,7 +3,7 @@ import { LockKey, ArrowLeft } from '@phosphor-icons/react';
 
 export function Privacy() {
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 font-display">
+    <div className="bg-background text-foreground font-display">
       
       {/* Header */}
       <section className="bg-background border-b-2 border-foreground/20 px-4 sm:px-0 py-10">

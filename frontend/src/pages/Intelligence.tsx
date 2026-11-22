@@ -31,7 +31,7 @@ export function Intelligence() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 font-display">
+    <div className="bg-background text-foreground font-display">
       <header className="border-b-2 border-foreground/20 px-4 py-8 sm:px-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
           <div>

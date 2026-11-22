@@ -173,7 +173,7 @@ export const Home: React.FC = () => {
         <HeroCarousel slides={MOCK_HERO_SLIDES} />
       </div>
 
-      <div className="max-w-4xl md:max-w-5xl lg:max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 space-y-12">
+      <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 space-y-12">
         <MovieSection
           title="Em Cartaz"
           linkTo="/movies?status=now_playing"

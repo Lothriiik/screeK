@@ -161,7 +161,7 @@ export function PersonDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 font-display">
+    <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. PERSON HERO BANNER (POSTER STYLE) ─── */}
       <section className="bg-tertiary border-b-4 border-foreground/40 text-white relative overflow-hidden">

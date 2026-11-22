@@ -3,7 +3,7 @@ import { FilmSlate, House } from '@phosphor-icons/react';
 
 export function NotFound() {
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 text-center font-display">
+    <div className="bg-background text-foreground flex flex-col items-center justify-center p-4 text-center font-display">
       
       <div className="max-w-md space-y-6">
         <div className="w-20 h-20 bg-primary/10 border-4 border-primary text-primary mx-auto flex items-center justify-center shadow-[4px_4px_0px_0px_var(--border)]">

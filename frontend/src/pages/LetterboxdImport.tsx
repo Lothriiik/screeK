@@ -110,7 +110,7 @@ export function LetterboxdImport() {
   const visibleFailures = failedItems.slice(0, 100);
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 font-display">
+    <div className="bg-background text-foreground font-display">
       <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-8">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           <div className="flex items-center gap-2 mb-1">

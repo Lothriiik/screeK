@@ -108,7 +108,7 @@ export function CinemaDetail() {
   const availableFormats = ['ALL', '2D', 'IMAX', 'VIP', '4DX'];
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 font-display">
+    <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. HERO WITH CINEMA PICTURE & AMBIENT BACKDROP ─── */}
       <section className="relative w-full bg-background overflow-hidden">

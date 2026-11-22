@@ -95,7 +95,7 @@ export function Cinemas() {
   });
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 font-display">
+    <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. TOP HEADER & SEARCH ─── */}
       <section className="bg-background py-8 px-4 sm:px-0">

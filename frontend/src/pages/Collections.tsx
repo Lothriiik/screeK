@@ -5,7 +5,7 @@ import { MOCK_MOVIES } from '../mocks/movies';
 
 export function Collections() {
   return (
-    <div className="min-h-screen bg-background pb-24 font-display text-foreground">
+    <div className="bg-background font-display text-foreground">
       <header className="border-b-4 border-foreground/30 px-4 py-8 sm:px-8"><div className="mx-auto max-w-6xl"><span className="font-mono text-[11px] font-black uppercase tracking-widest text-primary">Curadoria screeK</span><h1 className="mt-1 text-3xl font-black uppercase tracking-tight sm:text-5xl">Coleções temáticas</h1><p className="mt-2 max-w-2xl font-sans text-sm text-foreground/65">Filmes reunidos por uma ideia, uma estética ou pelo pulso da comunidade.</p></div></header>
       <main className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-8">
         {MOCK_COLLECTIONS.map((collection) => {

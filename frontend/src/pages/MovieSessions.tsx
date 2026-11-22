@@ -236,7 +236,7 @@ export function MovieSessions() {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-display">
+    <div className="bg-background text-foreground font-display">
       {/* ─── 1. MOVIE HEADER BANNER ─── */}
       <section className="relative w-full overflow-hidden border-b-4 border-foreground/40 bg-tertiary">
         <div
