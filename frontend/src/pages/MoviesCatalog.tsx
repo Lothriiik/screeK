@@ -14,6 +14,7 @@ import {
   SelectItem
 } from '../components/ui/select';
 import { movieService } from '../services/movieService';
+import { MOCK_MOVIES } from '../mocks/movies';
 import type { Movie } from '../types/movie';
 
 const GENRES = [
@@ -98,8 +99,8 @@ export function MoviesCatalog() {
   const [selectedRating, setSelectedRating] = useState('all');
   const [sortBy, setSortBy] = useState('popular');
   const [currentPage, setCurrentPage] = useState(1);
-  const [catalogMovies, setCatalogMovies] = useState<Movie[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [catalogMovies, setCatalogMovies] = useState<Movie[]>(MOCK_MOVIES);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch live movies on filter or page changes
   useEffect(() => {

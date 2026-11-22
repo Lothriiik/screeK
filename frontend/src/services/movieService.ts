@@ -138,6 +138,24 @@ export function normalizeTMDBMovie(raw: any): Movie {
     productionCompany = raw.production_companies.slice(0, 2).map((c: any) => c.name).join(' / ');
   }
 
+  let normalizedPoster = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=500&q=80';
+  if (posterPath) {
+    if (posterPath.startsWith('http') || posterPath.startsWith('data:') || posterPath.startsWith('/assets') || posterPath.startsWith('./')) {
+      normalizedPoster = posterPath;
+    } else {
+      normalizedPoster = `https://image.tmdb.org/t/p/w500${posterPath.startsWith('/') ? '' : '/'}${posterPath}`;
+    }
+  }
+
+  let normalizedBackdrop = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=80';
+  if (backdropPath) {
+    if (backdropPath.startsWith('http') || backdropPath.startsWith('data:') || backdropPath.startsWith('/assets') || backdropPath.startsWith('./')) {
+      normalizedBackdrop = backdropPath;
+    } else {
+      normalizedBackdrop = `https://image.tmdb.org/t/p/original${backdropPath.startsWith('/') ? '' : '/'}${backdropPath}`;
+    }
+  }
+
   return {
     id: String(raw.id || raw.numeric_id || 'movie'),
     numeric_id: Number(raw.id || raw.numeric_id || 0),
@@ -145,31 +163,23 @@ export function normalizeTMDBMovie(raw: any): Movie {
     title: raw.title || raw.name || 'Sem título',
     original_title: raw.original_title || raw.title || '',
     overview: raw.overview || 'Sinopse indisponível.',
-    poster_url: posterPath
-      ? posterPath.startsWith('http')
-        ? posterPath
-        : `https://image.tmdb.org/t/p/w500${posterPath}`
-      : 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=500&q=80',
-    backdrop_url: backdropPath
-      ? backdropPath.startsWith('http')
-        ? backdropPath
-        : `https://image.tmdb.org/t/p/original${backdropPath}`
-      : 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=80',
+    poster_url: normalizedPoster,
+    backdrop_url: normalizedBackdrop,
     release_date: releaseDate,
     release_year: releaseYear,
     status: raw.status || 'released',
-    runtime_minutes: raw.runtime || 120,
-    duration_display: raw.runtime
+    runtime_minutes: raw.runtime_minutes || raw.runtime || 120,
+    duration_display: raw.duration_display || (raw.runtime
       ? `${Math.floor(raw.runtime / 60)}h${raw.runtime % 60 ? (raw.runtime % 60 < 10 ? '0' : '') + (raw.runtime % 60) : '00'}`
-      : '2h00',
+      : '2h00'),
     original_language: raw.original_language?.toUpperCase() || 'EN',
     origin_country: country || undefined,
     production_company: productionCompany || undefined,
     genres: genresList.length > 0 ? genresList : ['FILME'],
     age_rating: raw.age_rating || '14',
-    global_rating: raw.vote_average ? Number((raw.vote_average / 2).toFixed(1)) : 4.5,
-    global_votes: raw.vote_count ? `${raw.vote_count}` : '1.2k',
-    popularity_score: raw.popularity ? Math.round(raw.popularity) : 80,
+    global_rating: raw.global_rating || (raw.vote_average ? Number((raw.vote_average / 2).toFixed(1)) : 4.5),
+    global_votes: raw.global_votes || (raw.vote_count ? `${raw.vote_count}` : '1.2k'),
+    popularity_score: raw.popularity_score || (raw.popularity ? Math.round(raw.popularity) : 80),
     is_in_theaters: raw.is_in_theaters || false,
     directors: directors.length > 0 ? directors : ['Direção não informada'],
     writers: writers.length > 0 ? writers : ['Roteiro não informado'],
@@ -249,31 +259,7 @@ export const movieService = {
     const tmdbPageStart = (page - 1) * 3 + 1;
     const pagesToFetch = [tmdbPageStart, tmdbPageStart + 1, tmdbPageStart + 2];
 
-    // 1. Try Go backend in parallel batches
-    try {
-      const backendRequests = pagesToFetch.map((p) =>
-        api.get<Movie[]>('/movies/discover', {
-          params: {
-            genre_id: genreId || undefined,
-            year: year || undefined,
-            page: p,
-          },
-        })
-      );
-      const responses = await Promise.all(backendRequests);
-      const allResults: Movie[] = [];
-      responses.forEach((res) => {
-        if (res.data && res.data.length > 0) {
-          allResults.push(...res.data.map(normalizeTMDBMovie));
-        }
-      });
-      if (allResults.length > 0) {
-        return allResults.slice(0, 54);
-      }
-    } catch {
-      // Direct TMDB fallback
-    }
-
+    // 1. Priorizar busca direta no TMDB (ultrarrápido e consistente com getNowPlaying/getUpcoming)
     if (TMDB_BEARER_TOKEN) {
       try {
         const requests = pagesToFetch.map((p) =>
@@ -299,8 +285,34 @@ export const movieService = {
           return allResults.slice(0, 54);
         }
       } catch {
-        // Continue to mock
+        // Continue para fallback do backend
       }
+    }
+
+    // 2. Fallback: tentar backend Go
+    try {
+      const backendRequests = pagesToFetch.map((p) =>
+        api.get<Movie[]>('/movies/discover', {
+          params: {
+            genre_id: genreId || undefined,
+            year: year || undefined,
+            page: p,
+          },
+          timeout: 2000,
+        })
+      );
+      const responses = await Promise.all(backendRequests);
+      const allResults: Movie[] = [];
+      responses.forEach((res) => {
+        if (res.data && res.data.length > 0) {
+          allResults.push(...res.data.map(normalizeTMDBMovie));
+        }
+      });
+      if (allResults.length > 0) {
+        return allResults.slice(0, 54);
+      }
+    } catch {
+      // Continue para mocks locais
     }
 
     return this.getMockDiscover(genreId, year);
