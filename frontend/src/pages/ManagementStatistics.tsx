@@ -62,7 +62,7 @@ export function ManagementStatistics() {
   return (
     <div className="flex-1 bg-background text-foreground font-display">
       {/* ─── CONTROLS BAR ─── */}
-      <div className="bg-background border-b-2 border-foreground/20 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4 text-xs">
+      <div className="bg-background px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4 text-xs">
         
         <div className="flex flex-wrap items-center gap-3">
           {/* Period buttons */}

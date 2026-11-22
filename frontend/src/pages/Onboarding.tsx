@@ -73,7 +73,7 @@ export function Onboarding() {
     <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. HERO BANNER ─── */}
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-10">
+      <section className="bg-background px-4 sm:px-0 py-10">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto text-center space-y-4">
           
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/40 text-primary text-xs font-black uppercase">

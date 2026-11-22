@@ -519,7 +519,7 @@ export function MovieDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left: Synopsis (7 cols) */}
           <section className="lg:col-span-7 space-y-3">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground border-b-2 border-foreground/20 pb-2">
+            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground pb-2">
               Sinopse
             </h2>
             <p className="font-sans text-sm sm:text-base text-foreground/80 leading-relaxed">
@@ -584,7 +584,7 @@ export function MovieDetail() {
         {/* Cast */}
         {movie.credits && movie.credits.length > 0 && (
           <section className="space-y-4">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground border-b-2 border-foreground/20 pb-2">
+            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground pb-2">
               Elenco Principal
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
@@ -610,7 +610,7 @@ export function MovieDetail() {
 
         {/* Similar Movies */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between border-b-2 border-foreground/20 pb-2">
+          <div className="flex items-center justify-between pb-2">
             <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground">
               Filmes Semelhantes &amp; Recomendações
             </h2>
@@ -642,7 +642,7 @@ export function MovieDetail() {
 
         {/* Reviews Community Feed */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between border-b-2 border-foreground/20 pb-2">
+          <div className="flex items-center justify-between pb-2">
             <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground">
               Reviews da Comunidade screeK
             </h2>

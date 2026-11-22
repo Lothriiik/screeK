@@ -6,7 +6,7 @@ export function Privacy() {
     <div className="bg-background text-foreground font-display">
       
       {/* Header */}
-      <section className="bg-background border-b-2 border-foreground/20 px-4 sm:px-0 py-10">
+      <section className="bg-background px-4 sm:px-0 py-10">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           <Link
             to="/"

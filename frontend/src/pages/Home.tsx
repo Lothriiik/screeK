@@ -88,7 +88,7 @@ const MovieSection: React.FC<MovieSectionProps> = ({ title, linkTo, movies }) =>
 
   return (
     <section className="relative w-full space-y-4 font-display">
-      <div className="flex items-center justify-between border-b-2 border-foreground/30 pb-2">
+      <div className="flex items-center justify-between pb-2">
         <div className="flex items-baseline gap-2 sm:gap-3">
           <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-primary">
             {title}
@@ -194,7 +194,7 @@ export const Home: React.FC = () => {
 
         {/* SEÇÃO: EXPLORE POR DIRETORES & ATORES (mesmo padrão visual de Em Cartaz) */}
         <section className="relative w-full space-y-4 font-display">
-          <div className="flex flex-wrap items-center justify-between border-b-2 border-foreground/30 pb-2 gap-3">
+          <div className="flex flex-wrap items-center justify-between pb-2 gap-3">
             <div className="flex items-baseline gap-2 sm:gap-3">
               <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-primary">
                 Explore por Diretores &amp; Atores

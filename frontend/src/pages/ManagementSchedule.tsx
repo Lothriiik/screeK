@@ -516,7 +516,7 @@ export function ManagementSchedule() {
     <div className="flex-1 bg-background text-foreground font-display flex flex-col relative overflow-x-hidden">
       
       {/* ─── 1. TOP CONTROL BAR ─── */}
-      <header className="bg-background border-b-2 border-foreground/20 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+      <header className="bg-background px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
         
         {/* Left: Cinema selector + Date Strip */}
         <div className="flex flex-wrap items-center gap-3">

@@ -56,7 +56,7 @@ export function Tickets() {
     <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. TOP HEADER & TABS ─── */}
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-6">
+      <section className="bg-background px-4 sm:px-0 py-6">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -95,7 +95,7 @@ export function Tickets() {
           </div>
 
           {/* Navigation Filter Tabs */}
-          <div className="flex items-center gap-2 border-b-2 border-foreground/20 pb-1">
+          <div className="flex items-center gap-2 pb-1">
             <button
               type="button"
               onClick={() => setActiveTab('active')}

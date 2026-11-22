@@ -221,7 +221,7 @@ export function Profile() {
 
       {/* ─── 2. FAVORITE 4 MOVIES (LETTERBOXD ROW) ─── */}
       <section className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 pt-8 space-y-4">
-        <div className="flex items-center justify-between border-b-2 border-foreground/20 pb-2">
+        <div className="flex items-center justify-between pb-2">
           <div className="flex items-center gap-2">
             <Star size={20} weight="fill" className="text-secondary" />
             <h2 className="text-sm sm:text-base font-black uppercase tracking-tight text-foreground">
@@ -260,7 +260,7 @@ export function Profile() {
       <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 pt-10 space-y-6">
         
         {/* Tab Controls Bar */}
-        <div className="flex items-center gap-2 border-b-2 border-foreground/20 pb-2 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-2 pb-2 overflow-x-auto scrollbar-none">
           
           <button
             type="button"
