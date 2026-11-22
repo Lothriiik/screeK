@@ -217,7 +217,7 @@ export function CinemaDetail() {
       </section>
 
       {/* ─── 2. STICKY DATE & FORMAT STRIP (Aligned to Bottom) ─── */}
-      <section className="sticky top-0 z-20 bg-background  px-4 sm:px-8 py-3">
+      <section className="sticky top-0 z-20 bg-background  px-4 sm:px-0 py-3">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 mx-auto flex flex-col md:flex-row md:items-end justify-between gap-4">
           
           {/* Dates Bar */}

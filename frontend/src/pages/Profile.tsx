@@ -96,8 +96,8 @@ export function Profile() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. USER PROFILE HEADER ─── */}
-      <section className="bg-background border-b-4 border-foreground/40 px-4 sm:px-8 py-8 shadow-sm">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <section className="bg-background border-b-4 border-foreground/40 px-4 sm:px-0 py-8 shadow-sm">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-8">
           
           {/* Main User Card Row */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
@@ -220,7 +220,7 @@ export function Profile() {
       </section>
 
       {/* ─── 2. FAVORITE 4 MOVIES (LETTERBOXD ROW) ─── */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-8 pt-8 space-y-4">
+      <section className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 pt-8 space-y-4">
         <div className="flex items-center justify-between border-b-2 border-foreground/20 pb-2">
           <div className="flex items-center gap-2">
             <Star size={20} weight="fill" className="text-secondary" />
@@ -257,7 +257,7 @@ export function Profile() {
       </section>
 
       {/* ─── 3. TABS & PROFILE CONTENT ─── */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-8 pt-10 space-y-6">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 pt-10 space-y-6">
         
         {/* Tab Controls Bar */}
         <div className="flex items-center gap-2 border-b-2 border-foreground/20 pb-2 overflow-x-auto scrollbar-none">

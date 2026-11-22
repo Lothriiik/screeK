@@ -156,8 +156,8 @@ export function Search() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. BIG SEARCH HERO BAR ─── */}
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-8 py-8">
-        <div className="max-w-5xl mx-auto space-y-6">
+      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-8">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -292,7 +292,7 @@ export function Search() {
       </section>
 
       {/* ─── 2. SEARCH RESULTS ─── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8">
         
         {/* ─── TAB 1: FILMES ─── */}
         {activeTab === 'movies' && (

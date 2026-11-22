@@ -165,7 +165,7 @@ export function PersonDetail() {
       
       {/* ─── 1. PERSON HERO BANNER (POSTER STYLE) ─── */}
       <section className="bg-tertiary border-b-4 border-foreground/40 text-white relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8 space-y-6">
           
           {/* Back link */}
           <button
@@ -274,7 +274,7 @@ export function PersonDetail() {
       </section>
 
       {/* ─── 2. BIOGRAPHY ─── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 space-y-3">
+      <section className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 pt-8 space-y-3">
         <div className="flex items-center gap-2 border-b-2 border-foreground/20 pb-2">
           <User size={22} weight="bold" className="text-primary" />
           <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground">
@@ -287,7 +287,7 @@ export function PersonDetail() {
       </section>
 
       {/* ─── 3. FILMOGRAPHY WITH ROLE TABS & FILTERS (LIKE /movies) ─── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8 space-y-6">
         
         <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-foreground/20 pb-3">
           <div className="flex items-center gap-2">

@@ -253,8 +253,8 @@ export function MoviesCatalog() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-8 py-3">
-        <div className="max-w-7xl px-4 sm:px-0 mx-auto space-y-3">
+      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-3">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 mx-auto space-y-3">
           
           <div className="flex flex-wrap items-center justify-between gap-4">
             
@@ -411,7 +411,7 @@ export function MoviesCatalog() {
       </section>
 
       {/* ─── 2. MOVIES POSTER GRID ─── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8 space-y-8">
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
             {Array.from({ length: 18 }).map((_, idx) => (

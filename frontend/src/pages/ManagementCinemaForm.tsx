@@ -423,8 +423,8 @@ export function ManagementCinemaForm() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. TOP HEADER & BREADCRUMB ─── */}
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-8 py-6">
-        <div className="max-w-6xl mx-auto space-y-4">
+      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-6">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           
           <div className="flex items-center gap-2 text-xs font-black uppercase text-foreground/60">
             <Link to="/management/cinemas" className="hover:text-primary transition-colors flex items-center gap-1">
@@ -471,7 +471,7 @@ export function ManagementCinemaForm() {
       </section>
 
       {/* ─── 2. MAIN FORM CONTENT & SIDEBAR ─── */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
           {/* LEFT & CENTER: FORM SECTIONS (2 COLS) */}

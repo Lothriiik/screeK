@@ -65,8 +65,8 @@ export function NewList() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. HEADER ─── */}
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-8 py-6">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-6">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           
           <button
             type="button"
@@ -88,7 +88,7 @@ export function NewList() {
       </section>
 
       {/* ─── 2. FORM BODY ─── */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8">
         <form onSubmit={handleSave} className="space-y-8">
           
           {/* Metadata Section */}

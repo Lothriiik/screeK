@@ -40,7 +40,7 @@ function MovieDetailSkeleton() {
       {/* Backdrop Skeleton */}
       <div className="relative w-full h-[280px] sm:h-[380px] md:h-[460px] bg-muted/40 border-b-4 border-foreground/30 overflow-hidden flex items-end">
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 pb-8 relative z-10 w-full flex items-end gap-6 sm:gap-8">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 pb-8 relative z-10 w-full flex items-end gap-6 sm:gap-8">
           <div className="w-28 sm:w-44 md:w-52 aspect-[2/3] bg-card border-4 border-foreground shadow-[6px_6px_0px_0px_var(--border)] shrink-0" />
           <div className="space-y-3 w-full max-w-xl pb-2">
             <div className="h-4 bg-primary/40 w-32" />
@@ -51,7 +51,7 @@ function MovieDetailSkeleton() {
       </div>
 
       {/* Content Skeleton */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-8 space-y-10 pb-16">
+      <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 space-y-10 pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Info */}
           <div className="lg:col-span-2 space-y-6">
@@ -237,7 +237,7 @@ export function MovieDetail() {
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-tertiary/40 to-transparent" />
 
         {/* Aligned 7xl Container */}
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="relative z-10 max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           {/* Voltar Button */}
           <Link
             to="/movies"
@@ -514,7 +514,7 @@ export function MovieDetail() {
       </section>
 
       {/* ─── 2. SYNOPSIS, RATING DISTRIBUTION & TECHNICAL INFO ─── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
         {/* Synopsis + Rating Distribution (2 Columns) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left: Synopsis (7 cols) */}

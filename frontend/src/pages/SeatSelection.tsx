@@ -219,7 +219,7 @@ export function SeatSelection() {
     <div className="min-h-screen bg-background text-foreground pb-28 font-display">
       {/* ─── 1. TOP HEADER NAVIGATION (CENTERED STEP PROGRESS ONLY) ─── */}
       <section className=" sticky top-0 z-30 pt-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-center">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-center">
           {/* Stepper Progress Indicator Centered */}
           <div className="flex items-center gap-2 text-xs font-black">
             <span
@@ -259,7 +259,7 @@ export function SeatSelection() {
       </section>
 
       {/* ─── 2. MAIN 2-COLUMN LAYOUT: ETAPA NA ESQUERDA + RESUMO FIXO NA DIREITA ─── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* ◄◄ ESQUERDA: CONTEÚDO DA ETAPA ATUAL (SALA > TIPO DE INGRESSO > PAGAMENTO) ◄◄ */}
@@ -756,7 +756,7 @@ export function SeatSelection() {
 
       {/* ─── 3. FIXED BOTTOM NAVIGATION BAR ─── */}
       <footer className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t-4 border-foreground/40 shadow-[0_-4px_12px_rgba(0,0,0,0.15)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
           {/* Left: Voltar Button */}
           <button
             type="button"
@@ -780,7 +780,7 @@ export function SeatSelection() {
               type="button"
               onClick={currentStep === 'confirmation' ? () => navigate('/') : handleNextStep}
               disabled={selectedSeatIds.length === 0}
-              className="px-4 sm:px-8 py-2.5 rounded-md bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground font-black text-xs sm:text-sm uppercase transition-all shadow-[3px_3px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="px-4 sm:px-0 py-2.5 rounded-md bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground font-black text-xs sm:text-sm uppercase transition-all shadow-[3px_3px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               {currentStep === 'seats'
                 ? 'Avançar →'

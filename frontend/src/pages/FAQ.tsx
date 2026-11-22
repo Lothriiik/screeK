@@ -37,8 +37,8 @@ export function FAQ() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* Header */}
-      <section className="bg-background border-b-2 border-foreground/20 px-4 sm:px-8 py-10">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <section className="bg-background border-b-2 border-foreground/20 px-4 sm:px-0 py-10">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           <Link
             to="/"
             className="inline-flex items-center gap-2 text-xs font-black uppercase text-foreground/60 hover:text-primary transition-colors"
@@ -62,7 +62,7 @@ export function FAQ() {
       </section>
 
       {/* Accordion List */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-8 py-10 space-y-4">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-10 space-y-4">
         {FAQ_ITEMS.map((item, index) => {
           const isOpen = openIndex === index;
 

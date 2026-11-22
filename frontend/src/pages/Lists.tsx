@@ -70,8 +70,8 @@ export function Lists() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. HEADER & ACTION BAR ─── */}
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-8 py-8">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-8">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -178,7 +178,7 @@ export function Lists() {
       </section>
 
       {/* ─── 2. LISTS GRID ─── */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8">
         
         {displayedLists.length === 0 ? (
           <div className="p-12 bg-background border-4 border-foreground/40 text-center space-y-3 shadow-[6px_6px_0px_0px_var(--border)] max-w-md mx-auto">

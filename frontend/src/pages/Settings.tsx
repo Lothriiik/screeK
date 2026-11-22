@@ -96,8 +96,8 @@ export function Settings() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. HEADER ─── */}
-      <section className="bg-background border-b-2 border-foreground/20 px-4 sm:px-8 py-8">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <section className="bg-background border-b-2 border-foreground/20 px-4 sm:px-0 py-8">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           <Link
             to="/profile"
             className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-foreground/60 hover:text-primary transition-colors"
@@ -116,7 +116,7 @@ export function Settings() {
       </section>
 
       {/* ─── 2. SETTINGS LAYOUT ─── */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-8 py-8 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         
         {/* Left Tabs Nav */}
         <aside className="md:col-span-4 bg-background border-4 border-foreground/40 shadow-[4px_4px_0px_0px_var(--border)] p-2 space-y-1">

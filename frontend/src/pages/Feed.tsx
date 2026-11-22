@@ -75,8 +75,8 @@ export function Feed() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. FEED HEADER & TABS ─── */}
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-8 py-6">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-6">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -156,7 +156,7 @@ export function Feed() {
       </section>
 
       {/* ─── 2. MAIN FEED LAYOUT (TIMELINE + SIDEBAR) ─── */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left Column: Post Creator + Feed Stream */}

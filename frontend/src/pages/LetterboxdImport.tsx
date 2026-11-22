@@ -111,8 +111,8 @@ export function LetterboxdImport() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-8 py-8">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-8">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <Brain size={24} weight="bold" className="text-secondary" />
             <span className="text-xs font-black uppercase text-foreground/60 tracking-wider">
@@ -128,7 +128,7 @@ export function LetterboxdImport() {
         </div>
       </section>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8 space-y-6">
         <div className="bg-muted/20 border-2 border-foreground/20 p-4 flex gap-3.5 items-start">
           <Info size={22} weight="bold" className="text-primary shrink-0 mt-0.5" />
           <div className="space-y-1 text-xs font-sans text-foreground/80">

@@ -115,7 +115,7 @@ export function ManagementStatistics() {
       </div>
 
       {/* ─── 3. MAIN DASHBOARD CONTENT ─── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
         
         {/* ── SECTION 1: KPIS DA SEMANA ── */}
         <section className="space-y-4">

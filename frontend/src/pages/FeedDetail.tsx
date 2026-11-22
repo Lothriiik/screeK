@@ -33,8 +33,8 @@ export function FeedDetail() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. TOP HEADER & BREADCRUMB ─── */}
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-8 py-6">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-6">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           
           {/* Back & Actions */}
           <div className="flex items-center justify-between">
@@ -73,7 +73,7 @@ export function FeedDetail() {
       </section>
 
       {/* ─── 2. MAIN POST CONTENT & COMMENTS ─── */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-8">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8 space-y-8">
         
         {/* Highlighted Main Post Card with Expanded Comment Thread */}
         <FeedCard

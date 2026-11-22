@@ -58,8 +58,8 @@ export function ManagementCinemas() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. TOP HEADER & METRICS ─── */}
-      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-8 py-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <section className="bg-background border-b-2 border-foreground/30 px-4 sm:px-0 py-6">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -160,7 +160,7 @@ export function ManagementCinemas() {
       </section>
 
       {/* ─── 2. CINEMA CARDS LIST ─── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8 space-y-6">
         
         {filteredCinemas.length === 0 ? (
           <div className="p-12 text-center border-4 border-foreground/30 bg-muted/20 space-y-4">

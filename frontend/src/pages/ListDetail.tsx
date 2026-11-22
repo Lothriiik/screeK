@@ -158,8 +158,8 @@ export function ListDetail() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. LIST HERO BANNER ─── */}
-      <section className="bg-background border-b-4 border-foreground/40 px-4 sm:px-8 py-8 relative shadow-sm">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <section className="bg-background border-b-4 border-foreground/40 px-4 sm:px-0 py-8 relative shadow-sm">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
           <div className="flex items-center justify-between">
             <Link
@@ -281,7 +281,7 @@ export function ListDetail() {
       </section>
 
       {/* ─── 2. SEARCH & SORT BAR ─── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-6 flex flex-wrap items-center justify-between gap-4">
         
         <div className="flex-1 max-w-sm">
           <Input
@@ -309,7 +309,7 @@ export function ListDetail() {
       </div>
 
       {/* ─── 3. MOVIES GRID ─── */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-8">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0">
         
         {movies.length === 0 ? (
           <div className="p-12 text-center border-4 border-dashed border-foreground/30 space-y-4 bg-muted/10">

@@ -98,8 +98,8 @@ export function Cinemas() {
     <div className="min-h-screen bg-background text-foreground pb-24 font-display">
       
       {/* ─── 1. TOP HEADER & SEARCH ─── */}
-      <section className="bg-background py-8 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <section className="bg-background py-8 px-4 sm:px-0">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl sm:text-4xl font-black uppercase text-primary tracking-tight">
@@ -189,7 +189,7 @@ export function Cinemas() {
       </section>
 
       {/* ─── 2. CINEMA LISTINGS ─── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 space-y-8">
+      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 space-y-8">
         {filteredCinemas.length === 0 ? (
           <div className="p-12 bg-background border-4 border-foreground/40 text-center space-y-3 shadow-[6px_6px_0px_0px_var(--border)]">
             <MapPin size={48} className="text-foreground/40 mx-auto" weight="bold" />
