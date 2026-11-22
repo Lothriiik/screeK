@@ -85,7 +85,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ slides }) => {
           </div>
 
           {/* Bottom Info Box (Mobile) / Left Info Box (Desktop) */}
-          <div className="relative z-10 w-full sm:w-[42%] lg:w-[38%] h-[150px] sm:h-full bg-black/85 sm:bg-black/75 backdrop-blur-xs border-t-4 sm:border-t-0 sm:border-r-4 border-foreground/40 p-3 sm:p-6 lg:p-7 flex flex-col justify-between items-center sm:items-start text-center sm:text-left text-white">
+          <div className="relative z-10 w-full sm:w-[42%] lg:w-[38%] h-[150px] sm:h-full bg-foreground/85 sm:bg-foreground/75 backdrop-blur-xs border-t-4 sm:border-t-0 sm:border-r-4 border-foreground/40 p-3 sm:p-6 lg:p-7 flex flex-col justify-between items-center sm:items-start text-center sm:text-left text-white">
             
             {/* Top Badge (Desktop only) */}
             <div className="hidden sm:block">

@@ -1,6 +1,28 @@
 package store
 
-import "github.com/StartLivin/screek/backend/internal/movies"
+import (
+	"strings"
+
+	"github.com/StartLivin/screek/backend/internal/movies"
+)
+
+func joinList(items []string) string {
+	return strings.Join(items, ", ")
+}
+
+func splitList(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	parts := strings.Split(value, ", ")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
+}
 
 func MovieToDomain(r *MovieRecord) *movies.Movie {
 	if r == nil {
@@ -19,6 +41,7 @@ func MovieToDomain(r *MovieRecord) *movies.Movie {
 		ID:               r.ID,
 		TMDBID:           r.TMDBID,
 		Title:            r.Title,
+		OriginalTitle:    r.OriginalTitle,
 		Overview:         r.Overview,
 		PosterURL:        r.PosterURL,
 		BackdropURL:      r.BackdropURL,
@@ -28,6 +51,15 @@ func MovieToDomain(r *MovieRecord) *movies.Movie {
 		Runtime:          r.Runtime,
 		OriginalLanguage: r.OriginalLanguage,
 		SpokenLanguages:  r.SpokenLanguages,
+		VoteAverage:      r.VoteAverage,
+		VoteCount:        r.VoteCount,
+		Popularity:       r.Popularity,
+		Budget:           r.Budget,
+		Revenue:          r.Revenue,
+		Countries:        splitList(r.Countries),
+		Keywords:         splitList(r.Keywords),
+		Studios:          splitList(r.Studios),
+		Certification:    r.Certification,
 		Genres:           genres,
 		Credits:          credits,
 	}
@@ -50,6 +82,7 @@ func MovieToRecord(d *movies.Movie) *MovieRecord {
 		ID:               d.ID,
 		TMDBID:           d.TMDBID,
 		Title:            d.Title,
+		OriginalTitle:    d.OriginalTitle,
 		Overview:         d.Overview,
 		PosterURL:        d.PosterURL,
 		BackdropURL:      d.BackdropURL,
@@ -59,6 +92,15 @@ func MovieToRecord(d *movies.Movie) *MovieRecord {
 		Runtime:          d.Runtime,
 		OriginalLanguage: d.OriginalLanguage,
 		SpokenLanguages:  d.SpokenLanguages,
+		VoteAverage:      d.VoteAverage,
+		VoteCount:        d.VoteCount,
+		Popularity:       d.Popularity,
+		Budget:           d.Budget,
+		Revenue:          d.Revenue,
+		Countries:        joinList(d.Countries),
+		Keywords:         joinList(d.Keywords),
+		Studios:          joinList(d.Studios),
+		Certification:    d.Certification,
 		Genres:           genres,
 		Credits:          credits,
 	}

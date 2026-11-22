@@ -113,7 +113,7 @@ func (s *UserService) IncrementStats(ctx context.Context, userID uuid.UUID, movi
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				slog.Error("panic recovered in RecalculateTopGenre",
+				slog.Error("Panic recuperado ao recalcular gênero principal",
 					"user_id", userID,
 					"panic", r,
 				)
@@ -124,7 +124,7 @@ func (s *UserService) IncrementStats(ctx context.Context, userID uuid.UUID, movi
 		defer cancel()
 
 		if err := s.RecalculateTopGenre(ctx, userID); err != nil {
-			slog.Warn("failed to recalculate top genre",
+			slog.Warn("Falha ao recalcular gênero principal",
 				"user_id", userID,
 				"error", err,
 			)
@@ -159,7 +159,7 @@ func (s *UserService) RecalculateTopGenre(ctx context.Context, userID uuid.UUID)
 
 	err = s.repo.UpdateUserStats(ctx, stats)
 	if err == nil {
-		slog.Debug("User top genre recalculated", "user_id", userID, "genre_id", genreID)
+		slog.Debug("Gênero principal do usuário recalculado", "user_id", userID, "genre_id", genreID)
 	}
 	return err
 }

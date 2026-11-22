@@ -1,10 +1,12 @@
 package main
 
 import (
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/StartLivin/screek/backend/internal/app"
 	"github.com/StartLivin/screek/backend/internal/shared/config"
+	"github.com/StartLivin/screek/backend/internal/shared/logging"
 )
 
 // @title screeK API
@@ -20,21 +22,25 @@ import (
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @host localhost:8003
-// @BasePath /
+// @BasePath /api/v1
 
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
 
 func main() {
+	logging.Setup()
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatal("Erro ao carregar configurações: ", err)
+		slog.Error("Falha ao carregar configurações", "error", err)
+		os.Exit(1)
 	}
 
 	application := app.NewApplication(cfg)
 
 	if err := application.Run(); err != nil {
-		log.Fatal("Erro fatal na aplicação: ", err)
+		slog.Error("Falha fatal na aplicação", "error", err)
+		os.Exit(1)
 	}
 }

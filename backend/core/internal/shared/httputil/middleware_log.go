@@ -29,7 +29,7 @@ func Logger(next http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		slog.Info("HTTP Request",
+		slog.Info("Requisição HTTP",
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", interceptor.statusCode,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 
 	"github.com/StartLivin/screek/backend/internal/notifications/realtime"
@@ -42,7 +41,7 @@ func (s *NotificationService) Notify(ctx context.Context, userID uuid.UUID, nTyp
 	if err == nil {
 		s.hub.SendToUser(userID, payload)
 	} else {
-		log.Printf("Erro ao serializar notificação: %v", err)
+		slog.Error("Falha ao serializar notificação", "user_id", userID, "error", err)
 	}
 
 	return nil
@@ -73,7 +72,7 @@ func (s *NotificationService) ProcessWatchlistMatches(ctx context.Context, match
 	}
 
 	if len(matches) > 0 {
-		slog.Info("[Job] Notificações de watchlist enviadas", "total", len(matches))
+		slog.Info("Notificações de watchlist enviadas", "job", "watchlist_notifications", "total", len(matches))
 	}
 
 	return nil

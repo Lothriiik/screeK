@@ -14,14 +14,17 @@ import {
   Ticket,
   FilmReel,
   Heart,
-  Bell,
+  CaretUp,
+  CaretDown,
+  Gear,
+  BookmarksSimple,
+  Buildings,
   List as MenuIcon,
   X as XIcon
 } from '@phosphor-icons/react';
 import { useAuthStore } from '../stores/authStore';
 import { useAuthModalStore } from '../stores/authModalStore';
 import { useThemeStore } from '../stores/themeStore';
-import { AuthModal } from '../components/AuthModal';
 import logoFull from '../assets/logos/logo-full.svg';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../components/ui/select';
 import { Button } from '../components/ui/button';
@@ -35,19 +38,25 @@ export const MainLayout = () => {
   const { theme, toggleTheme } = useThemeStore();
 
   const [openDropdown, setOpenDropdown] = useState<'cinema' | 'social' | null>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState('Arapiraca');
   const [activeFooterTab, setActiveFooterTab] = useState<'cinema' | 'social' | 'politicas' | 'redes' | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const path = location.pathname;
   const isCinemaActive = path === '/' || path.startsWith('/movies') || path.startsWith('/cinemas');
   const isSocialActive = path.startsWith('/feed') || path.startsWith('/lists') || path.startsWith('/reviews') || path.startsWith('/users');
+  const isBookingFunnel = path.includes('/seats') || path.includes('/checkout');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setOpenDropdown(null);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -65,13 +74,9 @@ export const MainLayout = () => {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans pb-16 md:pb-0 overflow-x-hidden">
       
-      <AuthModal />
-
-      {/* Header Bar */}
       <header className="sticky top-0 z-40 bg-background border-b-2 border-foreground/30 px-4 sm:px-12">
-        <div className="max-w-6xl mx-auto flex items-center justify-between w-full h-16 sm:h-20">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 mx-auto flex items-center justify-between w-full h-16 sm:h-16">
           
-          {/* Mobile Header (Clean Icon-Only Menu + Centered Logo + Icon-Only Bell) */}
           <div className="flex md:hidden items-center justify-between w-full">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -90,11 +95,11 @@ export const MainLayout = () => {
             </Link>
 
             <button
-              onClick={() => navigate('/notifications')}
+              onClick={() => navigate('/search')}
               className="p-1 text-foreground hover:text-primary transition-colors cursor-pointer"
-              title="Notificações"
+              title="Buscar"
             >
-              <Bell size={24} weight="bold" />
+              <MagnifyingGlass size={24} weight="bold" />
             </button>
           </div>
 
@@ -139,34 +144,57 @@ export const MainLayout = () => {
               </button>
 
               {openDropdown === 'cinema' && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-48 bg-background border-4 border-foreground/40 shadow-[6px_6px_0px_0px_var(--border)] z-50 py-2">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-background border-4 border-foreground/40 shadow-[6px_6px_0px_0px_var(--border)] z-50 py-2">
                   <Link
                     to="/movies?status=now_playing"
                     onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/60 hover:text-primary transition-colors"
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
                     Filmes em Cartaz
                   </Link>
                   <Link
                     to="/movies?status=upcoming"
                     onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/60 hover:text-primary transition-colors"
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
                     Em Breve
                   </Link>
                   <Link
                     to="/movies"
                     onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/60 hover:text-primary transition-colors"
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
-                    Catálogo
+                    Catálogo Geral
                   </Link>
                   <Link
                     to="/cinemas"
                     onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/60 hover:text-primary transition-colors"
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
-                    Cinemas
+                    Cinemas &amp; Salas
+                  </Link>
+                  <Link
+                    to="/intelligence"
+                    onClick={() => setOpenDropdown(null)}
+                    className="flex items-center justify-between px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-primary hover:text-primary transition-colors border-t border-foreground/10"
+                  >
+                    <span>screeK Intelligence</span>
+                    <span className="text-[9px] px-1.5 py-0.2 bg-primary/20 text-primary font-black">IA</span>
+                  </Link>
+                  <Link
+                    to="/tickets"
+                    onClick={() => setOpenDropdown(null)}
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors border-t border-foreground/10"
+                  >
+                    Meus Ingressos
+                  </Link>
+                  <Link
+                    to="/management"
+                    onClick={() => setOpenDropdown(null)}
+                    className="flex items-center justify-between px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-muted text-secondary hover:text-secondary transition-colors border-t border-foreground/10"
+                  >
+                    <span>Painel do Exibidor</span>
+                    <span className="text-[9px] px-1.5 py-0.2 bg-secondary/20 text-secondary font-black">B2B</span>
                   </Link>
                 </div>
               )}
@@ -185,34 +213,41 @@ export const MainLayout = () => {
               </button>
 
               {openDropdown === 'social' && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-48 bg-background border-4 border-foreground/40 shadow-[6px_6px_0px_0px_var(--border)] z-50 py-2">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-background border-4 border-foreground/40 shadow-[6px_6px_0px_0px_var(--border)] z-50 py-2">
                   <Link
                     to="/feed"
                     onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/60 hover:text-primary transition-colors"
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
-                    Feed
+                    Feed da Comunidade
                   </Link>
                   <Link
                     to="/lists"
                     onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/60 hover:text-primary transition-colors"
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
-                    Minhas Listas
+                    Listas de Filmes
                   </Link>
                   <Link
-                    to="/reviews"
+                    to="/lists/new"
                     onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/60 hover:text-primary transition-colors"
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
-                    Reviews
+                    + Criar Nova Lista
                   </Link>
                   <Link
-                    to="/users"
+                    to="/import/letterboxd"
                     onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/60 hover:text-primary transition-colors"
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors border-t border-foreground/10"
                   >
-                    Usuários
+                    Importar do Letterboxd
+                  </Link>
+                  <Link
+                    to="/profile"
+                    onClick={() => setOpenDropdown(null)}
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors border-t border-foreground/10"
+                  >
+                    Meu Perfil Cinéfilo
                   </Link>
                 </div>
               )}
@@ -240,23 +275,132 @@ export const MainLayout = () => {
             </Button>
 
             {user ? (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-2 px-3 py-1.5 border-2 border-primary bg-primary/10 hover:bg-primary hover:text-white transition-all font-bold text-xs uppercase"
+              <div ref={userMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-2 px-2 py-1 bg-background hover:bg-muted/40 border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)] transition-all cursor-pointer font-display"
                 >
-                  <User size={18} weight="bold" className="text-secondary" />
-                  <span>{user.username}</span>
-                </Link>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={logout}
-                  title="Sair"
-                  className="h-9 w-9"
-                >
-                  <SignOut size={18} weight="bold" />
-                </Button>
+                  <div className="w-7 h-7 border border-foreground/40 overflow-hidden shrink-0 bg-muted">
+                    <img
+                      src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
+                      alt={user.username}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="font-black text-xs uppercase text-foreground tracking-wider">
+                    {user.username}
+                  </span>
+                  {isUserMenuOpen ? (
+                    <CaretUp size={14} weight="bold" className="text-foreground/60" />
+                  ) : (
+                    <CaretDown size={14} weight="bold" className="text-foreground/60" />
+                  )}
+                </button>
+
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-background border-2 border-foreground/40 shadow-[4px_4px_0px_0px_var(--border)] z-50 overflow-hidden font-display divide-y divide-foreground/10 text-foreground">
+                    {/* Header */}
+                    <div className="p-3 flex items-center gap-3 bg-muted/20">
+                      <div className="w-9 h-9 border-2 border-foreground/40 overflow-hidden shrink-0 bg-muted">
+                        <img
+                          src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
+                          alt={user.username}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-black uppercase text-foreground truncate">
+                          {user.username === 'lothrik' ? 'Lothrik Junior' : user.username}
+                        </h4>
+                        <span className="text-[10px] text-foreground/50 font-bold block truncate">
+                          @{user.username}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Navigation items */}
+                    <div className="py-1">
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
+                      >
+                        <User size={16} weight="bold" className="text-foreground/60" />
+                        <span>Meu Perfil</span>
+                      </Link>
+
+                      <Link
+                        to="/tickets"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
+                      >
+                        <Ticket size={16} weight="bold" className="text-foreground/60" />
+                        <span>Meus Ingressos</span>
+                      </Link>
+
+                      <Link
+                        to="/lists"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
+                      >
+                        <BookmarksSimple size={16} weight="bold" className="text-foreground/60" />
+                        <span>Minhas Listas</span>
+                      </Link>
+
+                      <Link
+                        to="/intelligence"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
+                      >
+                        <FilmReel size={16} weight="bold" className="text-primary" />
+                        <span>screeK Intelligence</span>
+                      </Link>
+
+                      <Link
+                        to="/notifications"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
+                      >
+                        <Heart size={16} weight="bold" className="text-foreground/60" />
+                        <span>Notificações</span>
+                      </Link>
+
+                      <Link
+                        to="/settings"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors border-t border-foreground/10"
+                      >
+                        <Gear size={16} weight="bold" className="text-foreground/60" />
+                        <span>Configurações</span>
+                      </Link>
+
+                      <Link
+                        to="/management"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/10 transition-colors"
+                      >
+                        <Ticket size={16} weight="bold" className="text-primary" />
+                        <span>Gestão B2B (Admin)</span>
+                      </Link>
+                    </div>
+
+                    {/* Logout */}
+                    <div className="py-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-destructive hover:bg-destructive/10 transition-colors text-left cursor-pointer"
+                      >
+                        <SignOut size={16} weight="bold" />
+                        <span>Sair</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <>
@@ -337,30 +481,111 @@ export const MainLayout = () => {
 
               {/* Links de Navegação */}
               <div className="space-y-3 pt-2 border-t-2 border-foreground/10">
-                <label className="text-xs font-display font-extrabold uppercase text-foreground/50">Navegação</label>
+                <label className="text-xs font-display font-black uppercase text-foreground/50">Cinema</label>
                 <div className="space-y-1">
                   <Link
                     to="/movies?status=now_playing"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
                   >
                     Filmes em Cartaz
                   </Link>
                   <Link
                     to="/movies?status=upcoming"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
                   >
                     Em Breve
                   </Link>
                   <Link
-                    to="/feed"
+                    to="/movies"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
                   >
-                    Feed Social
+                    Catálogo Geral
+                  </Link>
+                  <Link
+                    to="/cinemas"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                  >
+                    Cinemas &amp; Salas
+                  </Link>
+                  <Link
+                    to="/intelligence"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    ⚡ screeK Intelligence (IA)
+                  </Link>
+                  <Link
+                    to="/tickets"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                  >
+                    Meus Ingressos
                   </Link>
                 </div>
+              </div>
+
+              {/* Social Navigation */}
+              <div className="space-y-3 pt-2 border-t-2 border-foreground/10">
+                <label className="text-xs font-display font-black uppercase text-foreground/50">Comunidade &amp; Social</label>
+                <div className="space-y-1">
+                  <Link
+                    to="/feed"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                  >
+                    Feed da Comunidade
+                  </Link>
+                  <Link
+                    to="/lists"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                  >
+                    Listas de Filmes
+                  </Link>
+                  <Link
+                    to="/lists/new"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                  >
+                    + Criar Nova Lista
+                  </Link>
+                  <Link
+                    to="/import/letterboxd"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                  >
+                    Importar do Letterboxd
+                  </Link>
+                  {user && (
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                    >
+                      Meu Perfil Cinéfilo
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              {/* Painel do Exibidor (B2B) */}
+              <div className="space-y-2 pt-2 border-t-2 border-foreground/10">
+                <label className="text-xs font-display font-black uppercase text-secondary">Exibidores / B2B</label>
+                <Link
+                  to="/management/cinemas"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between p-2.5 bg-muted/20 border-2 border-foreground/30 text-xs font-bold font-display uppercase hover:border-primary text-foreground hover:text-primary transition-all shadow-[2px_2px_0px_0px_var(--border)]"
+                >
+                  <div className="flex items-center gap-2">
+                    <Buildings size={16} weight="bold" className="text-secondary" />
+                    <span>Painel do Cinema</span>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.2 bg-secondary text-secondary-foreground font-black">B2B</span>
+                </Link>
               </div>
             </div>
 
@@ -403,230 +628,228 @@ export const MainLayout = () => {
         </>
       )}
 
-      {/* Main Page Body */}
       <main className="flex-1">
         <Outlet />
       </main>
 
-      {/* Footer (Exact Figma PC Layout | Tabbed Accordion on Mobile) */}
-      <footer className="bg-background border-t-4 border-foreground py-10 px-4 sm:px-12 mt-12 mb-16 md:mb-0">
-        <div className="max-w-6xl mx-auto">
-          
-          {/* 1. DESKTOP FOOTER (Exact Match to Figma Screenshot) */}
-          <div className="hidden md:flex flex-row justify-between items-start gap-12">
-            
-            {/* Left Column: Logo + Copyright underneath */}
-            <div className="space-y-4 pr-6 shrink-0">
-              <Link to="/" className="inline-block">
-                <img 
-                  src={logoFull} 
-                  alt="screeK Logo" 
-                  className="h-12 w-auto" 
-                />
-              </Link>
-              <p className="text-xs text-foreground/60 font-display font-extrabold tracking-wide max-w-[210px]">
-                © 2026 screeK Inc. Todos os direitos reservados.
-              </p>
-            </div>
+      {!isBookingFunnel && (
+        <>
+          <footer className="bg-background border-t-2 border-foreground/30 py-10 px-4 sm:px-12 mt-12 mb-16 md:mb-0">
+            <div className="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto">
+              <div className="hidden md:flex flex-row justify-between items-start gap-12">
+                <div className="space-y-4 pr-6 shrink-0">
+                  <Link to="/" className="inline-block">
+                    <img 
+                      src={logoFull} 
+                      alt="screeK Logo" 
+                      className="h-12 w-auto" 
+                    />
+                  </Link>
+                  <p className="text-xs text-foreground/60 font-display font-extrabold tracking-wide max-w-[210px]">
+                    © 2026 screeK Inc. Todos os direitos reservados.
+                  </p>
+                </div>
 
-            {/* Right Columns Grid: Cinema, Social, Políticas, Redes Sociais */}
-            <div className="grid grid-cols-4 gap-12 flex-1">
-              <div className="space-y-3">
-                <h3 className="text-primary font-display font-black text-base uppercase tracking-wider">Cinema</h3>
-                <ul className="space-y-1.5 text-xs font-bold text-foreground/70">
-                  <li><Link to="/movies?status=now_playing" className="hover:text-primary underline transition-colors">Filmes em Cartaz</Link></li>
-                  <li><Link to="/movies?status=upcoming" className="hover:text-primary underline transition-colors">Em Breve</Link></li>
-                  <li><Link to="/movies" className="hover:text-primary underline transition-colors">Catálogo</Link></li>
-                  <li><Link to="/cinemas" className="hover:text-primary underline transition-colors">Cinemas</Link></li>
-                </ul>
-              </div>
+                {/* Right Columns Grid: Cinema, Social, Políticas, Redes Sociais */}
+                <div className="grid grid-cols-4 gap-12 flex-1">
+                  <div className="space-y-3">
+                    <h3 className="text-primary font-display font-black text-base uppercase tracking-wider">Cinema</h3>
+                    <ul className="space-y-1.5 text-xs font-bold text-foreground/70">
+                      <li><Link to="/movies?status=now_playing" className="hover:text-primary underline transition-colors">Filmes em Cartaz</Link></li>
+                      <li><Link to="/movies?status=upcoming" className="hover:text-primary underline transition-colors">Em Breve</Link></li>
+                      <li><Link to="/movies" className="hover:text-primary underline transition-colors">Catálogo</Link></li>
+                      <li><Link to="/cinemas" className="hover:text-primary underline transition-colors">Cinemas</Link></li>
+                      <li><Link to="/management" className="text-secondary hover:underline transition-colors">Painel do Exibidor (B2B)</Link></li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-3">
-                <h3 className="text-primary font-display font-black text-base uppercase tracking-wider">Social</h3>
-                <ul className="space-y-1.5 text-xs font-bold text-foreground/70">
-                  <li><Link to="/feed" className="hover:text-primary underline transition-colors">Feed</Link></li>
-                  <li><Link to="/lists" className="hover:text-primary underline transition-colors">Minhas Listas</Link></li>
-                  <li><Link to="/reviews" className="hover:text-primary underline transition-colors">Reviews</Link></li>
-                  <li><Link to="/users" className="hover:text-primary underline transition-colors">Usuários</Link></li>
-                </ul>
-              </div>
+                  <div className="space-y-3">
+                    <h3 className="text-primary font-display font-black text-base uppercase tracking-wider">Social</h3>
+                    <ul className="space-y-1.5 text-xs font-bold text-foreground/70">
+                      <li><Link to="/feed" className="hover:text-primary underline transition-colors">Feed</Link></li>
+                      <li><Link to="/lists" className="hover:text-primary underline transition-colors">Minhas Listas</Link></li>
+                      <li><Link to="/reviews" className="hover:text-primary underline transition-colors">Reviews</Link></li>
+                      <li><Link to="/users" className="hover:text-primary underline transition-colors">Usuários</Link></li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-3">
-                <h3 className="text-primary font-display font-black text-base uppercase tracking-wider">Políticas</h3>
-                <ul className="space-y-1.5 text-xs font-bold text-foreground/70">
-                  <li><Link to="#" className="hover:text-primary underline transition-colors">Termos de Uso</Link></li>
-                  <li><Link to="#" className="hover:text-primary underline transition-colors">Privacidade</Link></li>
-                  <li><Link to="#" className="hover:text-primary underline transition-colors">FAQ</Link></li>
-                </ul>
-              </div>
+                  <div className="space-y-3">
+                    <h3 className="text-primary font-display font-black text-base uppercase tracking-wider">Políticas</h3>
+                    <ul className="space-y-1.5 text-xs font-bold text-foreground/70">
+                      <li><Link to="/terms" className="hover:text-primary underline transition-colors">Termos de Uso</Link></li>
+                      <li><Link to="/privacy" className="hover:text-primary underline transition-colors">Privacidade</Link></li>
+                      <li><Link to="/faq" className="hover:text-primary underline transition-colors">FAQ</Link></li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-3">
-                <h3 className="text-primary font-display font-black text-base uppercase tracking-wider">Redes Sociais</h3>
-                <div className="grid grid-cols-2 gap-2 w-24">
-                  <a href="https://youtube.com" target="_blank" rel="noreferrer" className="w-10 h-10 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="YouTube"><YoutubeLogo size={22} weight="fill" /></a>
-                  <a href="https://twitter.com" target="_blank" rel="noreferrer" className="w-10 h-10 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="Twitter / X"><TwitterLogo size={22} weight="fill" /></a>
-                  <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-10 h-10 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="Instagram"><InstagramLogo size={22} weight="fill" /></a>
-                  <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-10 h-10 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="Facebook"><FacebookLogo size={22} weight="fill" /></a>
+                  <div className="space-y-3">
+                    <h3 className="text-primary font-display font-black text-base uppercase tracking-wider">Redes Sociais</h3>
+                    <div className="flex items-center gap-3">
+                      <a href="https://youtube.com" target="_blank" rel="noreferrer" className="w-8 h-8 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors shadow-sm" title="YouTube"><YoutubeLogo size={18} weight="fill" /></a>
+                      <a href="https://twitter.com" target="_blank" rel="noreferrer" className="w-8 h-8 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors shadow-sm" title="Twitter / X"><TwitterLogo size={18} weight="fill" /></a>
+                      <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-8 h-8 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors shadow-sm" title="Instagram"><InstagramLogo size={18} weight="fill" /></a>
+                      <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-8 h-8 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors shadow-sm" title="Facebook"><FacebookLogo size={18} weight="fill" /></a>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-          </div>
+              {/* Mobile Footer Accordion Tabs */}
+              <div className="md:hidden flex flex-col space-y-6">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between border-b-2 border-foreground/20 pb-2 text-xs font-display font-extrabold uppercase">
+                    <button
+                      onClick={() => toggleFooterTab('cinema')}
+                      className={`py-1 px-2 transition-all cursor-pointer ${
+                        activeFooterTab === 'cinema'
+                          ? 'text-primary border-b-2 border-primary font-black scale-105'
+                          : 'text-foreground/70 hover:text-foreground'
+                      }`}
+                    >
+                      Cinema
+                    </button>
 
-          {/* 2. MOBILE FOOTER (Horizontal Tabs Row + Centered Logo Below) */}
-          <div className="md:hidden space-y-6">
-            <div className="border-b-2 border-foreground/20 pb-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-around gap-2 font-display font-extrabold text-xs uppercase">
-                <button
-                  onClick={() => toggleFooterTab('cinema')}
-                  className={`py-1 px-2 transition-all cursor-pointer ${
-                    activeFooterTab === 'cinema'
-                      ? 'text-primary border-b-2 border-primary font-black scale-105'
-                      : 'text-foreground/70 hover:text-foreground'
-                  }`}
-                >
-                  Cinema
-                </button>
+                    <button
+                      onClick={() => toggleFooterTab('social')}
+                      className={`py-1 px-2 transition-all cursor-pointer ${
+                        activeFooterTab === 'social'
+                          ? 'text-primary border-b-2 border-primary font-black scale-105'
+                          : 'text-foreground/70 hover:text-foreground'
+                      }`}
+                    >
+                      Social
+                    </button>
 
-                <button
-                  onClick={() => toggleFooterTab('social')}
-                  className={`py-1 px-2 transition-all cursor-pointer ${
-                    activeFooterTab === 'social'
-                      ? 'text-primary border-b-2 border-primary font-black scale-105'
-                      : 'text-foreground/70 hover:text-foreground'
-                  }`}
-                >
-                  Social
-                </button>
+                    <button
+                      onClick={() => toggleFooterTab('politicas')}
+                      className={`py-1 px-2 transition-all cursor-pointer ${
+                        activeFooterTab === 'politicas'
+                          ? 'text-primary border-b-2 border-primary font-black scale-105'
+                          : 'text-foreground/70 hover:text-foreground'
+                      }`}
+                    >
+                      Políticas
+                    </button>
 
-                <button
-                  onClick={() => toggleFooterTab('politicas')}
-                  className={`py-1 px-2 transition-all cursor-pointer ${
-                    activeFooterTab === 'politicas'
-                      ? 'text-primary border-b-2 border-primary font-black scale-105'
-                      : 'text-foreground/70 hover:text-foreground'
-                  }`}
-                >
-                  Políticas
-                </button>
+                    <button
+                      onClick={() => toggleFooterTab('redes')}
+                      className={`py-1 px-2 transition-all cursor-pointer ${
+                        activeFooterTab === 'redes'
+                          ? 'text-primary border-b-2 border-primary font-black scale-105'
+                          : 'text-foreground/70 hover:text-foreground'
+                      }`}
+                    >
+                      Redes Sociais
+                    </button>
+                  </div>
 
-                <button
-                  onClick={() => toggleFooterTab('redes')}
-                  className={`py-1 px-2 transition-all cursor-pointer ${
-                    activeFooterTab === 'redes'
-                      ? 'text-primary border-b-2 border-primary font-black scale-105'
-                      : 'text-foreground/70 hover:text-foreground'
-                  }`}
-                >
-                  Redes Sociais
-                </button>
-              </div>
+                  {/* Expanded Content Drawer Below Active Tab (Mobile Only) */}
+                  {activeFooterTab && (
+                    <div className="pt-3 border-t border-foreground/10 flex justify-center text-center animate-in fade-in slide-in-from-top-1 duration-150">
+                      {activeFooterTab === 'cinema' && (
+                        <ul className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-foreground/80">
+                          <li><Link to="/movies?status=now_playing" className="hover:text-primary underline">Filmes em Cartaz</Link></li>
+                          <li><Link to="/movies?status=upcoming" className="hover:text-primary underline">Em Breve</Link></li>
+                          <li><Link to="/movies" className="hover:text-primary underline">Catálogo</Link></li>
+                          <li><Link to="/cinemas" className="hover:text-primary underline">Cinemas</Link></li>
+                        </ul>
+                      )}
 
-              {/* Expanded Content Drawer Below Active Tab (Mobile Only) */}
-              {activeFooterTab && (
-                <div className="pt-3 border-t border-foreground/10 flex justify-center text-center animate-in fade-in slide-in-from-top-1 duration-150">
-                  {activeFooterTab === 'cinema' && (
-                    <ul className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-foreground/80">
-                      <li><Link to="/movies?status=now_playing" className="hover:text-primary underline">Filmes em Cartaz</Link></li>
-                      <li><Link to="/movies?status=upcoming" className="hover:text-primary underline">Em Breve</Link></li>
-                      <li><Link to="/movies" className="hover:text-primary underline">Catálogo</Link></li>
-                      <li><Link to="/cinemas" className="hover:text-primary underline">Cinemas</Link></li>
-                    </ul>
-                  )}
+                      {activeFooterTab === 'social' && (
+                        <ul className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-foreground/80">
+                          <li><Link to="/feed" className="hover:text-primary underline">Feed</Link></li>
+                          <li><Link to="/lists" className="hover:text-primary underline">Minhas Listas</Link></li>
+                          <li><Link to="/reviews" className="hover:text-primary underline">Reviews</Link></li>
+                          <li><Link to="/users" className="hover:text-primary underline">Usuários</Link></li>
+                        </ul>
+                      )}
 
-                  {activeFooterTab === 'social' && (
-                    <ul className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-foreground/80">
-                      <li><Link to="/feed" className="hover:text-primary underline">Feed</Link></li>
-                      <li><Link to="/lists" className="hover:text-primary underline">Minhas Listas</Link></li>
-                      <li><Link to="/reviews" className="hover:text-primary underline">Reviews</Link></li>
-                      <li><Link to="/users" className="hover:text-primary underline">Usuários</Link></li>
-                    </ul>
-                  )}
+                      {activeFooterTab === 'politicas' && (
+                        <ul className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-foreground/80">
+                          <li><Link to="/terms" className="hover:text-primary underline">Termos de Uso</Link></li>
+                          <li><Link to="/privacy" className="hover:text-primary underline">Privacidade</Link></li>
+                          <li><Link to="/faq" className="hover:text-primary underline">FAQ</Link></li>
+                        </ul>
+                      )}
 
-                  {activeFooterTab === 'politicas' && (
-                    <ul className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-foreground/80">
-                      <li><Link to="#" className="hover:text-primary underline">Termos de Uso</Link></li>
-                      <li><Link to="#" className="hover:text-primary underline">Privacidade</Link></li>
-                      <li><Link to="#" className="hover:text-primary underline">FAQ</Link></li>
-                    </ul>
-                  )}
-
-                  {activeFooterTab === 'redes' && (
-                    <div className="flex items-center justify-center gap-3">
-                      <a href="https://youtube.com" target="_blank" rel="noreferrer" className="w-9 h-9 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="YouTube"><YoutubeLogo size={20} weight="fill" /></a>
-                      <a href="https://twitter.com" target="_blank" rel="noreferrer" className="w-9 h-9 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="Twitter / X"><TwitterLogo size={20} weight="fill" /></a>
-                      <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-9 h-9 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="Instagram"><InstagramLogo size={20} weight="fill" /></a>
-                      <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-9 h-9 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="Facebook"><FacebookLogo size={20} weight="fill" /></a>
+                      {activeFooterTab === 'redes' && (
+                        <div className="flex items-center justify-center gap-3">
+                          <a href="https://youtube.com" target="_blank" rel="noreferrer" className="w-9 h-9 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="YouTube"><YoutubeLogo size={20} weight="fill" /></a>
+                          <a href="https://twitter.com" target="_blank" rel="noreferrer" className="w-9 h-9 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="Twitter / X"><TwitterLogo size={20} weight="fill" /></a>
+                          <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-9 h-9 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="Instagram"><InstagramLogo size={20} weight="fill" /></a>
+                          <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-9 h-9 bg-foreground/70 hover:bg-primary text-background flex items-center justify-center transition-colors" title="Facebook"><FacebookLogo size={20} weight="fill" /></a>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
+
+                {/* Mobile Bottom Centered Logo & Copyright */}
+                <div className="flex flex-col items-center justify-center text-center space-y-3 pt-1">
+                  <Link to="/" className="inline-block">
+                    <img 
+                      src={logoFull} 
+                      alt="screeK Logo" 
+                      className="h-12 w-auto" 
+                    />
+                  </Link>
+                  <p className="text-xs text-foreground/60 font-display font-extrabold tracking-wide">
+                    © 2026 screeK Inc. Todos os direitos reservados.
+                  </p>
+                </div>
+              </div>
+
             </div>
+          </footer>
 
-            {/* Mobile Bottom Centered Logo & Copyright */}
-            <div className="flex flex-col items-center justify-center text-center space-y-3 pt-1">
-              <Link to="/" className="inline-block">
-                <img 
-                  src={logoFull} 
-                  alt="screeK Logo" 
-                  className="h-12 w-auto" 
-                />
-              </Link>
-              <p className="text-xs text-foreground/60 font-display font-extrabold tracking-wide">
-                © 2026 screeK Inc. Todos os direitos reservados.
-              </p>
-            </div>
-          </div>
+          {/* Mobile Bottom Navigation Bar (Figma Mobile Dock - Fits 100% Screen Width) */}
+          <nav className="fixed bottom-0 left-0 right-0 w-full z-40 md:hidden bg-background border-t-4 border-foreground py-2 px-1 flex items-center justify-around text-center box-border overflow-hidden shadow-[0_-4px_12px_rgba(0,0,0,0.2)]">
+            <Link
+              to="/movies"
+              className="flex flex-col items-center gap-0.5 text-foreground/60 hover:text-primary transition-colors cursor-pointer"
+            >
+              <Ticket size={22} weight="bold" />
+              <span className="text-[9px] font-display font-black uppercase tracking-wider">TICKET</span>
+            </Link>
 
-        </div>
-      </footer>
+            <Link
+              to="/"
+              className={`flex flex-col items-center gap-0.5 transition-colors cursor-pointer ${
+                isCinemaActive ? 'text-secondary font-black' : 'text-foreground/60 hover:text-primary'
+              }`}
+            >
+              <FilmReel size={22} weight="bold" />
+              <span className="text-[9px] font-display font-black uppercase tracking-wider">CINEMA</span>
+            </Link>
 
-      {/* Mobile Bottom Navigation Bar (Figma Mobile Dock - Fits 100% Screen Width) */}
-      <nav className="fixed bottom-0 left-0 right-0 w-full z-40 md:hidden bg-background border-t-4 border-foreground py-2 px-1 flex items-center justify-around text-center box-border overflow-hidden shadow-[0_-4px_12px_rgba(0,0,0,0.2)]">
-        <Link
-          to="/movies"
-          className="flex flex-col items-center gap-0.5 text-foreground/60 hover:text-primary transition-colors cursor-pointer"
-        >
-          <Ticket size={22} weight="bold" />
-          <span className="text-[9px] font-display font-black uppercase tracking-wider">TICKET</span>
-        </Link>
+            <Link
+              to="/search"
+              className="flex flex-col items-center gap-0.5 text-foreground/60 hover:text-primary transition-colors cursor-pointer"
+            >
+              <MagnifyingGlass size={22} weight="bold" />
+              <span className="text-[9px] font-display font-black uppercase tracking-wider">BUSCAR</span>
+            </Link>
 
-        <Link
-          to="/"
-          className={`flex flex-col items-center gap-0.5 transition-colors cursor-pointer ${
-            isCinemaActive ? 'text-secondary font-black' : 'text-foreground/60 hover:text-primary'
-          }`}
-        >
-          <FilmReel size={22} weight="bold" />
-          <span className="text-[9px] font-display font-black uppercase tracking-wider">CINEMA</span>
-        </Link>
+            <Link
+              to="/feed"
+              className={`flex flex-col items-center gap-0.5 transition-colors cursor-pointer ${
+                isSocialActive ? 'text-secondary font-black' : 'text-foreground/60 hover:text-primary'
+              }`}
+            >
+              <Heart size={22} weight="bold" />
+              <span className="text-[9px] font-display font-black uppercase tracking-wider">SOCIAL</span>
+            </Link>
 
-        <Link
-          to="/search"
-          className="flex flex-col items-center gap-0.5 text-foreground/60 hover:text-primary transition-colors cursor-pointer"
-        >
-          <MagnifyingGlass size={22} weight="bold" />
-          <span className="text-[9px] font-display font-black uppercase tracking-wider">BUSCAR</span>
-        </Link>
-
-        <Link
-          to="/feed"
-          className={`flex flex-col items-center gap-0.5 transition-colors cursor-pointer ${
-            isSocialActive ? 'text-secondary font-black' : 'text-foreground/60 hover:text-primary'
-          }`}
-        >
-          <Heart size={22} weight="bold" />
-          <span className="text-[9px] font-display font-black uppercase tracking-wider">SOCIAL</span>
-        </Link>
-
-        <button
-          onClick={() => (user ? navigate('/profile') : openModal('login'))}
-          className="flex flex-col items-center gap-0.5 text-foreground/60 hover:text-primary transition-colors cursor-pointer"
-        >
-          <User size={22} weight="bold" />
-          <span className="text-[9px] font-display font-black uppercase tracking-wider">PERFIL</span>
-        </button>
-      </nav>
+            <button
+              onClick={() => (user ? navigate('/profile') : openModal('login'))}
+              className="flex flex-col items-center gap-0.5 text-foreground/60 hover:text-primary transition-colors cursor-pointer"
+            >
+              <User size={22} weight="bold" />
+              <span className="text-[9px] font-display font-black uppercase tracking-wider">PERFIL</span>
+            </button>
+          </nav>
+        </>
+      )}
     </div>
   );
 };

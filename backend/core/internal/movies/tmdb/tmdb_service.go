@@ -52,11 +52,16 @@ type TMDBResponse struct {
 type TMDBMovie struct {
 	ID               int     `json:"id"`
 	Title            string  `json:"title"`
+	OriginalTitle    string  `json:"original_title"`
 	Overview         string  `json:"overview"`
 	PosterPath       string  `json:"poster_path"`
+	BackdropPath     string  `json:"backdrop_path"`
 	ReleaseDate      string  `json:"release_date"`
 	OriginalLanguage string  `json:"original_language"`
 	VoteAverage      float64 `json:"vote_average"`
+	VoteCount        int     `json:"vote_count"`
+	Popularity       float64 `json:"popularity"`
+	GenreIDs         []int   `json:"genre_ids"`
 }
 
 type TMDBPerson struct {
@@ -72,16 +77,61 @@ type TMDBPeopleResponse struct {
 }
 
 type TMDBMovieDetails struct {
-	ID               int                  `json:"id"`
-	Title            string               `json:"title"`
-	Overview         string               `json:"overview"`
-	PosterPath       string               `json:"poster_path"`
-	ReleaseDate      string               `json:"release_date"`
-	Runtime          int                  `json:"runtime"`
-	OriginalLanguage string               `json:"original_language"`
-	SpokenLanguages  []TMDBSpokenLanguage `json:"spoken_languages"`
-	Genres           []TMDBGenre          `json:"genres"`
-	Credits          TMDBMovieCredits     `json:"credits"`
+	ID                  int                  `json:"id"`
+	Title               string               `json:"title"`
+	OriginalTitle       string               `json:"original_title"`
+	Overview            string               `json:"overview"`
+	PosterPath          string               `json:"poster_path"`
+	BackdropPath        string               `json:"backdrop_path"`
+	ReleaseDate         string               `json:"release_date"`
+	Runtime             int                  `json:"runtime"`
+	Status              string               `json:"status"`
+	OriginalLanguage    string               `json:"original_language"`
+	SpokenLanguages     []TMDBSpokenLanguage `json:"spoken_languages"`
+	Genres              []TMDBGenre          `json:"genres"`
+	Credits             TMDBMovieCredits     `json:"credits"`
+	Budget              int64                `json:"budget"`
+	Revenue             int64                `json:"revenue"`
+	VoteAverage         float64              `json:"vote_average"`
+	VoteCount           int                  `json:"vote_count"`
+	Popularity          float64              `json:"popularity"`
+	ProductionCompanies []TMDBCompany        `json:"production_companies"`
+	ProductionCountries []TMDBCountry        `json:"production_countries"`
+	Keywords            TMDBKeywords         `json:"keywords"`
+	ReleaseDates        TMDBReleaseDates     `json:"release_dates"`
+}
+
+type TMDBCompany struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type TMDBCountry struct {
+	ISO3166_1 string `json:"iso_3166_1"`
+	Name      string `json:"name"`
+}
+
+type TMDBKeywords struct {
+	Keywords []TMDBKeyword `json:"keywords"`
+}
+
+type TMDBKeyword struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type TMDBReleaseDates struct {
+	Results []TMDBReleaseDateResult `json:"results"`
+}
+
+type TMDBReleaseDateResult struct {
+	ISO3166_1    string            `json:"iso_3166_1"`
+	ReleaseDates []TMDBReleaseDate `json:"release_dates"`
+}
+
+type TMDBReleaseDate struct {
+	Certification string `json:"certification"`
+	Type          int    `json:"type"`
 }
 
 type TMDBGenre struct {
@@ -175,8 +225,12 @@ func (c *TMDBClient) doRequest(ctx context.Context, endpoint string) (*http.Resp
 }
 
 func (c *TMDBClient) SearchMovies(ctx context.Context, query string, year int) ([]TMDBMovie, error) {
+	return c.SearchMoviesByLanguage(ctx, query, year, "pt-BR")
+}
+
+func (c *TMDBClient) SearchMoviesByLanguage(ctx context.Context, query string, year int, language string) ([]TMDBMovie, error) {
 	safeQuery := url.QueryEscape(query)
-	endpoint := fmt.Sprintf("%s/search/movie?query=%s&language=pt-BR", c.BaseURL, safeQuery)
+	endpoint := fmt.Sprintf("%s/search/movie?query=%s&language=%s", c.BaseURL, safeQuery, language)
 	if year > 0 {
 		endpoint += fmt.Sprintf("&primary_release_year=%d", year)
 	}
@@ -200,7 +254,7 @@ func (c *TMDBClient) SearchMovies(ctx context.Context, query string, year int) (
 }
 
 func (c *TMDBClient) GetMovieDetails(ctx context.Context, tmdbID int) (*TMDBMovieDetails, error) {
-	endpoint := fmt.Sprintf("%s/movie/%d?append_to_response=credits&language=pt-BR", c.BaseURL, tmdbID)
+	endpoint := fmt.Sprintf("%s/movie/%d?append_to_response=credits,keywords,release_dates&language=pt-BR", c.BaseURL, tmdbID)
 
 	res, err := c.doRequest(ctx, endpoint)
 	if err != nil {
@@ -283,8 +337,11 @@ func (c *TMDBClient) GetMoviesRecommendations(ctx context.Context, movieid int) 
 	return parsedRes.Results, nil
 }
 
-func (c *TMDBClient) DiscoverMovies(ctx context.Context, genreID int, year int) ([]TMDBMovie, error) {
-	endpoint := fmt.Sprintf("%s/discover/movie?language=pt-BR&sort_by=popularity.desc", c.BaseURL)
+func (c *TMDBClient) DiscoverMovies(ctx context.Context, genreID int, year int, page int) ([]TMDBMovie, error) {
+	if page <= 0 {
+		page = 1
+	}
+	endpoint := fmt.Sprintf("%s/discover/movie?language=pt-BR&sort_by=popularity.desc&page=%d", c.BaseURL, page)
 	if genreID > 0 {
 		endpoint += fmt.Sprintf("&with_genres=%d", genreID)
 	}

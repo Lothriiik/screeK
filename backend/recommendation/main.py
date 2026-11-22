@@ -1,42 +1,19 @@
-from fastapi import FastAPI, HTTPException
-import uvicorn
-from engine import engine
+"""Shim de compatibilidade: mantém `python main.py` funcionando.
 
-app = FastAPI(title="screeK Intelligence Service", version="1.0.0")
+A implementação real vive em `app/`.
+"""
 
-@app.get("/")
-def read_root():
-    return {"message": "screeK Intelligence API is running", "engine_status": "loaded"}
+from __future__ import annotations
 
-@app.get("/health")
-def health_check():
-    return {"status": "healthy"}
+from app.main import app
 
-@app.get("/recommendations/{user_id}")
-def get_recommendations(user_id: str):
+__all__ = ["app"]
 
-    try:
-        recommendations = engine.calculate_similarity(user_id)
-        return {
-            "user_id": user_id,
-            "recommendations": recommendations,
-            "algorithm": "collaborative_filtering_baseline"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/similar/{movie_id}")
-def get_similar_movies(movie_id: int):
-
-    try:
-        similar = engine.get_similar_movies(movie_id)
-        return {
-            "movie_id": movie_id,
-            "similar": similar,
-            "algorithm": "content_based_baseline"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8081)
+    import uvicorn
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=settings.debug)

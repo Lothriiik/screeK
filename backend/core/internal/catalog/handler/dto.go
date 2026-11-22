@@ -1,9 +1,10 @@
 package handler
 
 type LogMovieRequestDTO struct {
-	Watched bool    `json:"watched"`
-	Rating  float64 `json:"rating" validate:"min=0,max=10"`
-	Liked   bool    `json:"liked"`
+	Watched bool `json:"watched"`
+	// Escala canônica 0.5–5.0. Zero = assistido sem nota.
+	Rating float64 `json:"rating" validate:"min=0,max=5"`
+	Liked  bool    `json:"liked"`
 }
 
 type AddWatchlistRequestDTO struct {

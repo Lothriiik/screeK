@@ -14,7 +14,9 @@ export interface MovieCardProps {
   ageRating?: 'L' | '10' | '12' | '14' | '16' | '18';
   tagType?: MovieTagType; // 'pre_sale' | 'release' | 're_release'
   eventLabel?: string;    // e.g. "ESTREIA 08/04", "REEXIBIÇÃO 08/04", "ESTREIA"
+  releaseDate?: string;   // e.g. "03/04", "05/04", "04/04", "08/04"
   isPreSale?: boolean;
+  linkTo?: string;
 }
 
 export const MovieCard: React.FC<MovieCardProps> = ({
@@ -27,10 +29,12 @@ export const MovieCard: React.FC<MovieCardProps> = ({
   ageRating = 'L',
   tagType = 'none',
   eventLabel,
+  releaseDate,
   isPreSale = false,
+  linkTo,
 }) => {
   const isPreSaleActive = isPreSale || tagType === 'pre_sale';
-  const isReRelease = tagType === 're_release';
+  const isReRelease = tagType === 're_release' || (eventLabel && eventLabel.includes('REEXIBIÇÃO'));
 
   const ageRatingBg =
     ageRating === 'L'
@@ -43,12 +47,19 @@ export const MovieCard: React.FC<MovieCardProps> = ({
       ? 'bg-[#D4A338]'
       : 'bg-[#3B82F6]';
 
+  // Release date extraction if eventLabel had date
+  const displayReleaseDate =
+    releaseDate ||
+    (eventLabel && eventLabel.includes('/') ? eventLabel.replace(/ESTREIA\s*|REEXIBIÇÃO\s*/gi, '').trim() : undefined);
+
+  const targetLink = linkTo || `/movies/${id}/sessions`;
+
   return (
     <Link
-      to={`/movies/${id}`}
+      to={targetLink}
       className={`group relative flex flex-col rounded-none border-4 font-display transition-all hover:-translate-y-1 shadow-[4px_4px_0px_0px_var(--border)] overflow-hidden bg-background ${
         isPreSaleActive
-          ? 'border-[#FF5C80]'
+          ? 'border-secondary'
           : 'border-foreground/40 hover:border-primary'
       }`}
     >
@@ -60,34 +71,45 @@ export const MovieCard: React.FC<MovieCardProps> = ({
           loading="lazy"
         />
 
+        {/* Top-Left Release Date Badge (when available) */}
+        {displayReleaseDate && (
+          <div
+            className={`absolute top-2 left-2 z-10 font-display font-black text-xs px-2 py-0.5 tracking-wider shadow-sm ${
+              isPreSaleActive
+                ? 'bg-secondary text-secondary-foreground'
+                : isReRelease
+                ? 'bg-[#1E2B45] text-white'
+                : 'bg-primary text-primary-foreground'
+            }`}
+          >
+            {displayReleaseDate}
+          </div>
+        )}
+
+        {/* Top-Right Age Rating Badge */}
         {ageRating && (
           <div
-            className={`absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center text-[10px] font-black text-white ${ageRatingBg}`}
+            className={`absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center text-xs font-black text-white shadow-sm ${ageRatingBg}`}
           >
             {ageRating}
           </div>
         )}
 
-        {isPreSaleActive && (
-          <div className="absolute bottom-0 inset-x-0 bg-foreground/80 text-[#FF5C80] text-center py-1 text-[10px] font-black uppercase tracking-widest border-t-2 border-b-2 border-[#FF5C80]">
-            PRÉ-VENDA
+        {/* Bottom Banner inside poster (for Pré-Venda or Reexibição) */}
+        {(isPreSaleActive || isReRelease || (!displayReleaseDate && eventLabel)) && (
+          <div
+            className={`absolute bottom-0 inset-x-0 z-10 text-center py-1 text-[10px] font-black uppercase tracking-widest border-t-2 shadow-sm ${
+              isPreSaleActive
+                ? 'bg-secondary text-secondary-foreground border-secondary'
+                : isReRelease
+                ? 'bg-[#1E2B45] text-white border-foreground/40'
+                : 'bg-primary text-primary-foreground border-primary'
+            }`}
+          >
+            {isPreSaleActive ? 'PRÉ-VENDA' : isReRelease ? 'REEXIBIÇÃO' : eventLabel || 'ESTREIA'}
           </div>
         )}
       </div>
-      
-      {(eventLabel || isPreSaleActive || isReRelease) && (
-        <div
-          className={`py-1 text-center text-[11px] font-black uppercase tracking-wider border-2 ${
-            isPreSaleActive
-              ? 'bg-foreground/40 text-[#6A1B4D] border-[#6A1B4D]'
-              : isReRelease
-              ? 'bg-foreground/40 text-[#1E2B45] border-[#1E2B45]'
-              : 'bg-foreground/40 text-[#6A1B4D] border-[#6A1B4D]'
-          }`}
-        >
-          {eventLabel || (isReRelease ? 'REEXIBIÇÃO' : 'ESTREIA')}
-        </div>
-      )}
 
       <div className="flex flex-col p-3 border-t-2 border-foreground/40 bg-background justify-between flex-1 space-y-2">
         <h3 className="h-8 sm:h-9 min-h-[2rem] sm:min-h-[2.25rem] text-xs sm:text-sm font-extrabold uppercase text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors overflow-hidden">

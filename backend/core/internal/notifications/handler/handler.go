@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -45,7 +45,7 @@ func (h *Handler) HandleWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Novo cliente WS tentando conectar: %v", userID)
+	slog.Info("Nova conexão WebSocket", "user_id", userID)
 	realtime.ServeWs(h.svc.Hub(), w, r, userID)
 }
 

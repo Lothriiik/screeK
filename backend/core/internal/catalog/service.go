@@ -44,7 +44,8 @@ func (s *CatalogService) LogMovie(ctx context.Context, userID uuid.UUID, movieID
 	}
 
 	if req.Watched && !alreadyWatched {
-		movie, err := s.movieProvider.GetMovieDetails(ctx, int(movieID))
+		// movieID já é o ID interno canônico (movies.id) neste ponto.
+		movie, err := s.movieProvider.GetMovieByID(ctx, int(movieID))
 		runtime := 0
 		if err == nil && movie != nil {
 			runtime = movie.Runtime
@@ -54,6 +55,16 @@ func (s *CatalogService) LogMovie(ctx context.Context, userID uuid.UUID, movieID
 	}
 
 	return nil
+}
+
+// LogMovieByTMDBID registra um filme a partir da chave externa (TMDB),
+// resolvendo-a para o ID interno canônico antes de gravar em movie_logs.
+func (s *CatalogService) LogMovieByTMDBID(ctx context.Context, userID uuid.UUID, tmdbID int, req LogMovieRequest) error {
+	movie, err := s.movieProvider.GetMovieDetails(ctx, tmdbID)
+	if err != nil || movie == nil || movie.ID == 0 {
+		return ErrMovieNotFoundLocal
+	}
+	return s.LogMovie(ctx, userID, uint(movie.ID), req)
 }
 
 func (s *CatalogService) AddToWatchlist(ctx context.Context, userID uuid.UUID, movieID uint) error {
@@ -79,7 +90,7 @@ func (s *CatalogService) GetWatchlist(ctx context.Context, userID uuid.UUID) ([]
 			AddedAt: item.AddedAt,
 		}
 
-		movie, err := s.movieProvider.GetMovieDetails(ctx, int(item.MovieID))
+		movie, err := s.movieProvider.GetMovieByID(ctx, int(item.MovieID))
 		if err == nil && movie != nil {
 			rich.Title = movie.Title
 			rich.PosterURL = movie.PosterURL
@@ -198,32 +209,34 @@ func (s *CatalogService) SearchLists(ctx context.Context, query string) ([]Movie
 	return s.repo.SearchLists(ctx, query)
 }
 
+// GetMovieDetail resolve o filme pela chave externa (TMDB ID).
 func (s *CatalogService) GetMovieDetail(ctx context.Context, tmdbID int) (*MovieDetailSummary, error) {
 	movie, err := s.movieProvider.GetMovieDetails(ctx, tmdbID)
 	if err != nil {
 		return nil, err
 	}
+	return s.buildMovieDetail(ctx, movie), nil
+}
 
+// GetMovieDetailByID resolve o filme pelo ID interno canônico (movies.id).
+func (s *CatalogService) GetMovieDetailByID(ctx context.Context, movieID int) (*MovieDetailSummary, error) {
+	movie, err := s.movieProvider.GetMovieByID(ctx, movieID)
+	if err != nil {
+		return nil, err
+	}
+	return s.buildMovieDetail(ctx, movie), nil
+}
+
+func (s *CatalogService) buildMovieDetail(ctx context.Context, movie *MovieDetailSummary) *MovieDetailSummary {
 	stats, _ := s.repo.GetMovieStats(ctx, uint(movie.ID))
 
-	summaries := &MovieDetailSummary{
-		ID:          movie.ID,
-		TMDBID:      movie.TMDBID,
-		Title:       movie.Title,
-		Overview:    movie.Overview,
-		PosterURL:   movie.PosterURL,
-		BackdropURL: movie.BackdropURL,
-		ReleaseDate: movie.ReleaseDate,
-		Runtime:     movie.Runtime,
-	}
-
+	summary := *movie
 	if stats != nil {
-		summaries.AverageRating = stats.AverageRating
-		summaries.TotalReviews = stats.TotalReviews
-		summaries.TotalLikes = stats.TotalLikes
+		summary.AverageRating = stats.AverageRating
+		summary.TotalReviews = stats.TotalReviews
+		summary.TotalLikes = stats.TotalLikes
 	}
-
-	return summaries, nil
+	return &summary
 }
 
 func (s *CatalogService) GetMyHistory(ctx context.Context, userID uuid.UUID) ([]MovieLogSummary, error) {
@@ -234,7 +247,7 @@ func (s *CatalogService) GetMyHistory(ctx context.Context, userID uuid.UUID) ([]
 
 	var summaries []MovieLogSummary
 	for _, log := range logs {
-		movie, _ := s.movieProvider.GetMovieDetails(ctx, int(log.MovieID))
+		movie, _ := s.movieProvider.GetMovieByID(ctx, int(log.MovieID))
 
 		var movieSummary MovieDetailSummary
 		if movie != nil {

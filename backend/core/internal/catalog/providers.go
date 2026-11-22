@@ -26,5 +26,8 @@ type UserProvider interface {
 }
 
 type MovieProvider interface {
+	// GetMovieDetails resolve um filme pelo TMDB ID (chave externa).
 	GetMovieDetails(ctx context.Context, tmdbID int) (*MovieDetailSummary, error)
+	// GetMovieByID resolve um filme pelo ID interno canônico (movies.id).
+	GetMovieByID(ctx context.Context, id int) (*MovieDetailSummary, error)
 }

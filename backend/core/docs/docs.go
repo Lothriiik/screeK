@@ -1265,6 +1265,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/catalog/movies/internal/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna detalhes do filme usando o ID canônico interno (movies.id)",
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Detalhe do Filme por ID interno",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID interno do filme (movies.id)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.MovieDetailResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
         "/catalog/movies/{id}": {
             "get": {
                 "security": [
@@ -1319,6 +1350,141 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/handler.MovieLogResponseDTO"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/import/letterboxd": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Envie um ZIP oficial no campo ` + "`" + `file` + "`" + ` ou ` + "`" + `zip` + "`" + `, ou CSVs separados (` + "`" + `ratings` + "`" + `, ` + "`" + `watched` + "`" + `, ` + "`" + `watchlist` + "`" + `). Os dados são associados ao usuário autenticado.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Importar export do Letterboxd",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "ZIP do export do Letterboxd ou CSV de ratings",
+                        "name": "file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "ZIP do export do Letterboxd",
+                        "name": "zip",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "ratings.csv",
+                        "name": "ratings",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "watched.csv",
+                        "name": "watched",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "watchlist.csv",
+                        "name": "watchlist",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.GlobalImportSummary"
+                        }
+                    },
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ImportJobStatus"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ImportJobStatus"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/import/letterboxd/{jobID}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Consultar andamento da importação Letterboxd",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID da importação",
+                        "name": "jobID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ImportJobStatus"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
                         }
                     }
                 }
@@ -1912,6 +2078,351 @@ const docTemplate = `{
                 }
             }
         },
+        "/recommendations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna recomendações personalizadas para o usuário autenticado. ` + "`" + `/recommendations` + "`" + ` é um alias desta rota.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Intelligence"
+                ],
+                "summary": "Minhas recomendações",
+                "parameters": [
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Quantidade (1-100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por gênero",
+                        "name": "genre",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano mínimo de lançamento",
+                        "name": "min_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano máximo de lançamento",
+                        "name": "max_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filtrar por filmes em cartaz",
+                        "name": "in_theaters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IDs de filmes em cartaz separados por vírgula",
+                        "name": "now_playing_ids",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/recommendation.RecommendationsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "501": {
+                        "description": "Not Implemented",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/recommendations/feedback": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra se o filme interessa ao usuário para ajustar recomendações futuras.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Intelligence"
+                ],
+                "summary": "Avaliar uma recomendação",
+                "parameters": [
+                    {
+                        "description": "Feedback",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.feedbackRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/recommendations/feedback/{movieID}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Intelligence"
+                ],
+                "summary": "Remover feedback de recomendação",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID interno do filme",
+                        "name": "movieID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/recommendations/{userID}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna recomendações personalizadas para o usuário informado. Requer autenticação.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Intelligence"
+                ],
+                "summary": "Recomendações de um usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID do usuário",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Quantidade (1-100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por gênero",
+                        "name": "genre",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano mínimo de lançamento",
+                        "name": "min_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano máximo de lançamento",
+                        "name": "max_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filtrar por filmes em cartaz",
+                        "name": "in_theaters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IDs de filmes em cartaz separados por vírgula",
+                        "name": "now_playing_ids",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/recommendation.RecommendationsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "501": {
+                        "description": "Not Implemented",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/similar/{movieID}": {
+            "get": {
+                "description": "Filmes similares a um filme canônico (movies.id)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Intelligence"
+                ],
+                "summary": "Filmes similares",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID interno do filme (movies.id)",
+                        "name": "movieID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Quantidade (1-100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/recommendation.SimilarResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "501": {
+                        "description": "Not Implemented",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/social/feed": {
             "get": {
                 "security": [
@@ -2487,6 +2998,96 @@ const docTemplate = `{
                         "description": "Não autorizado",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/recommendations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna recomendações personalizadas para o usuário autenticado. ` + "`" + `/recommendations` + "`" + ` é um alias desta rota.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Intelligence"
+                ],
+                "summary": "Minhas recomendações",
+                "parameters": [
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Quantidade (1-100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por gênero",
+                        "name": "genre",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano mínimo de lançamento",
+                        "name": "min_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano máximo de lançamento",
+                        "name": "max_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filtrar por filmes em cartaz",
+                        "name": "in_theaters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IDs de filmes em cartaz separados por vírgula",
+                        "name": "now_playing_ids",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/recommendation.RecommendationsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "501": {
+                        "description": "Not Implemented",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/httputil.ErrorResponse"
                         }
                     }
                 }
@@ -3211,6 +3812,64 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.GlobalImportSummary": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "likes": {
+                    "$ref": "#/definitions/letterboxd.ImportSummary"
+                },
+                "ratings": {
+                    "$ref": "#/definitions/letterboxd.ImportSummary"
+                },
+                "watched": {
+                    "$ref": "#/definitions/letterboxd.ImportSummary"
+                },
+                "watchlist": {
+                    "$ref": "#/definitions/letterboxd.ImportSummary"
+                }
+            }
+        },
+        "handler.ImportJobStatus": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "job_id": {
+                    "type": "string"
+                },
+                "percent": {
+                    "type": "integer"
+                },
+                "processed": {
+                    "type": "integer"
+                },
+                "stage": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "summary": {
+                    "$ref": "#/definitions/letterboxd.ZipImportSummary"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.LogMovieRequestDTO": {
             "type": "object",
             "properties": {
@@ -3218,8 +3877,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "rating": {
+                    "description": "Escala canônica 0.5–5.0. Zero = assistido sem nota.",
                     "type": "number",
-                    "maximum": 10,
+                    "maximum": 5,
                     "minimum": 0
                 },
                 "watched": {
@@ -3896,6 +4556,17 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.feedbackRequest": {
+            "type": "object",
+            "properties": {
+                "feedback": {
+                    "type": "string"
+                },
+                "movie_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "httputil.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -3928,6 +4599,69 @@ const docTemplate = `{
                 }
             }
         },
+        "letterboxd.ImportFailure": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "letterboxd.ImportSummary": {
+            "type": "object",
+            "properties": {
+                "failed": {
+                    "type": "integer"
+                },
+                "success": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "letterboxd.ZipImportSummary": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "failed_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/letterboxd.ImportFailure"
+                    }
+                },
+                "failed_items_truncated": {
+                    "type": "boolean"
+                },
+                "likes": {
+                    "$ref": "#/definitions/letterboxd.ImportSummary"
+                },
+                "ratings": {
+                    "$ref": "#/definitions/letterboxd.ImportSummary"
+                },
+                "watched": {
+                    "$ref": "#/definitions/letterboxd.ImportSummary"
+                },
+                "watchlist": {
+                    "$ref": "#/definitions/letterboxd.ImportSummary"
+                }
+            }
+        },
         "movies.Genre": {
             "type": "object",
             "properties": {
@@ -3948,6 +4682,18 @@ const docTemplate = `{
                 "backdrop_url": {
                     "type": "string"
                 },
+                "budget": {
+                    "type": "integer"
+                },
+                "certification": {
+                    "type": "string"
+                },
+                "countries": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "credits": {
                     "type": "array",
                     "items": {
@@ -3963,17 +4709,32 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "keywords": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "original_language": {
+                    "type": "string"
+                },
+                "original_title": {
                     "type": "string"
                 },
                 "overview": {
                     "type": "string"
+                },
+                "popularity": {
+                    "type": "number"
                 },
                 "poster_url": {
                     "type": "string"
                 },
                 "release_date": {
                     "type": "string"
+                },
+                "revenue": {
+                    "type": "integer"
                 },
                 "runtime": {
                     "type": "integer"
@@ -3984,10 +4745,25 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
+                "studios": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "title": {
                     "type": "string"
                 },
                 "tmdb_id": {
+                    "type": "integer"
+                },
+                "vote_average": {
+                    "type": "number"
+                },
+                "vote_count": {
+                    "type": "integer"
+                },
+                "year": {
                     "type": "integer"
                 }
             }
@@ -4032,17 +4808,174 @@ const docTemplate = `{
                 }
             }
         },
+        "recommendation.Movie": {
+            "type": "object",
+            "properties": {
+                "backdrop_url": {
+                    "type": "string"
+                },
+                "genres": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "original_title": {
+                    "type": "string"
+                },
+                "overview": {
+                    "type": "string"
+                },
+                "poster_url": {
+                    "type": "string"
+                },
+                "release_date": {
+                    "type": "string"
+                },
+                "runtime": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "tmdb_id": {
+                    "type": "integer"
+                },
+                "vote_average": {
+                    "type": "number"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "recommendation.RecommendationsResult": {
+            "type": "object",
+            "properties": {
+                "algorithm": {
+                    "type": "string"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "id_type": {
+                    "type": "string"
+                },
+                "recommendations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/recommendation.RecommendedMovie"
+                    }
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "recommendation.RecommendedMovie": {
+            "type": "object",
+            "properties": {
+                "feedback": {
+                    "type": "string"
+                },
+                "is_niche_breaker": {
+                    "type": "boolean"
+                },
+                "movie": {
+                    "$ref": "#/definitions/recommendation.Movie"
+                },
+                "movie_id": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "tmdb_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "recommendation.SimilarMovie": {
+            "type": "object",
+            "properties": {
+                "movie": {
+                    "$ref": "#/definitions/recommendation.Movie"
+                },
+                "movie_id": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "similarity_score": {
+                    "type": "number"
+                },
+                "tmdb_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "recommendation.SimilarResult": {
+            "type": "object",
+            "properties": {
+                "algorithm": {
+                    "type": "string"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "id_type": {
+                    "type": "string"
+                },
+                "movie": {
+                    "$ref": "#/definitions/recommendation.Movie"
+                },
+                "movie_id": {
+                    "type": "integer"
+                },
+                "similar_movies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/recommendation.SimilarMovie"
+                    }
+                },
+                "tmdb_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "tmdb.TMDBMovie": {
             "type": "object",
             "properties": {
+                "backdrop_path": {
+                    "type": "string"
+                },
+                "genre_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "id": {
                     "type": "integer"
                 },
                 "original_language": {
                     "type": "string"
                 },
+                "original_title": {
+                    "type": "string"
+                },
                 "overview": {
                     "type": "string"
+                },
+                "popularity": {
+                    "type": "number"
                 },
                 "poster_path": {
                     "type": "string"
@@ -4055,6 +4988,9 @@ const docTemplate = `{
                 },
                 "vote_average": {
                     "type": "number"
+                },
+                "vote_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -4101,7 +5037,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8003",
-	BasePath:         "/",
+	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "screeK API",
 	Description:      "API para a plataforma de cinema screeK.",

@@ -11,6 +11,7 @@ import (
 	"github.com/StartLivin/screek/backend/internal/cinema"
 	"github.com/StartLivin/screek/backend/internal/imports/letterboxd"
 	"github.com/StartLivin/screek/backend/internal/movies"
+	"github.com/StartLivin/screek/backend/internal/recommendation"
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/social"
 	"github.com/StartLivin/screek/backend/internal/users"
@@ -195,7 +196,18 @@ func (a *catalogMovieAdapter) GetMovieDetails(ctx context.Context, tmdbID int) (
 	if err != nil {
 		return nil, err
 	}
+	return catalogSummary(movie), nil
+}
 
+func (a *catalogMovieAdapter) GetMovieByID(ctx context.Context, id int) (*catalog.MovieDetailSummary, error) {
+	movie, err := a.svc.GetMovieByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return catalogSummary(movie), nil
+}
+
+func catalogSummary(movie *movies.Movie) *catalog.MovieDetailSummary {
 	return &catalog.MovieDetailSummary{
 		ID:          movie.ID,
 		TMDBID:      movie.TMDBID,
@@ -205,7 +217,7 @@ func (a *catalogMovieAdapter) GetMovieDetails(ctx context.Context, tmdbID int) (
 		BackdropURL: movie.BackdropURL,
 		ReleaseDate: movie.ReleaseDate,
 		Runtime:     movie.Runtime,
-	}, nil
+	}
 }
 
 type catalogUserAdapter struct {
@@ -307,6 +319,53 @@ func (a *listSearchAdapter) SearchLists(ctx context.Context, query string) ([]mo
 		})
 	}
 	return results, nil
+}
+
+type recommendationMovieAdapter struct {
+	svc *movies.MovieService
+}
+
+func (a *recommendationMovieAdapter) GetByID(ctx context.Context, id int) (*recommendation.Movie, error) {
+	movie, err := a.svc.GetMovieByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return recommendationMovie(movie), nil
+}
+
+func (a *recommendationMovieAdapter) GetByTMDBID(ctx context.Context, tmdbID int) (*recommendation.Movie, error) {
+	movie, err := a.svc.GetMovieDetails(ctx, tmdbID)
+	if err != nil {
+		return nil, err
+	}
+	return recommendationMovie(movie), nil
+}
+
+func recommendationMovie(movie *movies.Movie) *recommendation.Movie {
+	genres := make([]string, 0, len(movie.Genres))
+	for _, genre := range movie.Genres {
+		genres = append(genres, genre.Name)
+	}
+
+	year := movie.Year
+	if year == 0 && !movie.ReleaseDate.IsZero() {
+		year = movie.ReleaseDate.Year()
+	}
+
+	return &recommendation.Movie{
+		ID:            movie.ID,
+		TMDBID:        movie.TMDBID,
+		Title:         movie.Title,
+		OriginalTitle: movie.OriginalTitle,
+		Overview:      movie.Overview,
+		PosterURL:     movie.PosterURL,
+		BackdropURL:   movie.BackdropURL,
+		ReleaseDate:   movie.ReleaseDate,
+		Year:          year,
+		Runtime:       movie.Runtime,
+		VoteAverage:   movie.VoteAverage,
+		Genres:        genres,
+	}
 }
 
 type sessionSearchAdapter struct {

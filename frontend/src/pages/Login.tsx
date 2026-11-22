@@ -1,28 +1,34 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { X as XIcon, Lock, MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react';
-import { api } from '../services/api';
-import { useAuthStore, type User } from '../stores/authStore';
+import { authService } from '../services/authService';
+import { useAuthStore, type UserRole } from '../stores/authStore';
 
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { TooltipError } from '../components/ui/tooltip-error';
 
 const loginSchema = z.object({
-  email: z.string().email('Digite um e-mail válido'),
+  username: z.string().min(1, 'Digite seu nome de usuário'),
   password: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  user: User;
+function roleFromToken(token: string): UserRole {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const binary = atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '='));
+    const decoded = decodeURIComponent(Array.from(binary, (char) => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
+    const claims = JSON.parse(decoded);
+    return ['USER', 'MANAGER', 'ADMIN'].includes(claims.role) ? claims.role : 'USER';
+  } catch {
+    return 'USER';
+  }
 }
 
 interface LoginProps {
@@ -31,7 +37,10 @@ interface LoginProps {
 
 export const Login = ({ onClose }: LoginProps = {}) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const setTokens = useAuthStore((state) => state.setTokens);
+  const logout = useAuthStore((state) => state.logout);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -57,14 +66,22 @@ export const Login = ({ onClose }: LoginProps = {}) => {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setLoading(true);
-      const response = await api.post<LoginResponse>('/auth/login', data);
-      setAuth(
-        response.data.user,
-        response.data.access_token,
-        response.data.refresh_token
-      );
+      const tokens = await authService.login(data);
+      setTokens(tokens.access_token, tokens.refresh_token);
+      try {
+        const profile = await authService.getMe(tokens.access_token);
+        setAuth({ ...profile, role: roleFromToken(tokens.access_token) }, tokens.access_token, tokens.refresh_token);
+      } catch (error) {
+        logout();
+        throw error;
+      }
       toast.success('Login realizado com sucesso! Bem-vindo(a).');
-      handleClose();
+      if (onClose) {
+        onClose();
+      } else {
+        const redirect = searchParams.get('redirect');
+        navigate(redirect?.startsWith('/') && !redirect.startsWith('//') ? redirect : '/');
+      }
     } catch (err: any) {
       const message = err.response?.data?.error || 'Erro ao realizar login. Tente novamente.';
       toast.error(message);
@@ -79,21 +96,22 @@ export const Login = ({ onClose }: LoginProps = {}) => {
         <div>
           <h1 className="text-lg sm:text-xl text-primary font-display font-extrabold uppercase tracking-wide">Login</h1>
         </div>
-        <button onClick={handleClose} className="border-4 hover:bg-foreground/30 border-primary h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center ml-auto cursor-pointer" title="Fechar">
+        {onClose && <button type="button" onClick={handleClose} className="border-4 hover:bg-foreground/30 border-primary h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center ml-auto cursor-pointer" title="Fechar">
           <XIcon size={18} className="text-primary" />
-        </button>
+        </button>}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-5 sm:p-6">
         <div className="relative">
-          <label className="block text-xs sm:text-sm text-foreground/40 font-bold font-display mb-1">Nome de Usuario</label>
+          <label className="block text-xs sm:text-sm text-foreground/40 font-bold font-display mb-1">Nome de usuário</label>
           <Input
             type="text"
             icon={<MagnifyingGlassIcon size={20} className="text-foreground/40" />}
-            {...register('email')}
-            placeholder="Seu Usuario"
+            autoComplete="username"
+            {...register('username')}
+            placeholder="Seu usuário"
           />
-          <TooltipError message={errors.email?.message} />
+          <TooltipError message={errors.username?.message} />
         </div>
 
         <div className="relative">
@@ -101,6 +119,7 @@ export const Login = ({ onClose }: LoginProps = {}) => {
           <Input
             type="password"
             icon={<Lock size={20} className="text-foreground/40" />}
+            autoComplete="current-password"
             {...register('password')}
             placeholder="••••••••"
           />

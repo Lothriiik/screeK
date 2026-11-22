@@ -20,27 +20,27 @@ func (r *JobRunner) Register(spec string, name string, task func()) {
 	_, err := r.cron.AddFunc(spec, func() {
 		defer func() {
 			if r := recover(); r != nil {
-				slog.Error("[Job] Panic capturado na execução", "name", name, "panic", r)
+				slog.Error("Panic capturado na execução do job", "job", name, "panic", r)
 			}
 		}()
-		slog.Info("[Job] Iniciando execução", "name", name)
+		slog.Info("Iniciando execução do job", "job", name)
 		task()
-		slog.Info("[Job] Execução finalizada", "name", name)
+		slog.Info("Execução do job finalizada", "job", name)
 	})
 
 	if err != nil {
-		slog.Error("[Job] Erro ao registrar job", "name", name, "error", err)
+		slog.Error("Falha ao registrar job", "job", name, "error", err)
 	} else {
-		slog.Info("[Job] Registrado com sucesso", "name", name, "spec", spec)
+		slog.Info("Job registrado", "job", name, "schedule", spec)
 	}
 }
 
 func (r *JobRunner) Start() {
 	r.cron.Start()
-	slog.Info("[Job] Motor de jobs iniciado")
+	slog.Info("Motor de jobs iniciado")
 }
 
 func (r *JobRunner) Stop() {
 	r.cron.Stop()
-	slog.Info("[Job] Motor de jobs parado")
+	slog.Info("Motor de jobs parado")
 }

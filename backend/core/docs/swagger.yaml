@@ -1,4 +1,4 @@
-basePath: /
+basePath: /api/v1
 definitions:
   bookings.TicketType:
     enum:
@@ -308,12 +308,51 @@ definitions:
       total_revenue:
         type: number
     type: object
+  handler.GlobalImportSummary:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      likes:
+        $ref: '#/definitions/letterboxd.ImportSummary'
+      ratings:
+        $ref: '#/definitions/letterboxd.ImportSummary'
+      watched:
+        $ref: '#/definitions/letterboxd.ImportSummary'
+      watchlist:
+        $ref: '#/definitions/letterboxd.ImportSummary'
+    type: object
+  handler.ImportJobStatus:
+    properties:
+      created_at:
+        type: string
+      error:
+        type: string
+      job_id:
+        type: string
+      percent:
+        type: integer
+      processed:
+        type: integer
+      stage:
+        type: string
+      status:
+        type: string
+      summary:
+        $ref: '#/definitions/letterboxd.ZipImportSummary'
+      total:
+        type: integer
+      updated_at:
+        type: string
+    type: object
   handler.LogMovieRequestDTO:
     properties:
       liked:
         type: boolean
       rating:
-        maximum: 10
+        description: Escala canônica 0.5–5.0. Zero = assistido sem nota.
+        maximum: 5
         minimum: 0
         type: number
       watched:
@@ -755,6 +794,13 @@ definitions:
       movie:
         $ref: '#/definitions/handler.MovieSummaryDTO'
     type: object
+  handler.feedbackRequest:
+    properties:
+      feedback:
+        type: string
+      movie_id:
+        type: integer
+    type: object
   httputil.ErrorResponse:
     properties:
       error:
@@ -776,6 +822,47 @@ definitions:
     required:
     - role
     type: object
+  letterboxd.ImportFailure:
+    properties:
+      name:
+        type: string
+      reason:
+        type: string
+      source:
+        type: string
+      year:
+        type: integer
+    type: object
+  letterboxd.ImportSummary:
+    properties:
+      failed:
+        type: integer
+      success:
+        type: integer
+      total:
+        type: integer
+    type: object
+  letterboxd.ZipImportSummary:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      failed_items:
+        items:
+          $ref: '#/definitions/letterboxd.ImportFailure'
+        type: array
+      failed_items_truncated:
+        type: boolean
+      likes:
+        $ref: '#/definitions/letterboxd.ImportSummary'
+      ratings:
+        $ref: '#/definitions/letterboxd.ImportSummary'
+      watched:
+        $ref: '#/definitions/letterboxd.ImportSummary'
+      watchlist:
+        $ref: '#/definitions/letterboxd.ImportSummary'
+    type: object
   movies.Genre:
     properties:
       id:
@@ -789,6 +876,14 @@ definitions:
     properties:
       backdrop_url:
         type: string
+      budget:
+        type: integer
+      certification:
+        type: string
+      countries:
+        items:
+          type: string
+        type: array
       credits:
         items:
           $ref: '#/definitions/movies.MovieCredit'
@@ -799,23 +894,43 @@ definitions:
         type: array
       id:
         type: integer
+      keywords:
+        items:
+          type: string
+        type: array
       original_language:
+        type: string
+      original_title:
         type: string
       overview:
         type: string
+      popularity:
+        type: number
       poster_url:
         type: string
       release_date:
         type: string
+      revenue:
+        type: integer
       runtime:
         type: integer
       spoken_languages:
         type: string
       status:
         type: string
+      studios:
+        items:
+          type: string
+        type: array
       title:
         type: string
       tmdb_id:
+        type: integer
+      vote_average:
+        type: number
+      vote_count:
+        type: integer
+      year:
         type: integer
     type: object
   movies.MovieCredit:
@@ -844,14 +959,117 @@ definitions:
       tmdb_id:
         type: integer
     type: object
+  recommendation.Movie:
+    properties:
+      backdrop_url:
+        type: string
+      genres:
+        items:
+          type: string
+        type: array
+      id:
+        type: integer
+      original_title:
+        type: string
+      overview:
+        type: string
+      poster_url:
+        type: string
+      release_date:
+        type: string
+      runtime:
+        type: integer
+      title:
+        type: string
+      tmdb_id:
+        type: integer
+      vote_average:
+        type: number
+      year:
+        type: integer
+    type: object
+  recommendation.RecommendationsResult:
+    properties:
+      algorithm:
+        type: string
+      generated_at:
+        type: string
+      id_type:
+        type: string
+      recommendations:
+        items:
+          $ref: '#/definitions/recommendation.RecommendedMovie'
+        type: array
+      user_id:
+        type: string
+    type: object
+  recommendation.RecommendedMovie:
+    properties:
+      feedback:
+        type: string
+      is_niche_breaker:
+        type: boolean
+      movie:
+        $ref: '#/definitions/recommendation.Movie'
+      movie_id:
+        type: integer
+      reason:
+        type: string
+      score:
+        type: number
+      tmdb_id:
+        type: integer
+    type: object
+  recommendation.SimilarMovie:
+    properties:
+      movie:
+        $ref: '#/definitions/recommendation.Movie'
+      movie_id:
+        type: integer
+      reason:
+        type: string
+      similarity_score:
+        type: number
+      tmdb_id:
+        type: integer
+    type: object
+  recommendation.SimilarResult:
+    properties:
+      algorithm:
+        type: string
+      generated_at:
+        type: string
+      id_type:
+        type: string
+      movie:
+        $ref: '#/definitions/recommendation.Movie'
+      movie_id:
+        type: integer
+      similar_movies:
+        items:
+          $ref: '#/definitions/recommendation.SimilarMovie'
+        type: array
+      tmdb_id:
+        type: integer
+    type: object
   tmdb.TMDBMovie:
     properties:
+      backdrop_path:
+        type: string
+      genre_ids:
+        items:
+          type: integer
+        type: array
       id:
         type: integer
       original_language:
         type: string
+      original_title:
+        type: string
       overview:
         type: string
+      popularity:
+        type: number
       poster_path:
         type: string
       release_date:
@@ -860,6 +1078,8 @@ definitions:
         type: string
       vote_average:
         type: number
+      vote_count:
+        type: integer
     type: object
   tmdb.TMDBPersonMovieCast:
     properties:
@@ -1699,6 +1919,25 @@ paths:
       summary: Detalhe do Filme (ScreeK)
       tags:
       - Catalog
+  /catalog/movies/internal/{id}:
+    get:
+      description: Retorna detalhes do filme usando o ID canônico interno (movies.id)
+      parameters:
+      - description: ID interno do filme (movies.id)
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.MovieDetailResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Detalhe do Filme por ID interno
+      tags:
+      - Catalog
   /history:
     get:
       description: Retorna todos os filmes que o usuário já assistiu (logs)
@@ -1716,6 +1955,93 @@ paths:
       summary: Meu Histórico
       tags:
       - Catalog
+  /import/letterboxd:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Envie um ZIP oficial no campo `file` ou `zip`, ou CSVs separados
+        (`ratings`, `watched`, `watchlist`). Os dados são associados ao usuário autenticado.
+      parameters:
+      - description: ZIP do export do Letterboxd ou CSV de ratings
+        in: formData
+        name: file
+        type: file
+      - description: ZIP do export do Letterboxd
+        in: formData
+        name: zip
+        type: file
+      - description: ratings.csv
+        in: formData
+        name: ratings
+        type: file
+      - description: watched.csv
+        in: formData
+        name: watched
+        type: file
+      - description: watchlist.csv
+        in: formData
+        name: watchlist
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.GlobalImportSummary'
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/handler.ImportJobStatus'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ImportJobStatus'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Importar export do Letterboxd
+      tags:
+      - Users
+  /import/letterboxd/{jobID}:
+    get:
+      parameters:
+      - description: ID da importação
+        in: path
+        name: jobID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ImportJobStatus'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Consultar andamento da importação Letterboxd
+      tags:
+      - Users
   /lists:
     post:
       consumes:
@@ -2090,6 +2416,234 @@ paths:
       summary: Lista filmes relacionados a uma pessoa
       tags:
       - Movies
+  /recommendations:
+    get:
+      description: Retorna recomendações personalizadas para o usuário autenticado.
+        `/recommendations` é um alias desta rota.
+      parameters:
+      - default: 20
+        description: Quantidade (1-100)
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Filtrar por gênero
+        in: query
+        name: genre
+        type: string
+      - description: Ano mínimo de lançamento
+        in: query
+        name: min_year
+        type: integer
+      - description: Ano máximo de lançamento
+        in: query
+        name: max_year
+        type: integer
+      - description: Filtrar por filmes em cartaz
+        in: query
+        name: in_theaters
+        type: boolean
+      - description: IDs de filmes em cartaz separados por vírgula
+        in: query
+        name: now_playing_ids
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/recommendation.RecommendationsResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Minhas recomendações
+      tags:
+      - Intelligence
+  /recommendations/{userID}:
+    get:
+      description: Retorna recomendações personalizadas para o usuário informado.
+        Requer autenticação.
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: userID
+        required: true
+        type: string
+      - default: 20
+        description: Quantidade (1-100)
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Filtrar por gênero
+        in: query
+        name: genre
+        type: string
+      - description: Ano mínimo de lançamento
+        in: query
+        name: min_year
+        type: integer
+      - description: Ano máximo de lançamento
+        in: query
+        name: max_year
+        type: integer
+      - description: Filtrar por filmes em cartaz
+        in: query
+        name: in_theaters
+        type: boolean
+      - description: IDs de filmes em cartaz separados por vírgula
+        in: query
+        name: now_playing_ids
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/recommendation.RecommendationsResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Recomendações de um usuário
+      tags:
+      - Intelligence
+  /recommendations/feedback:
+    post:
+      consumes:
+      - application/json
+      description: Registra se o filme interessa ao usuário para ajustar recomendações
+        futuras.
+      parameters:
+      - description: Feedback
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.feedbackRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Avaliar uma recomendação
+      tags:
+      - Intelligence
+  /recommendations/feedback/{movieID}:
+    delete:
+      parameters:
+      - description: ID interno do filme
+        in: path
+        name: movieID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remover feedback de recomendação
+      tags:
+      - Intelligence
+  /similar/{movieID}:
+    get:
+      description: Filmes similares a um filme canônico (movies.id)
+      parameters:
+      - description: ID interno do filme (movies.id)
+        in: path
+        name: movieID
+        required: true
+        type: integer
+      - default: 20
+        description: Quantidade (1-100)
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/recommendation.SimilarResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+      summary: Filmes similares
+      tags:
+      - Intelligence
   /social/feed:
     get:
       description: Retorna posts das pessoas que o usuário segue
@@ -2501,6 +3055,66 @@ paths:
       summary: Adiciona um filme aos favoritos
       tags:
       - Users
+  /users/me/recommendations:
+    get:
+      description: Retorna recomendações personalizadas para o usuário autenticado.
+        `/recommendations` é um alias desta rota.
+      parameters:
+      - default: 20
+        description: Quantidade (1-100)
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Filtrar por gênero
+        in: query
+        name: genre
+        type: string
+      - description: Ano mínimo de lançamento
+        in: query
+        name: min_year
+        type: integer
+      - description: Ano máximo de lançamento
+        in: query
+        name: max_year
+        type: integer
+      - description: Filtrar por filmes em cartaz
+        in: query
+        name: in_theaters
+        type: boolean
+      - description: IDs de filmes em cartaz separados por vírgula
+        in: query
+        name: now_playing_ids
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/recommendation.RecommendationsResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/httputil.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Minhas recomendações
+      tags:
+      - Intelligence
   /users/register:
     post:
       consumes:

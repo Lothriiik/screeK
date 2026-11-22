@@ -24,14 +24,14 @@ func NewWebhookHandler(svc bookings.Service, paymentSvc payment.Service) *Webhoo
 func (h *WebhookHandler) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 	event, err := h.paymentSvc.ParseWebhook(r)
 	if err != nil {
-		slog.Error("Webhook Rejeitado", "error", err)
+		slog.Error("Webhook rejeitado", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	isNew, err := h.svc.SetPaymentProcessedNX(r.Context(), event.PaymentID)
 	if err != nil || !isNew {
-		slog.Warn("Webhook Ignorado ou Erro", "payment_id", event.PaymentID, "error", err)
+		slog.Warn("Webhook ignorado ou processado com erro", "payment_id", event.PaymentID, "error", err)
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -43,14 +43,14 @@ func (h *WebhookHandler) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 
 		txID, err := uuid.Parse(txIDStr)
 		if err != nil || userIDStr == "" {
-			slog.Error("Webhook [ERRO]: Metadados inválidos na Transaction", "metadata", event.Metadata)
+			slog.Error("Metadados inválidos no webhook", "metadata", event.Metadata)
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
 		userID, err := uuid.Parse(userIDStr)
 		if err != nil {
-			slog.Error("Webhook [ERRO]: UUID de usuário inválido")
+			slog.Error("UUID de usuário inválido no webhook")
 			w.WriteHeader(http.StatusOK)
 			return
 		}

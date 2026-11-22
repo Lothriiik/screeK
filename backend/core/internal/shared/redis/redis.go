@@ -2,13 +2,14 @@ package redis
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
-func InitRedis(redisURL string) *redis.Client {
+func InitRedis(redisURL string) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
@@ -18,9 +19,10 @@ func InitRedis(redisURL string) *redis.Client {
 
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
-		log.Fatalf("Falha ao conectar no Redis em %s: %v", redisURL, err)
+		slog.Error("Falha ao conectar ao Redis", "address", redisURL, "error", err)
+		return nil, fmt.Errorf("conectar ao Redis: %w", err)
 	}
 
-	log.Println("Conexão com Redis estabelecida com sucesso")
-	return client
+	slog.Info("Conexão com Redis estabelecida", "address", redisURL)
+	return client, nil
 }

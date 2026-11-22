@@ -1,7 +1,7 @@
 package realtime
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -48,7 +48,7 @@ func (c *Client) readPump() {
 		_, _, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("erro WS: %v", err)
+				slog.Warn("Conexão WebSocket encerrada inesperadamente", "error", err, "user_id", c.userID)
 			}
 			break
 		}
@@ -99,7 +99,7 @@ func (c *Client) writePump() {
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("Erro ao dar upgrade no WS:", err)
+		slog.Error("Falha no upgrade da conexão WebSocket", "error", err)
 		return
 	}
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Heart, ChatCircle, DotsThree } from '@phosphor-icons/react';
+import { useRequireAuth } from '../../hooks/useRequireAuth';
 
 export interface CommentRowProps {
   name: string; // e.g. "Lothrik Junior"
@@ -22,17 +23,20 @@ export const CommentRow: React.FC<CommentRowProps> = ({
   commentsCount = 42,
   isLikedInitial = true,
 }) => {
+  const { requireAuth } = useRequireAuth();
   const [isLiked, setIsLiked] = useState(isLikedInitial);
   const [likes, setLikes] = useState(likesCount);
 
   const toggleLike = () => {
-    if (isLiked) {
-      setIsLiked(false);
-      setLikes((prev) => prev - 1);
-    } else {
-      setIsLiked(true);
-      setLikes((prev) => prev + 1);
-    }
+    requireAuth(() => {
+      if (isLiked) {
+        setIsLiked(false);
+        setLikes((prev) => prev - 1);
+      } else {
+        setIsLiked(true);
+        setLikes((prev) => prev + 1);
+      }
+    }, { message: 'Faça login para curtir comentários.' });
   };
 
   const formattedHandle = handle.startsWith('@') ? handle : `@${handle}`;

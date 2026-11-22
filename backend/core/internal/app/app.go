@@ -38,12 +38,16 @@ import (
 	notifhandler "github.com/StartLivin/screek/backend/internal/notifications/handler"
 	"github.com/StartLivin/screek/backend/internal/notifications/realtime"
 	notifstore "github.com/StartLivin/screek/backend/internal/notifications/store"
+	"github.com/StartLivin/screek/backend/internal/recommendation"
+	recommendationhandler "github.com/StartLivin/screek/backend/internal/recommendation/handler"
+	recommendationstore "github.com/StartLivin/screek/backend/internal/recommendation/store"
 	"github.com/StartLivin/screek/backend/internal/shared/config"
 	"github.com/StartLivin/screek/backend/internal/shared/database"
 	"github.com/StartLivin/screek/backend/internal/shared/email"
 	"github.com/StartLivin/screek/backend/internal/shared/events"
 	"github.com/StartLivin/screek/backend/internal/shared/httputil"
 	"github.com/StartLivin/screek/backend/internal/shared/jobs"
+	"github.com/StartLivin/screek/backend/internal/shared/logging"
 	"github.com/StartLivin/screek/backend/internal/shared/redis"
 	"github.com/StartLivin/screek/backend/internal/social"
 	socialhandler "github.com/StartLivin/screek/backend/internal/social/handler"
@@ -89,7 +93,13 @@ func (app *Application) Router() *chi.Mux {
 
 func (app *Application) mount() {
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "https://screek.app"},
+		AllowedOrigins: []string{
+			"http://localhost:5173",
+			"http://127.0.0.1:5173",
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+			"https://screek.app",
+		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -127,7 +137,16 @@ func (app *Application) mount() {
 		})
 	})
 
-	app.router.Get("/swagger/*", httpSwagger.WrapHandler)
+	app.router.Get("/swagger/*", httpSwagger.Handler(httpSwagger.UIConfig(map[string]string{
+		"requestInterceptor": `(request) => {
+			const key = Object.keys(request.headers || {}).find((name) => name.toLowerCase() === "authorization");
+			if (key) {
+				const value = String(request.headers[key]).trim();
+				request.headers[key] = /^Bearer\s/i.test(value) ? value : "Bearer " + value;
+			}
+			return request;
+		}`,
+	})))
 
 	userStore := userstore.NewStore(app.db)
 	movieStore := moviestore.NewStore(app.db)
@@ -184,7 +203,15 @@ func (app *Application) mount() {
 	notifHandler := notifhandler.NewHandler(notifService)
 	webhookHandler := bookinghandler.NewWebhookHandler(bookingSvc, paymentSvc)
 	letterboxdSvc := letterboxd.NewService(&letterboxdMovieAdapter{svc: movieService}, &letterboxdCatalogAdapter{svc: catalogSvc})
-	letterboxdHandler := lbxdhandler.NewHandler(letterboxdSvc)
+	recommendationClient := recommendation.NewClient(app.config.RecommendationURL)
+	letterboxdHandler := lbxdhandler.NewHandler(letterboxdSvc, recommendationClient)
+
+	recommendationSvc := recommendation.NewService(
+		recommendationClient,
+		&recommendationMovieAdapter{svc: movieService},
+		recommendationstore.NewFeedbackStore(app.db),
+	)
+	recommendationHandler := recommendationhandler.NewHandler(recommendationSvc)
 
 	app.registerEventHandlers(notifService, mgmtSvc, socialSvc)
 
@@ -200,6 +227,7 @@ func (app *Application) mount() {
 		bookingHandler,
 		notifHandler,
 		letterboxdHandler,
+		recommendationHandler,
 	))
 
 	app.router.Post("/webhooks/stripe", webhookHandler.StripeWebhook)
@@ -215,8 +243,7 @@ func (app *Application) mount() {
 }
 
 func (app *Application) Run() error {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
+	logging.Setup()
 
 	db, err := database.InitDB(app.config.DatabaseURL)
 	if err != nil {
@@ -224,7 +251,10 @@ func (app *Application) Run() error {
 	}
 
 	app.db = db
-	app.redis = redis.InitRedis(app.config.RedisURL)
+	app.redis, err = redis.InitRedis(app.config.RedisURL)
+	if err != nil {
+		return err
+	}
 
 	if app.config.RunMigrations {
 		slog.Info("Executando migrações automáticas...")
@@ -250,6 +280,9 @@ func (app *Application) Run() error {
 			return err
 		}
 		if err := notifstore.AutoMigrate(app.db); err != nil {
+			return err
+		}
+		if err := recommendationstore.AutoMigrate(app.db); err != nil {
 			return err
 		}
 		slog.Info("Migrações executadas com sucesso!", "db", "postgres")
@@ -323,6 +356,7 @@ func (app *Application) buildRoutes(
 	bookingH *bookinghandler.Handler,
 	notifH *notifhandler.Handler,
 	letterboxdH *lbxdhandler.ImportHandler,
+	recommendationH *recommendationhandler.Handler,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -339,6 +373,7 @@ func (app *Application) buildRoutes(
 	bookingH.RegisterRoutes(r, authMiddleware)
 	notifH.RegisterRoutes(r, authMiddleware)
 	letterboxdH.RegisterRoutes(r, authMiddleware)
+	recommendationH.RegisterRoutes(r, authMiddleware)
 
 	return r
 }

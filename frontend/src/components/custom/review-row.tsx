@@ -28,6 +28,7 @@ export const ReviewRow: React.FC<ReviewRowProps> = ({
 }) => {
   const [isLiked, setIsLiked] = useState(isLikedInitial);
   const [likes, setLikes] = useState(likesCount);
+  const [isRevealed, setIsRevealed] = useState(false);
 
   const toggleLike = () => {
     if (isLiked) {
@@ -86,13 +87,22 @@ export const ReviewRow: React.FC<ReviewRowProps> = ({
               <span>SPOILER</span>
             </div>
 
-            {/* Blurred Review Text */}
-            <div className="relative group cursor-pointer">
-              <p className="text-xs sm:text-sm font-bold text-foreground/80 leading-relaxed blur-sm select-none transition-all group-hover:blur-none group-hover:select-text">
+            {/* Blurred Review Text with persistent hint to prevent layout jump */}
+            <div
+              onClick={() => setIsRevealed(!isRevealed)}
+              className="relative group cursor-pointer"
+            >
+              <p
+                className={`text-xs sm:text-sm font-bold text-foreground/80 leading-relaxed transition-all ${
+                  isRevealed
+                    ? 'blur-none select-text'
+                    : 'blur-sm select-none group-hover:blur-none group-hover:select-text'
+                }`}
+              >
                 {reviewText}
               </p>
-              <span className="block text-[10px] font-extrabold text-foreground/50 italic mt-1 group-hover:hidden">
-                Passe o mouse para revelar o spoiler
+              <span className="block text-[10px] font-extrabold text-foreground/50 italic mt-1">
+                Passe o mouse ou clique para revelar o spoiler
               </span>
             </div>
           </div>

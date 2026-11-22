@@ -6,6 +6,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=screek
     ports:
       - "5432:5432"
     volumes:
@@ -46,11 +47,18 @@ services:
         condition: service_healthy
     ports:
       - "8003:8003"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8003/health > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     env_file:
       - ./backend/core/.env
     environment:
       - DATABASE_URL=host=db user=postgres password=password dbname=screek port=5432 sslmode=disable TimeZone=America/Sao_Paulo
       - REDIS_URL=redis:6379
+      - RECOMMENDATION_SERVICE_URL=http://recommendation:8081/api/v1
     networks:
       - screek-network
 
@@ -60,8 +68,16 @@ services:
       dockerfile: Dockerfile
     container_name: screek-recommendation
     restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
     ports:
       - "8081:8081"
+    environment:
+      - DATA_SOURCE=postgres
+      - DATABASE_URL=postgresql://postgres:password@db:5432/screek
     networks:
       - screek-network
 

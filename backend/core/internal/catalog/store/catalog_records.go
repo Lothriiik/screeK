@@ -3,7 +3,7 @@ package store
 import (
 	"time"
 
-	"github.com/StartLivin/screek/backend/internal/movies"
+	moviestore "github.com/StartLivin/screek/backend/internal/movies/store"
 	userstore "github.com/StartLivin/screek/backend/internal/users/store"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -18,8 +18,8 @@ type MovieLogRecord struct {
 	CreatedAt time.Time `gorm:"not null;default:now()"`
 	UpdatedAt time.Time `gorm:"not null;default:now()"`
 
-	User  userstore.UserRecord `gorm:"foreignKey:UserID"`
-	Movie movies.Movie         `gorm:"foreignKey:MovieID"`
+	User  userstore.UserRecord   `gorm:"foreignKey:UserID"`
+	Movie moviestore.MovieRecord `gorm:"foreignKey:MovieID"`
 }
 
 type MovieListRecord struct {
@@ -40,8 +40,8 @@ type MovieListItemRecord struct {
 	MovieID uint      `gorm:"not null"`
 	AddedAt time.Time `gorm:"not null;default:now()"`
 
-	List  MovieListRecord `gorm:"foreignKey:ListID"`
-	Movie movies.Movie    `gorm:"foreignKey:MovieID"`
+	List  MovieListRecord        `gorm:"foreignKey:ListID"`
+	Movie moviestore.MovieRecord `gorm:"foreignKey:MovieID"`
 }
 
 type WatchlistItemRecord struct {
@@ -49,8 +49,8 @@ type WatchlistItemRecord struct {
 	MovieID uint      `gorm:"primaryKey;autoIncrement:false"`
 	AddedAt time.Time `gorm:"not null;default:now()"`
 
-	User  userstore.UserRecord `gorm:"foreignKey:UserID"`
-	Movie movies.Movie         `gorm:"foreignKey:MovieID"`
+	User  userstore.UserRecord   `gorm:"foreignKey:UserID"`
+	Movie moviestore.MovieRecord `gorm:"foreignKey:MovieID"`
 }
 
 type MovieStatsRecord struct {

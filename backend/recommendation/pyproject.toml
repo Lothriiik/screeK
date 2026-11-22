@@ -1,0 +1,13 @@
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+exclude = [".venv", "venv", "data", "__pycache__"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "PIE", "PYI"]
+# B008 é o padrão recomendado pelo FastAPI para Depends/File.
+ignore = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

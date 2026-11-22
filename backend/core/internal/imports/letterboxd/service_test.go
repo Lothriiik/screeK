@@ -58,7 +58,7 @@ func TestImportService(t *testing.T) {
 	})
 
 	t.Run("ImportRatingsCSV", func(t *testing.T) {
-		csvData := "Date,Name,Year,Rating,Letterboxd URI\n2023-01-01,Matrix,1999,4.5,http://lb.com/matrix"
+		csvData := "Date,Name,Year,Letterboxd URI,Rating\n2023-01-01,Matrix,1999,http://lb.com/matrix,4.5"
 		reader := strings.NewReader(csvData)
 
 		movie := &MatchedMovieSummary{ID: 2}
@@ -70,6 +70,17 @@ func TestImportService(t *testing.T) {
 		assert.Equal(t, 1, summary.Success)
 		matcher.AssertExpectations(t)
 		catalogSvc.AssertExpectations(t)
+	})
+
+	t.Run("ImportRatingsCSV ignora linha curta", func(t *testing.T) {
+		csvData := "Date,Name\n2023-01-01,Inception"
+		reader := strings.NewReader(csvData)
+
+		summary, err := svc.ImportRatingsCSV(context.Background(), userID, reader)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, summary.Total)
+		assert.Equal(t, 1, summary.Failed)
+		assert.Equal(t, 0, summary.Success)
 	})
 
 	t.Run("ImportWatchlistCSV", func(t *testing.T) {

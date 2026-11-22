@@ -184,8 +184,12 @@ func (h *Handler) GetRecommendationsProxy(w http.ResponseWriter, r *http.Request
 func (h *Handler) Discover(w http.ResponseWriter, r *http.Request) {
 	genreID, _ := strconv.Atoi(r.URL.Query().Get("genre_id"))
 	year, _ := strconv.Atoi(r.URL.Query().Get("year"))
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page <= 0 {
+		page = 1
+	}
 
-	foundmovies, err := h.svc.DiscoverMovies(r.Context(), genreID, year)
+	foundmovies, err := h.svc.DiscoverMovies(r.Context(), genreID, year, page)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusInternalServerError, httputil.ErrorResponse{Error: err.Error()})
 		return

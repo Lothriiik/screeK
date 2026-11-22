@@ -753,9 +753,9 @@ export const ComponentsShowcaseScreen = () => {
           <div className="space-y-6 pt-4 border-t-2 border-foreground/20">
             <span className="block text-xs font-extrabold uppercase text-foreground/50">Session Chips (`SessionChip` - 3 Estados: Disponível, Selecionado & Indisponível)</span>
             <div className="flex flex-wrap items-center gap-4">
-              <SessionChip time="19:00" roomName="Sala 4" freeSeatsPercentage={82} state="available" />
-              <SessionChip time="19:00" roomName="Sala 4" freeSeatsPercentage={82} state="selected" />
-              <SessionChip time="19:00" roomName="Sala 4" freeSeatsPercentage={82} state="disabled" />
+              <SessionChip time="19:00" roomName="Sala 4" audioFormat="LEG" screenFormat="IMAX" state="available" />
+              <SessionChip time="19:00" roomName="Sala 4" audioFormat="LEG" screenFormat="IMAX" state="selected" />
+              <SessionChip time="19:00" roomName="Sala 4" audioFormat="LEG" screenFormat="IMAX" state="disabled" />
             </div>
 
             <span className="block text-xs font-extrabold uppercase text-foreground/50 pt-4">Session Cards (`SessionCard` Horizontais - 2 Estados de Borda)</span>

@@ -1,0 +1,23 @@
+# Ambiente local
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Segredos
+.env
+
+# Dados grandes (o modo de produção lê o Postgres)
+data/raw/
+data/cache/
+data/processed/
+
+# Desenvolvimento
+tests/
+.git/
+.gitignore
+README.md
+STRATEGIES.md

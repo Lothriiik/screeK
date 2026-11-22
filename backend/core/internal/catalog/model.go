@@ -61,8 +61,10 @@ type LogMovieRequest struct {
 }
 
 func (r *LogMovieRequest) Validate() error {
-	if r.Rating < 0 || r.Rating > 10 {
-		return errors.New("avaliação deve ser entre 0 e 10")
+	// A escala canônica é 0.5–5.0 (a mesma do Letterboxd).
+	// Zero é aceito para representar "assistido, mas sem nota".
+	if r.Rating < 0 || r.Rating > 5 {
+		return errors.New("avaliação deve ser entre 0 e 5")
 	}
 	return nil
 }

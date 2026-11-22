@@ -6,7 +6,8 @@ import React from 'react';
 export interface SessionChipProps {
   time: string; // e.g. "19:00"
   roomName: string; // e.g. "Sala 4"
-  freeSeatsPercentage?: number; // e.g. 82
+  audioFormat?: string; // e.g. "LEG", "DUB"
+  screenFormat?: string; // e.g. "IMAX", "4DX", "VIP", "2D"
   state?: 'available' | 'selected' | 'disabled';
   onClick?: () => void;
 }
@@ -14,7 +15,8 @@ export interface SessionChipProps {
 export const SessionChip: React.FC<SessionChipProps> = ({
   time,
   roomName,
-  freeSeatsPercentage = 82,
+  audioFormat,
+  screenFormat,
   state = 'available',
   onClick,
 }) => {
@@ -26,18 +28,18 @@ export const SessionChip: React.FC<SessionChipProps> = ({
       type="button"
       onClick={onClick}
       disabled={isDisabled}
-      className={`w-28 h-28 flex flex-col items-center justify-center p-3 font-display rounded-none border-4 transition-all cursor-pointer ${
+      className={`w-28 h-28 flex flex-col items-center justify-between p-2.5 font-display rounded-none border-4 transition-all cursor-pointer text-center shrink-0 ${
         isDisabled
           ? 'opacity-40 border-foreground/30 bg-background/50 cursor-not-allowed text-foreground/50'
           : isSelected
-          ? 'border-[#6A1B4D] bg-[#6A1B4D] text-white shadow-[4px_4px_0px_0px_var(--border)]'
-          : 'border-[#6A1B4D] bg-background text-foreground hover:bg-[#6A1B4D]/5 shadow-[4px_4px_0px_0px_var(--border)]'
+          ? 'border-primary bg-primary text-primary-foreground shadow-[4px_4px_0px_0px_var(--border)] scale-[1.02]'
+          : 'border-primary bg-background text-foreground hover:bg-primary/5 shadow-[4px_4px_0px_0px_var(--border)] hover:-translate-y-1'
       }`}
     >
       {/* Time Text */}
       <span
-        className={`text-xl font-black tracking-tight ${
-          isSelected ? 'text-white' : isDisabled ? 'text-foreground/50' : 'text-[#6A1B4D]'
+        className={`text-2xl font-black tracking-tight ${
+          isSelected ? 'text-primary-foreground' : isDisabled ? 'text-foreground/50' : 'text-primary'
         }`}
       >
         {time}
@@ -45,32 +47,20 @@ export const SessionChip: React.FC<SessionChipProps> = ({
 
       {/* Room Name */}
       <span
-        className={`text-xs font-bold my-0.5 ${
-          isSelected ? 'text-white/80' : 'text-foreground/60'
+        className={`text-xs font-bold truncate max-w-full ${
+          isSelected ? 'text-primary-foreground/90' : 'text-foreground/70'
         }`}
       >
         {roomName}
       </span>
 
-      {/* Occupancy Progress Bar */}
-      <div
-        className={`w-full h-1.5 rounded-none overflow-hidden my-1 ${
-          isSelected ? 'bg-white/30' : 'bg-foreground/20'
-        }`}
-      >
-        <div
-          className={`h-full ${isSelected ? 'bg-white' : 'bg-[#6A1B4D]'}`}
-          style={{ width: `${freeSeatsPercentage}%` }}
-        />
-      </div>
-
-      {/* Percentage Text */}
+      {/* Clean text line for Audio · Format */}
       <span
-        className={`text-[10px] font-extrabold uppercase ${
-          isSelected ? 'text-white' : 'text-[#6A1B4D]'
+        className={`text-[11px] font-black uppercase tracking-wider ${
+          isSelected ? 'text-primary-foreground/90' : 'text-primary'
         }`}
       >
-        {freeSeatsPercentage}% livres
+        {[audioFormat, screenFormat].filter(Boolean).join(' · ')}
       </span>
     </button>
   );

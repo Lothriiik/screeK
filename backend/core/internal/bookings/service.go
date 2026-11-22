@@ -15,7 +15,6 @@ import (
 	redisclient "github.com/redis/go-redis/v9"
 )
 
-
 type Mailer interface {
 	SendTicketEmail(ctx context.Context, to, userName, qrCode string) error
 }
@@ -489,7 +488,7 @@ func (s *bookingsService) CleanupExpiredReservations(ctx context.Context) error 
 	}
 
 	if tickets+txs > 0 {
-		slog.Info("[Job] Limpeza de reservas concluída", "tickets", tickets, "transações", txs)
+		slog.Info("Limpeza de reservas concluída", "job", "reservation_cleanup", "tickets", tickets, "transactions", txs)
 	}
 
 	return nil

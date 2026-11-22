@@ -2,7 +2,7 @@ package config
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -19,12 +19,13 @@ type Config struct {
 	ResendKey           string
 	MeiliHost           string
 	MeiliMasterKey      string
+	RecommendationURL   string
 	RunMigrations       bool
 }
 
 func LoadConfig() (Config, error) {
 	if err := godotenv.Load(); err != nil {
-		log.Println("Arquivo .env não encontrado, usando variáveis de ambiente do sistema.")
+		slog.Warn("Arquivo .env não encontrado; usando variáveis de ambiente do sistema")
 	}
 	DatabaseURL := os.Getenv("DATABASE_URL")
 	if DatabaseURL == "" {
@@ -58,6 +59,11 @@ func LoadConfig() (Config, error) {
 		meiliMasterKey = "masterKey123"
 	}
 
+	recommendationURL := os.Getenv("RECOMMENDATION_SERVICE_URL")
+	if recommendationURL == "" {
+		recommendationURL = "http://localhost:8081/api/v1"
+	}
+
 	runMigrationsEnv := os.Getenv("RUN_MIGRATIONS")
 	runMigrations := runMigrationsEnv != "false"
 
@@ -72,6 +78,7 @@ func LoadConfig() (Config, error) {
 		ResendKey:           os.Getenv("RESEND_KEY"),
 		MeiliHost:           meiliHost,
 		MeiliMasterKey:      meiliMasterKey,
+		RecommendationURL:   recommendationURL,
 		RunMigrations:       runMigrations,
 	}, nil
 }

@@ -1,0 +1,23 @@
+# Ambiente
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Segredos
+.env
+
+# Dados locais (export do Letterboxd, cache TMDB, artefatos processados)
+data/cache/
+data/processed/
+data/raw/uploads/
+data/raw/letterboxd/
+data/letterboxd-*/
+
+# Build/artefatos
+*.exe
+*.log
+.DS_Store

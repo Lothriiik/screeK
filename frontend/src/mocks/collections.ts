@@ -1,0 +1,69 @@
+import type { EditorialCollection } from '../types/collection';
+import carouselWallpaper1 from '../assets/carrousel/wallpaper-1.jpg';
+import carouselWallpaper2 from '../assets/carrousel/wallpaper-2.jpg';
+import carouselWallpaper3 from '../assets/carrousel/wallpaper-3.jpg';
+
+export const MOCK_COLLECTIONS: EditorialCollection[] = [
+  {
+    id: 'col-1',
+    title: 'Essenciais do Cinema Sci-Fi & Cyberpunk',
+    slug: 'sci-fi-cyberpunk',
+    subtitle: 'Direção de arte radical, ritmos implacáveis e futuros distópicos',
+    description:
+      'Uma seleção com curadoria editorial screeK reunindo visões de futuro audaciosas, inovação estética e narrativas que desafiaram o cinema tradicional.',
+    banner_url: carouselWallpaper1,
+    backdrop_url: carouselWallpaper1,
+    movie_ids: ['speed-racer', 'dune-part-two', 'shin-godzilla', 'chainsaw-man'],
+    tags: ['Sci-Fi', 'Cyberpunk', 'Visual', 'IMAX'],
+    curator: {
+      name: 'Equipe screeK Curadoria',
+      role: 'Curadoria Oficial',
+      avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+    },
+    movies_count: 4,
+    featured: true,
+    created_at: '2026-09-01',
+  },
+  {
+    id: 'col-2',
+    title: 'Onda de Terror Visceral & Psicológico',
+    slug: 'terror-visceral',
+    subtitle: 'Das obras-primas do Giallo ao novo horror corporal europeu',
+    description:
+      'De Dario Argento e Brian De Palma a Julia Ducournau: cinema de tensão atmosférica extrema, iluminação expressionista e estética do pesadelo.',
+    banner_url: carouselWallpaper3,
+    backdrop_url: carouselWallpaper3,
+    movie_ids: ['raw', 'opera', 'the-stendhal-syndrome', 'phantom-of-the-paradise'],
+    tags: ['Terror', 'Giallo', 'Cult', 'Autoral'],
+    curator: {
+      name: 'Clara Miranda',
+      role: 'Crítica Convidada',
+      avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    },
+    movies_count: 4,
+    featured: true,
+    created_at: '2026-08-20',
+  },
+  {
+    id: 'col-3',
+    title: 'Em Alta na Comunidade screeK',
+    slug: 'em-alta-screek',
+    subtitle: 'Filmes com maior volume de debates e notas elevadas neste mês',
+    description:
+      'Coleção gerada automaticamente com base nas interações da comunidade: resenhas publicadas, médias de avaliação e atividade nas salas de cinema.',
+    banner_url: carouselWallpaper2,
+    backdrop_url: carouselWallpaper2,
+    movie_ids: ['dune-part-two', 'chainsaw-man', 'speed-racer', 'the-wolf-house'],
+    tags: ['Algoritmo', 'Popular', 'Comunidade', 'Em Alta'],
+    is_algorithmic: true,
+    algorithm_type: 'trending',
+    curator: {
+      name: 'screeK Bot',
+      role: 'Algoritmo de Tendências',
+      avatar_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
+    },
+    movies_count: 4,
+    featured: false,
+    created_at: '2026-09-15',
+  },
+];

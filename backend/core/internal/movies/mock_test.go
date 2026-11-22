@@ -16,6 +16,14 @@ func (m *MockMoviesRepo) SaveMovie(ctx context.Context, movie *Movie) error {
 	return args.Error(0)
 }
 
+func (m *MockMoviesRepo) GetMovieByID(ctx context.Context, id int) (*Movie, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*Movie), args.Error(1)
+}
+
 func (m *MockMoviesRepo) GetMovieByTMDBID(ctx context.Context, tmdbID int) (*Movie, error) {
 	args := m.Called(ctx, tmdbID)
 	if args.Get(0) == nil {
@@ -70,6 +78,11 @@ func (m *MockTMDBService) SearchMovies(ctx context.Context, query string, year i
 	return args.Get(0).([]movietmdb.TMDBMovie), args.Error(1)
 }
 
+func (m *MockTMDBService) SearchMoviesByLanguage(ctx context.Context, query string, year int, language string) ([]movietmdb.TMDBMovie, error) {
+	args := m.Called(ctx, query, year, language)
+	return args.Get(0).([]movietmdb.TMDBMovie), args.Error(1)
+}
+
 func (m *MockTMDBService) GetMovieDetails(ctx context.Context, tmdbID int) (*movietmdb.TMDBMovieDetails, error) {
 	args := m.Called(ctx, tmdbID)
 	if args.Get(0) == nil {
@@ -99,8 +112,8 @@ func (m *MockTMDBService) GetMoviesRecommendations(ctx context.Context, movieID 
 	return args.Get(0).([]movietmdb.TMDBMovie), args.Error(1)
 }
 
-func (m *MockTMDBService) DiscoverMovies(ctx context.Context, genreID int, year int) ([]movietmdb.TMDBMovie, error) {
-	args := m.Called(ctx, genreID, year)
+func (m *MockTMDBService) DiscoverMovies(ctx context.Context, genreID int, year int, page int) ([]movietmdb.TMDBMovie, error) {
+	args := m.Called(ctx, genreID, year, page)
 	return args.Get(0).([]movietmdb.TMDBMovie), args.Error(1)
 }
 

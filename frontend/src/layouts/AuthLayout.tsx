@@ -20,9 +20,9 @@ export const AuthLayout = () => {
 
 
       <footer className="pb-6 sm:pb-12 md:pb-32 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs sm:text-sm font-bold font-display text-foreground/60">
-        <Link to="#" className="underline hover:text-tertiary transition-colors">Termos de Uso</Link>
-        <Link to="#" className="underline hover:text-tertiary transition-colors">FAQ</Link>
-        <Link to="#" className="underline hover:text-tertiary transition-colors">Privacidade</Link>
+        <Link to="/terms" className="underline hover:text-tertiary transition-colors">Termos de Uso</Link>
+        <Link to="/faq" className="underline hover:text-tertiary transition-colors">FAQ</Link>
+        <Link to="/privacy" className="underline hover:text-tertiary transition-colors">Privacidade</Link>
       </footer>
 
     </div>

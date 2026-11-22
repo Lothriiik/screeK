@@ -41,6 +41,7 @@ func (h *CatalogHandler) RegisterRoutes(r chi.Router, authMiddleware func(http.H
 		r.Delete("/lists/{id}", h.DeleteMovieList)
 
 		r.Get("/catalog/movies/{id}", h.GetMovieDetail)
+		r.Get("/catalog/movies/internal/{id}", h.GetMovieDetailByID)
 	})
 }
 
@@ -74,7 +75,8 @@ func (h *CatalogHandler) LogMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.LogMovie(r.Context(), userID, uint(movieID), catalog.LogMovieRequest{
+	// A rota pública usa TMDB ID; o serviço resolve para movies.id.
+	if err := h.svc.LogMovieByTMDBID(r.Context(), userID, movieID, catalog.LogMovieRequest{
 		Watched: reqDTO.Watched,
 		Rating:  reqDTO.Rating,
 		Liked:   reqDTO.Liked,
@@ -334,6 +336,25 @@ func (h *CatalogHandler) GetMovieDetail(w http.ResponseWriter, r *http.Request) 
 	movieID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 
 	detail, err := h.svc.GetMovieDetail(r.Context(), movieID)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusNotFound, httputil.ErrorResponse{Error: "Filme não encontrado"})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, detail)
+}
+
+// @Summary Detalhe do Filme por ID interno
+// @Description Retorna detalhes do filme usando o ID canônico interno (movies.id)
+// @Tags Catalog
+// @Param id path int true "ID interno do filme (movies.id)"
+// @Success 200 {object} MovieDetailResponseDTO
+// @Security BearerAuth
+// @Router /catalog/movies/internal/{id} [get]
+func (h *CatalogHandler) GetMovieDetailByID(w http.ResponseWriter, r *http.Request) {
+	movieID, _ := strconv.Atoi(chi.URLParam(r, "id"))
+
+	detail, err := h.svc.GetMovieDetailByID(r.Context(), movieID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusNotFound, httputil.ErrorResponse{Error: "Filme não encontrado"})
 		return

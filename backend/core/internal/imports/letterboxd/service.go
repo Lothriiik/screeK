@@ -5,9 +5,24 @@ import (
 	"encoding/csv"
 	"io"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 )
+
+// parseTitleYear extrai Nome/Ano das colunas do export do Letterboxd
+// (Date,Name,Year,...). Linhas curtas ou sem título são ignoradas.
+func parseTitleYear(record []string) (string, int, bool) {
+	if len(record) < 3 {
+		return "", 0, false
+	}
+	name := strings.TrimSpace(record[1])
+	if name == "" {
+		return "", 0, false
+	}
+	year, _ := strconv.Atoi(strings.TrimSpace(record[2]))
+	return name, year, true
+}
 
 type Service struct {
 	matcher MovieMatcher
@@ -40,8 +55,11 @@ func (s *Service) ImportWatchedCSV(ctx context.Context, userID uuid.UUID, reader
 
 	for _, record := range records[1:] {
 		summary.Total++
-		name := record[1]
-		year, _ := strconv.Atoi(record[2])
+		name, year, ok := parseTitleYear(record)
+		if !ok {
+			summary.Failed++
+			continue
+		}
 
 		movie, err := s.matcher.MatchMovieByTitleAndYear(ctx, name, year)
 		if err != nil {
@@ -73,9 +91,16 @@ func (s *Service) ImportRatingsCSV(ctx context.Context, userID uuid.UUID, reader
 
 	for _, record := range records[1:] {
 		summary.Total++
-		name := record[1]
-		year, _ := strconv.Atoi(record[2])
-		rating, _ := strconv.ParseFloat(record[3], 64)
+		name, year, ok := parseTitleYear(record)
+		if !ok {
+			summary.Failed++
+			continue
+		}
+		// ratings.csv: Date,Name,Year,LetterboxdURI,Rating
+		rating := 0.0
+		if len(record) > 4 {
+			rating, _ = strconv.ParseFloat(strings.TrimSpace(record[4]), 64)
+		}
 
 		movie, err := s.matcher.MatchMovieByTitleAndYear(ctx, name, year)
 		if err != nil {
@@ -107,8 +132,11 @@ func (s *Service) ImportWatchlistCSV(ctx context.Context, userID uuid.UUID, read
 
 	for _, record := range records[1:] {
 		summary.Total++
-		name := record[1]
-		year, _ := strconv.Atoi(record[2])
+		name, year, ok := parseTitleYear(record)
+		if !ok {
+			summary.Failed++
+			continue
+		}
 
 		movie, err := s.matcher.MatchMovieByTitleAndYear(ctx, name, year)
 		if err != nil {

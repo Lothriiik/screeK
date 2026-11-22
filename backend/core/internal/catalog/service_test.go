@@ -125,6 +125,14 @@ func (m *MockMovieProvider) GetMovieDetails(ctx context.Context, tmdbID int) (*M
 	return args.Get(0).(*MovieDetailSummary), args.Error(1)
 }
 
+func (m *MockMovieProvider) GetMovieByID(ctx context.Context, id int) (*MovieDetailSummary, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*MovieDetailSummary), args.Error(1)
+}
+
 func TestLogMovie_WithGamification(t *testing.T) {
 	repo := new(MockCatalogRepo)
 	up := new(MockUserProvider)
@@ -137,7 +145,7 @@ func TestLogMovie_WithGamification(t *testing.T) {
 
 	repo.On("GetMovieLog", mock.Anything, userID, movieID).Return(nil, nil)
 	repo.On("UpsertMovieLog", mock.Anything, mock.AnythingOfType("*catalog.MovieLog")).Return(nil)
-	mp.On("GetMovieDetails", mock.Anything, 550).Return(&MovieDetailSummary{Runtime: 120}, nil)
+	mp.On("GetMovieByID", mock.Anything, 550).Return(&MovieDetailSummary{Runtime: 120}, nil)
 	up.On("IncrementStats", mock.Anything, userID, 1, 120).Return(nil)
 
 	err := svc.LogMovie(context.Background(), userID, movieID, req)

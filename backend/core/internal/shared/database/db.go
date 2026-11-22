@@ -1,7 +1,7 @@
 package database
 
 import (
-	"log"
+	"log/slog"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -13,7 +13,7 @@ func InitDB(dsn string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	log.Println("Conexão com PostgreSQL estabelecida com sucesso! 🐘")
+	slog.Info("Conexão com PostgreSQL estabelecida", "database", "postgres")
 
 	return db, nil
 }

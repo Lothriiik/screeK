@@ -46,11 +46,11 @@ func (eb *EventBus) Publish(eventType EventType, payload any) {
 	if handlers, ok := eb.handlers[eventType]; ok {
 		for _, handler := range handlers {
 			go func(h Handler) {
-				defer func() { 
+				defer func() {
 					if r := recover(); r != nil {
-						slog.Error("[EventBus] panic in handler", 
-						"error", string(eventType),
-						"panic", r)
+						slog.Error("Panic no handler de evento",
+							"event_type", eventType,
+							"panic", r)
 					}
 				}()
 				h(payload)

@@ -29,17 +29,57 @@ func NewStore(db *gorm.DB) *Store {
 
 func (s *Store) SaveMovie(ctx context.Context, movie *movies.Movie) error {
 	record := MovieToRecord(movie)
-	result := s.db.WithContext(ctx).Where(MovieRecord{TMDBID: record.TMDBID}).Assign(MovieRecord{
-		Title:       record.Title,
-		Overview:    record.Overview,
-		PosterURL:   record.PosterURL,
-		ReleaseDate: record.ReleaseDate,
-	}).FirstOrCreate(record)
+
+	updates := map[string]any{
+		"title":    record.Title,
+		"overview": record.Overview,
+	}
+	if record.OriginalTitle != "" {
+		updates["original_title"] = record.OriginalTitle
+	}
+	if record.PosterURL != "" {
+		updates["poster_url"] = record.PosterURL
+	}
+	if record.BackdropURL != "" {
+		updates["backdrop_url"] = record.BackdropURL
+	}
+	if !record.ReleaseDate.IsZero() {
+		updates["release_date"] = record.ReleaseDate
+	}
+	if record.Runtime > 0 {
+		updates["runtime"] = record.Runtime
+	}
+	if record.OriginalLanguage != "" {
+		updates["original_language"] = record.OriginalLanguage
+	}
+	if record.VoteAverage > 0 {
+		updates["vote_average"] = record.VoteAverage
+	}
+	if record.VoteCount > 0 {
+		updates["vote_count"] = record.VoteCount
+	}
+	if record.Popularity > 0 {
+		updates["popularity"] = record.Popularity
+	}
+
+	result := s.db.WithContext(ctx).Where(MovieRecord{TMDBID: record.TMDBID}).Assign(updates).FirstOrCreate(record)
 
 	if result.Error == nil {
 		movie.ID = record.ID
 	}
 	return result.Error
+}
+
+func (s *Store) GetMovieByID(ctx context.Context, id int) (*movies.Movie, error) {
+	var record MovieRecord
+	result := s.db.WithContext(ctx).Preload("Genres").Preload("Credits").Preload("Credits.Person").First(&record, id)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, ErrMovieNotFound
+	}
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return MovieToDomain(&record), nil
 }
 
 func (s *Store) GetMovieByTMDBID(ctx context.Context, tmdbID int) (*movies.Movie, error) {
@@ -140,16 +180,48 @@ func (s *Store) SaveMovieDetails(ctx context.Context, tmdbData *movietmdb.TMDBMo
 	}
 	spokenLanguagesStr := strings.Join(spokenLangs, ", ")
 
+	var countries []string
+	for _, country := range tmdbData.ProductionCountries {
+		countries = append(countries, country.Name)
+	}
+
+	var keywords []string
+	for _, keyword := range tmdbData.Keywords.Keywords {
+		keywords = append(keywords, keyword.Name)
+	}
+
+	var studios []string
+	for _, company := range tmdbData.ProductionCompanies {
+		studios = append(studios, company.Name)
+	}
+
 	parsedDate, _ := time.Parse("2006-01-02", tmdbData.ReleaseDate)
+
+	status := tmdbData.Status
+	if status == "" {
+		status = "Released"
+	}
 
 	movieRec := MovieRecord{
 		TMDBID:           tmdbData.ID,
 		Title:            tmdbData.Title,
+		OriginalTitle:    tmdbData.OriginalTitle,
 		Overview:         tmdbData.Overview,
-		PosterURL:        tmdbData.PosterPath,
+		PosterURL:        imageURL(tmdbData.PosterPath, "w500"),
+		BackdropURL:      imageURL(tmdbData.BackdropPath, "original"),
+		Status:           status,
 		Runtime:          tmdbData.Runtime,
 		OriginalLanguage: tmdbData.OriginalLanguage,
 		SpokenLanguages:  spokenLanguagesStr,
+		VoteAverage:      tmdbData.VoteAverage,
+		VoteCount:        tmdbData.VoteCount,
+		Popularity:       tmdbData.Popularity,
+		Budget:           tmdbData.Budget,
+		Revenue:          tmdbData.Revenue,
+		Countries:        joinList(countries),
+		Keywords:         joinList(keywords),
+		Studios:          joinList(studios),
+		Certification:    extractCertification(tmdbData.ReleaseDates),
 		ReleaseDate:      parsedDate,
 		Genres:           generosDoBanco,
 		Credits:          creditosDoBanco,
@@ -209,4 +281,43 @@ func (s *Store) GetGenreName(ctx context.Context, genreID int) (string, error) {
 		return "", err
 	}
 	return record.Name, nil
+}
+
+func imageURL(path, size string) string {
+	if path == "" {
+		return ""
+	}
+	if strings.HasPrefix(path, "http") {
+		return path
+	}
+	return "https://image.tmdb.org/t/p/" + size + path
+}
+
+// extractCertification prefere a classificação dos EUA, depois a do Brasil
+// e, por fim, a primeira classificação não vazia disponível.
+func extractCertification(releaseDates movietmdb.TMDBReleaseDates) string {
+	priorities := []string{"US", "BR"}
+
+	for _, country := range priorities {
+		for _, result := range releaseDates.Results {
+			if result.ISO3166_1 != country {
+				continue
+			}
+			for _, release := range result.ReleaseDates {
+				if release.Certification != "" {
+					return release.Certification
+				}
+			}
+		}
+	}
+
+	for _, result := range releaseDates.Results {
+		for _, release := range result.ReleaseDates {
+			if release.Certification != "" {
+				return release.Certification
+			}
+		}
+	}
+
+	return ""
 }

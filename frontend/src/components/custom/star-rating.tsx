@@ -6,6 +6,9 @@ export interface StarRatingProps {
   onChange?: (value: number) => void;
   readonly?: boolean;
   size?: number;
+  starColor?: string;
+  emptyColor?: string;
+  showValue?: boolean;
 }
 
 export const StarRating: React.FC<StarRatingProps> = ({
@@ -13,6 +16,9 @@ export const StarRating: React.FC<StarRatingProps> = ({
   onChange,
   readonly = false,
   size = 24,
+  starColor = 'text-amber-400',
+  emptyColor = 'text-white/30',
+  showValue = true,
 }) => {
   const [hoverValue, setHoverValue] = useState<number | null>(null);
 
@@ -53,18 +59,20 @@ export const StarRating: React.FC<StarRatingProps> = ({
             }}
           >
             {isHalf ? (
-              <Star size={size} weight="duotone" className="text-amber-500" />
+              <Star size={size} weight="duotone" className={starColor} />
             ) : isFilled ? (
-              <Star size={size} weight="fill" className="text-amber-500" />
+              <Star size={size} weight="fill" className={starColor} />
             ) : (
-              <Star size={size} weight="regular" className="text-foreground/30" />
+              <Star size={size} weight="regular" className={emptyColor} />
             )}
           </div>
         );
       })}
-      <span className="ml-2 font-display font-extrabold text-sm text-amber-500">
-        {displayValue.toFixed(1)}
-      </span>
+      {showValue && (
+        <span className={`ml-2 font-display font-extrabold text-sm ${starColor}`}>
+          {displayValue.toFixed(1)}
+        </span>
+      )}
     </div>
   );
 };

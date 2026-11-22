@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { X as XIcon, Lock, MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react';
-import { api } from '../services/api';
+import { authService } from '../services/authService';
 
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -13,7 +13,8 @@ import { TooltipError } from '../components/ui/tooltip-error';
 
 const registerSchema = z
   .object({
-    username: z.string().min(3, 'O nome de usuário deve ter no mínimo 3 caracteres'),
+    name: z.string().min(1, 'Digite seu nome'),
+    username: z.string().min(4, 'O nome de usuário deve ter no mínimo 4 caracteres'),
     email: z.string().email('Digite um e-mail válido'),
     password: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres'),
     confirmPassword: z.string().min(6, 'Confirme sua senha'),
@@ -56,13 +57,16 @@ export const Register = ({ onClose }: RegisterProps = {}) => {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setLoading(true);
-      await api.post('/auth/register', {
+      await authService.register({
+        name: data.name,
         username: data.username,
         email: data.email,
         password: data.password,
+        password_confirmation: data.confirmPassword,
       });
       toast.success('Conta criada com sucesso! Faça login para entrar.');
-      handleClose();
+      if (onClose) onClose();
+      else navigate('/login');
     } catch (err: any) {
       const message = err.response?.data?.error || 'Erro ao criar conta. Tente novamente.';
       toast.error(message);
@@ -84,9 +88,20 @@ export const Register = ({ onClose }: RegisterProps = {}) => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-5 sm:p-6">
         <div className="relative">
+          <label className="block text-xs sm:text-sm text-foreground/40 font-bold font-display mb-1">Nome</label>
+          <Input
+            type="text"
+            autoComplete="name"
+            {...register('name')}
+            placeholder="Seu nome"
+          />
+          <TooltipError message={errors.name?.message} />
+        </div>
+        <div className="relative">
           <label className="block text-xs sm:text-sm text-foreground/40 font-bold font-display mb-1">Nome de Usuario</label>
           <Input
             type="text"
+            autoComplete="username"
             icon={<MagnifyingGlassIcon size={20} className="text-foreground/40" />}
             {...register('username')}
             placeholder="Seu Usuario"
@@ -98,6 +113,7 @@ export const Register = ({ onClose }: RegisterProps = {}) => {
           <label className="block text-xs sm:text-sm text-foreground/40 font-bold font-display mb-1">Endereço de e-mail</label>
           <Input
             type="text"
+            autoComplete="email"
             icon={<MagnifyingGlassIcon size={20} className="text-foreground/40" />}
             {...register('email')}
             placeholder="Seu E-mail"
@@ -109,6 +125,7 @@ export const Register = ({ onClose }: RegisterProps = {}) => {
           <label className="block text-xs sm:text-sm text-foreground/40 font-bold font-display mb-1">Senha</label>
           <Input
             type="password"
+            autoComplete="new-password"
             icon={<Lock size={20} className="text-foreground/40" />}
             {...register('password')}
             placeholder="••••••••"
@@ -120,6 +137,7 @@ export const Register = ({ onClose }: RegisterProps = {}) => {
           <label className="block text-xs sm:text-sm text-foreground/40 font-bold font-display mb-1">Confirmação de Senha</label>
           <Input
             type="password"
+            autoComplete="new-password"
             icon={<Lock size={20} className="text-foreground/40" />}
             {...register('confirmPassword')}
             placeholder="••••••••"
@@ -129,7 +147,7 @@ export const Register = ({ onClose }: RegisterProps = {}) => {
 
         <div className="justify-between mt-3">
           <p className="font-black text-xs text-foreground/40 mb-3 leading-tight">
-            Ao continuar, você concorda com os <Link to="#" onClick={onClose} className="hover:text-secondary-hover text-secondary font-black text-xs text-decoration-line: underline">Termos de Uso</Link> e a <Link to="#" onClick={onClose} className="hover:text-secondary-hover text-secondary font-black text-xs text-decoration-line: underline">Política de Privacidade</Link>.
+            Ao continuar, você concorda com os <Link to="/terms" onClick={onClose} className="hover:text-secondary-hover text-secondary font-black text-xs text-decoration-line: underline">Termos de Uso</Link> e a <Link to="/privacy" onClick={onClose} className="hover:text-secondary-hover text-secondary font-black text-xs text-decoration-line: underline">Política de Privacidade</Link>.
           </p>
           <Button
             type="submit"

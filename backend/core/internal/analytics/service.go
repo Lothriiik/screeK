@@ -143,6 +143,6 @@ func (s *AnalyticsService) RunAnalyticsAggregation(ctx context.Context, date tim
 		return err
 	}
 
-	slog.Info("[Job] Analytics consolidado", "cinemas", len(cinemaStats), "filmes", len(movieStats))
+	slog.Info("Analytics consolidado", "job", "analytics_aggregation", "cinemas", len(cinemaStats), "movies", len(movieStats))
 	return nil
 }
