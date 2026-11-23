@@ -11,7 +11,8 @@ import {
   Eye,
   ChatCircle,
   Plus,
-  ChartBar
+  ChartBar,
+  Ticket
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MovieCard } from '../components/custom/movie-card';
@@ -19,8 +20,10 @@ import { ReviewRow } from '../components/custom/review-row';
 import { FeedCard } from '../components/custom/feed-card';
 import { MOCK_USERS, MOCK_MOVIES } from '../mocks';
 import { MOCK_FEED_ACTIVITIES } from '../mocks/feed';
+import { MOCK_CINEMA_PASSPORT } from '../mocks/cinema-passport';
+import { CinemaPassportCard } from '../components/custom/cinema-passport-card';
 
-type ProfileTab = 'diary' | 'posts' | 'watched' | 'reviews' | 'lists';
+type ProfileTab = 'diary' | 'posts' | 'watched' | 'passport' | 'reviews' | 'lists';
 
 export function Profile() {
   const { username } = useParams<{ username: string }>();
@@ -316,6 +319,19 @@ export function Profile() {
 
           <button
             type="button"
+            onClick={() => setActiveTab('passport')}
+            className={`px-4 py-2 text-xs font-black uppercase transition-all cursor-pointer border-2 flex items-center gap-1.5 ${
+              activeTab === 'passport'
+                ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_var(--border)]'
+                : 'bg-background text-foreground/70 border-transparent hover:border-foreground/30 hover:text-foreground'
+            }`}
+          >
+            <Ticket size={16} weight="bold" />
+            <span>Passaporte</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('lists')}
             className={`px-4 py-2 text-xs font-black uppercase transition-all cursor-pointer border-2 flex items-center gap-1.5 ${
               activeTab === 'lists'
@@ -454,6 +470,36 @@ export function Profile() {
         )}
 
         {/* ─── TAB CONTENT 4: REVIEWS ─── */}
+        {activeTab === 'passport' && (
+          <section className="space-y-6">
+            <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-foreground/20 pb-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+                  Visto no cinema
+                </p>
+                <h2 className="mt-1 text-xl font-black uppercase sm:text-2xl">
+                  Passaporte de Cinema
+                </h2>
+              </div>
+              <span className="font-mono text-xs font-bold text-foreground/55">
+                {MOCK_CINEMA_PASSPORT.length} {MOCK_CINEMA_PASSPORT.length === 1 ? 'INGRESSO' : 'INGRESSOS'}
+              </span>
+            </div>
+            <p className="text-xs font-semibold text-foreground/60">
+              Clique para ver o verso; duplo clique para ampliar. Passe o cursor para revelar o brilho.
+            </p>
+            <div className="grid grid-cols-2 items-start gap-4 md:grid-cols-3 xl:grid-cols-4">
+              {MOCK_CINEMA_PASSPORT.map((ticket) => (
+                <CinemaPassportCard
+                  key={ticket.id}
+                  {...ticket}
+                  palette="poster"
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {activeTab === 'reviews' && (
           <div className="space-y-4">
             <ReviewRow

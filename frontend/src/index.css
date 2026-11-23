@@ -151,6 +151,24 @@
   pointer-events: none;
 }
 
+.passport-shine {
+  background-image: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgb(var(--background-rgb) / 0.32) 45%,
+    rgb(var(--secondary-rgb) / 0.28) 52%,
+    transparent 66%
+  );
+}
+
+.passport-back-pattern {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgb(var(--foreground-rgb) / 0.06) 0 2px,
+    transparent 2px 14px
+  );
+}
+
 /* ===== Utilities ===== */
 .scrollbar-hide {
     -ms-overflow-style: none;
