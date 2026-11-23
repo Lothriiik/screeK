@@ -1,9 +1,14 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { HeroCarousel, type CarouselSlide } from '../components/custom/hero-carousel';
 import { MovieCard, type MovieCardProps } from '../components/custom/movie-card';
 import { MOCK_MOVIES } from '../mocks';
+import { intelligenceService } from '../services/intelligenceService';
+import { useAuthStore } from '../stores/authStore';
+import { MOCK_PEOPLE } from '../mocks/people';
+import { PersonCard } from '../components/custom/person-card';
+import { CommunitySection } from '../components/custom/community-section';
 
 // Hero Carousel Slides derived from Central Mock Store
 const MOCK_HERO_SLIDES: CarouselSlide[] = MOCK_MOVIES.slice(0, 3).map((m) => ({
@@ -34,6 +39,9 @@ const MOCK_NOW_PLAYING: MovieCardProps[] = MOCK_MOVIES.filter(
   eventLabel: 'ESTREIA',
   linkTo: `/movies/${m.id}/sessions`,
 }));
+
+// Preview-only picks keep the recommendation marker visible while developing without API data.
+const MOCK_RECOMMENDED_MOVIE_IDS = new Set(['speed-racer', 'chainsaw-man']);
 
 const MOCK_RE_RELEASES: MovieCardProps[] = MOCK_MOVIES.filter(
   (m) => m.status === 're_release'
@@ -71,9 +79,10 @@ interface MovieSectionProps {
   title: string;
   linkTo: string;
   movies: MovieCardProps[];
+  recommendedMovieIds?: ReadonlySet<string>;
 }
 
-const MovieSection: React.FC<MovieSectionProps> = ({ title, linkTo, movies }) => {
+const MovieSection: React.FC<MovieSectionProps> = ({ title, linkTo, movies, recommendedMovieIds }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -130,7 +139,10 @@ const MovieSection: React.FC<MovieSectionProps> = ({ title, linkTo, movies }) =>
         >
           {movies.map((movie) => (
             <div key={movie.id} className="w-[165px] sm:w-[190px] shrink-0">
-              <MovieCard {...movie} />
+              <MovieCard
+                {...movie}
+                isRecommended={recommendedMovieIds?.has(movie.id) ?? false}
+              />
             </div>
           ))}
         </div>
@@ -139,13 +151,67 @@ const MovieSection: React.FC<MovieSectionProps> = ({ title, linkTo, movies }) =>
   );
 };
 
-import { MOCK_PEOPLE } from '../mocks/people';
-import { PersonCard } from '../components/custom/person-card';
-import { CommunitySection } from '../components/custom/community-section';
-
 export const Home: React.FC = () => {
+  const user = useAuthStore((state) => state.user);
+  const [recommendedMovieIds, setRecommendedMovieIds] = useState<Set<string>>(() =>
+    import.meta.env.DEV ? new Set(MOCK_RECOMMENDED_MOVIE_IDS) : new Set()
+  );
   const [personFilter, setPersonFilter] = React.useState<'all' | 'directors' | 'actors'>('all');
   const peopleContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!user) {
+      setRecommendedMovieIds(
+        import.meta.env.DEV ? new Set(MOCK_RECOMMENDED_MOVIE_IDS) : new Set()
+      );
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    intelligenceService
+      .getRecommendations({ in_theaters: true, limit: 10 })
+      .then((items) => {
+        if (!isMounted) return;
+
+        const recommendationIds = new Set<string>();
+        items.forEach((item) => {
+          recommendationIds.add(String(item.movie_id));
+          if (item.tmdb_id) recommendationIds.add(String(item.tmdb_id));
+          if (item.movie?.id) recommendationIds.add(String(item.movie.id));
+          if (item.movie?.tmdb_id) recommendationIds.add(String(item.movie.tmdb_id));
+        });
+
+        const nowPlayingIds = new Set(
+          MOCK_MOVIES
+            .filter((movie) => movie.status === 'now_playing')
+            .filter((movie) =>
+              [movie.id, movie.numeric_id, movie.tmdb_id].some(
+                (id) => id !== undefined && recommendationIds.has(String(id))
+              )
+            )
+            .map((movie) => movie.id)
+        );
+        setRecommendedMovieIds(
+          nowPlayingIds.size === 0 && import.meta.env.DEV
+            ? new Set(MOCK_RECOMMENDED_MOVIE_IDS)
+            : nowPlayingIds
+        );
+      })
+      .catch(() => {
+        if (isMounted) {
+          setRecommendedMovieIds(
+            import.meta.env.DEV ? new Set(MOCK_RECOMMENDED_MOVIE_IDS) : new Set()
+          );
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const filteredPeople = React.useMemo(() => {
     if (personFilter === 'directors') {
@@ -178,6 +244,7 @@ export const Home: React.FC = () => {
           title="Em Cartaz"
           linkTo="/movies?status=now_playing"
           movies={MOCK_NOW_PLAYING}
+          recommendedMovieIds={recommendedMovieIds}
         />
 
         <MovieSection

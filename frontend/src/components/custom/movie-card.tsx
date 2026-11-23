@@ -16,6 +16,7 @@ export interface MovieCardProps {
   eventLabel?: string;    // e.g. "ESTREIA 08/04", "REEXIBIÇÃO 08/04", "ESTREIA"
   releaseDate?: string;   // e.g. "03/04", "05/04", "04/04", "08/04"
   isPreSale?: boolean;
+  isRecommended?: boolean;
   linkTo?: string;
 }
 
@@ -31,6 +32,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({
   eventLabel,
   releaseDate,
   isPreSale = false,
+  isRecommended = false,
   linkTo,
 }) => {
   const isPreSaleActive = isPreSale || tagType === 'pre_sale';
@@ -70,6 +72,16 @@ export const MovieCard: React.FC<MovieCardProps> = ({
           className="h-full w-full object-cover"
           loading="lazy"
         />
+
+        {isRecommended && (
+          <div
+            aria-label="Recomendado para você"
+            title="Recomendado para você"
+            className="absolute top-2 left-2 z-10 flex h-6 w-6 items-center justify-center bg-tertiary text-secondary"
+          >
+            <Star size={14} weight="fill" />
+          </div>
+        )}
 
         {/* Top-Left Release Date Badge (when available) */}
         {displayReleaseDate && (
