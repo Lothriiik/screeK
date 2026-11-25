@@ -1,5 +1,16 @@
-import { FilmStrip, Plus, Trash } from '@phosphor-icons/react';
+import { useState } from 'react';
+import { Armchair, FilmStrip, Plus, Trash } from '@phosphor-icons/react';
 import type { Room, RoomType } from '../../types/cinema';
+
+function buildSeatMap(room: Room) {
+  const columns = 10;
+  const rows = Math.ceil(room.capacity / columns);
+  return Array.from({ length: room.capacity }, (_, index) => {
+    const rowIndex = Math.floor(index / columns);
+    const number = (index % columns) + 1;
+    return { id: `${String.fromCharCode(65 + rowIndex)}${number}`, numeric_id: index + 1, room_id: room.id, row: String.fromCharCode(65 + rowIndex), number, pos_x: number, pos_y: rowIndex, type: 'standard' as const, price_multiplier: 1, is_occupied: false };
+  }).slice(0, rows * columns);
+}
 
 interface CinemaRoomEditorProps {
   rooms: Room[];
@@ -18,6 +29,7 @@ export function CinemaRoomEditor({
   onUpdateRoom,
   onRemoveRoom,
 }: CinemaRoomEditorProps) {
+  const [expandedRoomId, setExpandedRoomId] = useState<number | null>(null);
   return (
     <section className="border-4 border-foreground/40 bg-background shadow-[6px_6px_0px_0px_var(--border)] p-6 space-y-5">
       <div className="border-b-2 border-foreground/20 pb-3 flex flex-wrap items-center justify-between gap-3">
@@ -40,10 +52,8 @@ export function CinemaRoomEditor({
 
       <div className="space-y-3">
         {rooms.map((room, idx) => (
-          <div
-            key={room.id || idx}
-            className="grid grid-cols-1 items-end gap-3 border-2 border-foreground/30 bg-muted/20 p-4 sm:grid-cols-2 xl:grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1.4fr)_auto]"
-          >
+          <div key={room.id || idx} className="border-2 border-foreground/30 bg-muted/20 p-4">
+            <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1.4fr)_auto]">
             <div className="hidden w-6 pb-2 text-xs font-black text-foreground/40 font-mono xl:block">#{idx + 1}</div>
 
             <div className="min-w-0 space-y-1">
@@ -104,6 +114,19 @@ export function CinemaRoomEditor({
               >
                 <Trash size={16} weight="bold" />
               </button>
+            </div>
+            </div>
+            <div className="mt-3 border-t border-foreground/20 pt-3">
+              <button type="button" onClick={() => setExpandedRoomId(expandedRoomId === room.id ? null : room.id)} className="inline-flex items-center gap-2 text-[10px] font-black uppercase text-primary hover:underline"><Armchair size={15}/>{expandedRoomId === room.id ? 'Fechar mapa de assentos' : 'Configurar mapa de assentos'}</button>
+              {expandedRoomId === room.id && (() => {
+                const seats = room.seats?.length ? room.seats : buildSeatMap(room);
+                const rows = [...new Set(seats.map((seat) => seat.row))];
+                return <div className="mt-3 border-2 border-foreground/20 bg-background p-3">
+                  <div className="mx-auto mb-4 max-w-sm border-y-2 border-foreground/30 py-1 text-center text-[9px] font-black uppercase tracking-[.18em] text-foreground/50">Tela</div>
+                  <div className="space-y-1.5">{rows.map((row) => <div key={row} className="flex flex-wrap items-center justify-center gap-1"><span className="w-4 text-[9px] font-black text-foreground/50">{row}</span>{seats.filter((seat) => seat.row === row).map((seat) => <button key={seat.id} type="button" title={`${seat.id} · ${seat.type}`} onClick={() => { const next = seats.map((item) => item.id === seat.id ? { ...item, type: item.type === 'standard' ? 'wheelchair' as const : item.type === 'wheelchair' ? 'vip' as const : 'standard' as const, price_multiplier: item.type === 'standard' ? 1 : item.type === 'wheelchair' ? 1.5 : 1 } : item); onUpdateRoom(idx, 'seats', next); }} className={`h-6 min-w-6 border text-[8px] font-bold ${seat.type === 'wheelchair' ? 'border-secondary bg-secondary/20' : seat.type === 'vip' ? 'border-primary bg-primary/20' : 'border-foreground/25 bg-muted/30'}`}>{seat.number}</button>)}</div>)}</div>
+                  <p className="mt-3 text-[9px] text-foreground/60">Clique nos assentos para alternar Padrão → Acessível → VIP. O mapa é uma configuração demonstrativa do protótipo.</p>
+                </div>;
+              })()}
             </div>
           </div>
         ))}

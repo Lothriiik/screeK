@@ -9,7 +9,8 @@ import {
   Check,
   Lock,
   Globe,
-  FilmStrip
+  FilmStrip,
+  DotsSixVertical
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MOCK_MOVIES } from '../mocks';
@@ -27,6 +28,9 @@ export function NewList() {
   // Movie search & selection
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMovies, setSelectedMovies] = useState<Movie[]>([MOCK_MOVIES[0], MOCK_MOVIES[1]]);
+  const [coverMovieId, setCoverMovieId] = useState(MOCK_MOVIES[0]?.id || '');
+  const [isNumbered, setIsNumbered] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const searchResults = searchQuery.trim()
     ? MOCK_MOVIES.filter(
@@ -39,11 +43,27 @@ export function NewList() {
 
   const handleAddMovie = (movie: Movie) => {
     setSelectedMovies([...selectedMovies, movie]);
+    if (!selectedMovies.length) setCoverMovieId(movie.id);
     setSearchQuery('');
   };
 
   const handleRemoveMovie = (id: string) => {
-    setSelectedMovies(selectedMovies.filter((m) => m.id !== id));
+    const remaining = selectedMovies.filter((m) => m.id !== id);
+    setSelectedMovies(remaining);
+    if (coverMovieId === id) setCoverMovieId(remaining[0]?.id || '');
+  };
+
+  const handleDropMovie = (targetId: string) => {
+    if (!draggedId || draggedId === targetId) return;
+    setSelectedMovies((current) => {
+      const next = [...current];
+      const from = next.findIndex((movie) => movie.id === draggedId);
+      const to = next.findIndex((movie) => movie.id === targetId);
+      if (from < 0 || to < 0) return current;
+      next.splice(to, 0, next.splice(from, 1)[0]);
+      return next;
+    });
+    setDraggedId(null);
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -94,7 +114,7 @@ export function NewList() {
           {/* Metadata Section */}
           <div className="bg-background border-4 border-foreground/40 shadow-[6px_6px_0px_0px_var(--border)] p-6 space-y-5">
             <h2 className="text-base font-black uppercase text-foreground border-b-2 border-foreground/10 pb-2">
-              1. Detalhes da Coleção
+              1. Detalhes da lista
             </h2>
 
             <div className="space-y-4">
@@ -181,6 +201,8 @@ export function NewList() {
               </span>
             </div>
 
+            <label className="flex items-start gap-2 text-xs font-bold"><input type="checkbox" checked={isNumbered} onChange={(event) => setIsNumbered(event.target.checked)} className="mt-0.5 accent-primary" />Numerar filmes na lista</label>
+
             {/* Search Input */}
             <div className="relative">
               <MagnifyingGlass
@@ -239,12 +261,15 @@ export function NewList() {
                 {selectedMovies.map((movie, index) => (
                   <div
                     key={movie.id}
-                    className="p-3 bg-muted/20 border-2 border-foreground/20 flex items-center justify-between gap-4"
+                    draggable
+                    onDragStart={() => setDraggedId(movie.id)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => handleDropMovie(movie.id)}
+                    className="p-3 bg-muted/20 border-2 border-foreground/20 flex items-center justify-between gap-3"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-xs font-mono font-black text-foreground/40 w-4 text-center">
-                        {index + 1}
-                      </span>
+                      <span className="text-foreground/50" title="Arraste para reordenar"><DotsSixVertical size={18} weight="bold" /></span>
+                      {isNumbered && <span className="text-xs font-mono font-black text-foreground/40 w-4 text-center">{index + 1}</span>}
                       <img
                         src={movie.poster_url}
                         alt={movie.title}
@@ -260,14 +285,10 @@ export function NewList() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveMovie(movie.id)}
-                      className="p-2 text-foreground/50 hover:text-red-500 hover:bg-background border border-transparent hover:border-red-400 transition-colors cursor-pointer"
-                      title="Remover filme"
-                    >
-                      <Trash size={16} weight="bold" />
-                    </button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button type="button" onClick={() => setCoverMovieId(movie.id)} aria-pressed={coverMovieId === movie.id} className={`border-2 px-2 py-1 text-[9px] font-black uppercase ${coverMovieId === movie.id ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/25'}`}>{coverMovieId === movie.id ? 'Capa' : 'Usar como capa'}</button>
+                      <button type="button" onClick={() => handleRemoveMovie(movie.id)} className="p-2 text-foreground/50 hover:text-red-500 hover:bg-background border border-transparent hover:border-red-400 transition-colors cursor-pointer" title="Remover filme"><Trash size={16} weight="bold" /></button>
+                    </div>
                   </div>
                 ))}
               </div>

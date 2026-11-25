@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { FilmSlate, House } from '@phosphor-icons/react';
+import { useState } from 'react';
 
 export function NotFound() {
+  const [query, setQuery] = useState('');
   return (
-    <div className="bg-background text-foreground flex flex-col items-center justify-center p-4 text-center font-display">
+    <div className="bg-background text-foreground flex min-h-[70vh] flex-col items-center justify-center p-4 text-center font-display">
       
       <div className="max-w-md space-y-6">
         <div className="w-20 h-20 bg-primary/10 border-4 border-primary text-primary mx-auto flex items-center justify-center shadow-[4px_4px_0px_0px_var(--border)]">
@@ -22,6 +24,10 @@ export function NotFound() {
           </p>
         </div>
 
+        <form action="/search" className="flex w-full border-2 border-primary bg-background p-1">
+          <input name="q" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar filmes, cinemas, pessoas..." className="min-w-0 flex-1 bg-transparent px-3 py-2 text-xs outline-none" />
+          <button type="submit" className="bg-primary px-3 text-xs font-black uppercase text-primary-foreground">Buscar</button>
+        </form>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <Link
             to="/"

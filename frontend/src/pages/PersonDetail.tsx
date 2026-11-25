@@ -1,3 +1,4 @@
+import { movieRouteId } from '../lib/movie-route';
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -460,7 +461,7 @@ export function PersonDetail() {
                 }
                 releaseDate={movie.status === 'upcoming' ? movie.release_date_display : undefined}
                 isPreSale={movie.is_pre_sale}
-                linkTo={`/movies/${movie.id}`}
+                linkTo={`/movies/${movieRouteId(movie)}`}
               />
             ))}
           </div>

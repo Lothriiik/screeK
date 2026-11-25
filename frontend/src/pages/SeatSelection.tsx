@@ -10,6 +10,7 @@ import {
   FilmStrip
 } from '@phosphor-icons/react';
 import { OrderSummary, type OrderItem } from '../components/custom/order-summary';
+import { StatusModal } from '../components/custom/status-modal';
 import { toast } from 'sonner';
 
 import posterSpeedRacer from '../assets/posters/29389-angel-dust-0-1000-0-1500-crop.jpg';
@@ -77,6 +78,9 @@ export function SeatSelection() {
   const [timeLeft, setTimeLeft] = useState<number>(600); // 10 minutes
   const [timerStarted, setTimerStarted] = useState<boolean>(false);
   const [pixGenerated, setPixGenerated] = useState<boolean>(false);
+  const [reservationExpired, setReservationExpired] = useState(false);
+  const [paymentRejected, setPaymentRejected] = useState(false);
+  const [halfEntryDocument, setHalfEntryDocument] = useState('');
 
   // Optional snack combos
   const [snacks, setSnacks] = useState<SnackItem[]>([
@@ -109,11 +113,11 @@ export function SeatSelection() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          toast.error('O tempo de reserva expirou. Selecione seus assentos novamente.');
           setSelectedSeatIds([]);
           setTicketTypes({});
           setCurrentStep('seats');
           setTimerStarted(false);
+          setReservationExpired(true);
           return 600;
         }
         return prev - 1;
@@ -216,6 +220,10 @@ export function SeatSelection() {
       }
       setCurrentStep('tickets');
     } else if (currentStep === 'tickets') {
+      if (Object.values(ticketTypes).includes('meia') && !halfEntryDocument) {
+        toast.warning('Selecione o documento que será apresentado para meia-entrada.');
+        return;
+      }
       setCurrentStep('payment');
     } else if (currentStep === 'payment') {
       if (paymentMethod === 'pix') {
@@ -229,6 +237,11 @@ export function SeatSelection() {
           toast.warning('Clique em "Gerar Código PIX" para continuar.');
           return;
         }
+      }
+
+      if (paymentMethod === 'credit_card' && paymentRejected) {
+        toast.error('Pagamento recusado. Seus assentos continuam reservados pelo tempo restante.');
+        return;
       }
       
       toast.success('Pagamento confirmado com sucesso!');
@@ -474,6 +487,20 @@ export function SeatSelection() {
                   </div>
                 </div>
 
+                {Object.values(ticketTypes).includes('meia') && (
+                  <div className="space-y-3 border-2 border-secondary/50 bg-secondary/5 p-4">
+                    <div>
+                      <h3 className="text-xs font-black uppercase">Comprovação de meia-entrada</h3>
+                      <p className="mt-1 text-xs text-foreground/70">A carteirinha ou documento que comprova o benefício poderá ser solicitado na entrada do cinema. Confira as regras legais antes de concluir a compra.</p>
+                    </div>
+                    <label className="block max-w-md text-[10px] font-black uppercase">Documento que será apresentado
+                      <select value={halfEntryDocument} onChange={(event) => setHalfEntryDocument(event.target.value)} className="mt-1 block w-full border-2 border-foreground/30 bg-background px-3 py-2 text-xs font-bold">
+                        <option value="">Selecione o documento</option><option value="student">Carteira de estudante</option><option value="idoso">Documento de identidade · 60+</option><option value="pcd">Documento/credencial PcD</option><option value="id-jovem">ID Jovem</option><option value="other">Outro documento válido</option>
+                      </select>
+                    </label>
+                  </div>
+                )}
+
                 {/* Optional Snacks & Combos Box */}
                 <div className="bg-background border-4 border-foreground/40 p-6 shadow-[6px_6px_0px_0px_var(--border)] space-y-4">
                   <div>
@@ -699,6 +726,7 @@ export function SeatSelection() {
                   {/* Credit Card Content Area */}
                   {paymentMethod === 'credit_card' && (
                     <div className="p-6 bg-background border-2 border-foreground/40 space-y-4 shadow-sm">
+                      {paymentRejected && <div role="alert" className="border-2 border-destructive bg-destructive/10 p-3 text-xs"><strong className="block font-black uppercase text-destructive">Pagamento recusado</strong><span className="mt-1 block">O emissor não autorizou a compra. Os assentos seguem reservados enquanto o contador estiver ativo.</span><div className="mt-2 flex flex-wrap gap-4"><button type="button" onClick={() => setPaymentRejected(false)} className="font-black uppercase text-primary underline">Tentar outro cartão</button><button type="button" onClick={() => { setPaymentMethod('pix'); setPaymentRejected(false); }} className="font-black uppercase text-primary underline">Tentar com PIX</button></div></div>}
                       <div className="space-y-1">
                         <label className="block text-xs font-black uppercase text-foreground/70">Número do Cartão</label>
                         <input
@@ -739,6 +767,7 @@ export function SeatSelection() {
                           className="w-full bg-background border-2 border-foreground/30 px-3.5 py-2.5 text-sm font-sans uppercase text-foreground outline-none focus:border-primary"
                         />
                       </div>
+                      {!paymentRejected && <button type="button" onClick={() => setPaymentRejected(true)} className="border border-destructive/60 px-3 py-2 text-[10px] font-black uppercase text-destructive hover:bg-destructive/5">Simular recusa do cartão</button>}
                     </div>
                   )}
                 </div>
@@ -871,6 +900,7 @@ export function SeatSelection() {
 
         </div>
       </main>
+      <StatusModal isOpen={reservationExpired} type="expired" headerTitle="RESERVA EXPIRADA" title="O tempo para concluir a compra acabou" description="Liberamos os assentos que estavam reservados. Volte às sessões para escolher outro horário e iniciar uma nova reserva." primaryActionLabel="VOLTAR ÀS SESSÕES" secondaryActionLabel="FECHAR" onPrimaryAction={() => { setReservationExpired(false); navigate(-1); }} onSecondaryAction={() => setReservationExpired(false)} onClose={() => setReservationExpired(false)} />
     </div>
   );
 }

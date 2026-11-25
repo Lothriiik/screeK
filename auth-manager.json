@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "theme",
+          "value": "light"
+        },
+        {
+          "name": "screek-auth",
+          "value": "{\"state\":{\"user\":{\"id\":\"851c0230-f269-4e8d-bda0-7542fcaa33b1\",\"name\":\"kleber0303\",\"username\":\"Kleber\",\"email\":\"kleber@gmail.com\",\"bio\":\"\",\"avatar_url\":\"\",\"pronouns\":\"\",\"default_city\":\"\",\"favorite_movies\":null,\"role\":\"MANAGER\"},\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiODUxYzAyMzAtZjI2OS00ZThkLWJkYTAtNzU0MmZjYWEzM2IxIiwidXNlcm5hbWUiOiJLbGViZXIiLCJyb2xlIjoiVVNFUiIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJleHAiOjE3OTU1ODMzMjcsImlhdCI6MTc5NTU4MjQyNywianRpIjoiNjNjNjY0ZjYtMmZmMS00NzY2LTk1ZTUtOGI4NDQzNDhkMDg4In0.XxAVO8DfpswJNr14lxJchI9Gf1dpV0l7X6IPPo3dEwU\",\"refreshToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiODUxYzAyMzAtZjI2OS00ZThkLWJkYTAtNzU0MmZjYWEzM2IxIiwidXNlcm5hbWUiOiIiLCJyb2xlIjoiIiwidG9rZW5fdHlwZSI6InJlZnJlc2giLCJleHAiOjE3OTYxODcyMjcsImlhdCI6MTc5NTU4MjQyNywianRpIjoiYjdhNTcyMzYtMWRhMC00MjZkLWI4YTEtMGY0ZWQ4NjcwNGQwIn0.2St6LcQrxenzfp5ObAkYzOXLt5mx3Lx4z7WLgekVvvM\",\"isAuthenticated\":true},\"version\":0}"
+        }
+      ]
+    }
+  ]
+}

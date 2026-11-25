@@ -83,7 +83,7 @@ export const getMovies = (filter?: { status?: MovieStatus; genre?: string }): Mo
 };
 
 export const getMovieById = (id: string | number): Movie | undefined => {
-  return MOCK_MOVIES.find((m) => m.id === id || m.numeric_id === Number(id));
+  return MOCK_MOVIES.find((m) => m.id === String(id) || m.numeric_id === Number(id) || m.tmdb_id === Number(id));
 };
 
 export const getCinemas = (filter?: { city?: string; chain?: string }): Cinema[] => {
@@ -102,8 +102,10 @@ export const getCinemaById = (id: string | number): Cinema | undefined => {
 };
 
 export const getSessionsByMovie = (movieId: string, cinemaId?: string): Session[] => {
+  const movie = getMovieById(movieId);
+  const canonicalId = movie?.id ?? movieId;
   return MOCK_SESSIONS.filter(
-    (s) => s.movie_id === movieId && (!cinemaId || s.cinema_id === cinemaId)
+    (s) => s.movie_id === canonicalId && (!cinemaId || s.cinema_id === cinemaId)
   );
 };
 

@@ -113,13 +113,7 @@ export function LetterboxdImport() {
     <div className="bg-background text-foreground font-display">
       <section className="bg-background page-divider px-4 sm:px-0 py-8">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Brain size={24} weight="bold" className="text-secondary" />
-            <span className="text-xs font-black uppercase text-foreground/60 tracking-wider">
-              screeK Intelligence • Integrações
-            </span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-primary">
             Importar Histórico do Letterboxd
           </h1>
           <p className="font-sans text-sm text-foreground/80 leading-relaxed max-w-2xl">
@@ -165,12 +159,12 @@ export function LetterboxdImport() {
         {job && (
           <section className="bg-background border-4 border-foreground/30 shadow-[6px_6px_0px_0px_var(--border)] p-5 sm:p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-black uppercase">Andamento da importação</h2>
+              <h2 className="font-black uppercase text-primary">Andamento da importação</h2>
               <span className="text-xs font-mono uppercase">{job.status === 'completed' ? 'Concluída' : job.status === 'failed' ? 'Falhou' : 'Em andamento'}</span>
             </div>
             <p className="text-sm text-foreground/70">{stageLabel[job.stage]}{job.total > 0 ? ` • ${job.processed}/${job.total}` : ''}</p>
             <div className="w-full h-3 bg-black/20 border border-foreground/30 overflow-hidden" aria-label={`Progresso ${job.percent}%`}>
-              <div className="h-full bg-secondary transition-all duration-500" style={{ width: `${job.percent}%` }} />
+              <div className="h-full bg-primary transition-all duration-500" style={{ width: `${job.percent}%` }} />
             </div>
             <p className="text-right text-xs font-mono font-bold">{job.percent}%</p>
             {job.error && <p role="alert" className="text-sm text-destructive">{job.error}</p>}

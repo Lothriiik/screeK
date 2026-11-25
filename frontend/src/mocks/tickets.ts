@@ -49,7 +49,7 @@ export const MOCK_USER_TICKETS: BookingTransaction[] = [
     service_fee: 5.0,
     total_amount: 169.0,
     payment_method: 'PIX',
-    status: 'PAID',
+    status: 'USED',
     qr_code: 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=SCREEK-TXN-20260820-8912',
     created_at: '2026-08-20T14:10:00Z',
   },

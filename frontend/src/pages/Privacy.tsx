@@ -16,12 +16,7 @@ export function Privacy() {
             <span>Voltar para o Início</span>
           </Link>
 
-          <div className="flex items-center gap-2 text-secondary">
-            <LockKey size={28} weight="bold" />
-            <span className="text-xs font-black uppercase tracking-wider">Segurança &amp; LGPD</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-black uppercase text-foreground tracking-tight">
+          <h1 className="text-3xl sm:text-5xl font-black uppercase text-primary tracking-tight">
             Política de Privacidade
           </h1>
           <p className="font-sans text-xs sm:text-sm text-foreground/60">

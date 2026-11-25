@@ -10,6 +10,7 @@ export interface SessionChipProps {
   screenFormat?: string; // e.g. "IMAX", "4DX", "VIP", "2D"
   state?: 'available' | 'selected' | 'disabled';
   compact?: boolean;
+  inline?: boolean;
   onClick?: () => void;
 }
 
@@ -20,10 +21,32 @@ export const SessionChip: React.FC<SessionChipProps> = ({
   screenFormat,
   state = 'available',
   compact = false,
+  inline = false,
   onClick,
 }) => {
   const isSelected = state === 'selected';
   const isDisabled = state === 'disabled';
+
+  if (inline) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={isDisabled}
+        aria-label={`${time} · ${[audioFormat, screenFormat].filter(Boolean).join(' · ')}`}
+        className={`inline-flex h-7 shrink-0 items-center gap-1.5 border-2 px-2 text-[10px] font-black transition-colors ${
+          isDisabled
+            ? 'cursor-not-allowed border-foreground/30 text-foreground/40'
+            : isSelected
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-foreground/40 bg-background text-foreground hover:border-primary hover:bg-primary hover:text-primary-foreground'
+        }`}
+      >
+        <span>{time}</span>
+        {screenFormat && <span className="font-bold opacity-70">{screenFormat}</span>}
+      </button>
+    );
+  }
 
   return (
     <button

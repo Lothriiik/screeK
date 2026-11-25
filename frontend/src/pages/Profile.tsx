@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { movieRouteId } from '../lib/movie-route';
+import { useState, useMemo, useEffect } from 'react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import {
   Star,
   BookmarksSimple,
@@ -31,12 +32,24 @@ type ProfileTab = 'diary' | 'posts' | 'watched' | 'passport' | 'reviews' | 'list
 
 export function Profile() {
   const { username } = useParams<{ username: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Load user by username param, or fallback to main profile user
   const user = (username ? MOCK_USERS.find((u) => u.username.toLowerCase() === username.toLowerCase()) : undefined) || MOCK_USERS[0];
   const isOwnProfile = !username || username.toLowerCase() === 'lothrik' || username.toLowerCase() === 'uander';
 
-  const [activeTab, setActiveTab] = useState<ProfileTab>('diary');
+  const validTabs: ProfileTab[] = ['diary', 'posts', 'watched', 'reviews', 'passport', 'lists'];
+  const initialTab = validTabs.includes(searchParams.get('tab') as ProfileTab) ? searchParams.get('tab') as ProfileTab : 'diary';
+  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
+  useEffect(() => {
+    const tab = searchParams.get('tab') as ProfileTab;
+    if (validTabs.includes(tab)) setActiveTab(tab);
+    else setActiveTab('diary');
+  }, [searchParams]);
+  const selectTab = (tab: ProfileTab) => {
+    setActiveTab(tab);
+    setSearchParams(tab === 'diary' ? {} : { tab }, { replace: false });
+  };
   const [isFollowing, setIsFollowing] = useState(user.is_following || false);
 
   // Favorite 4 movies (Letterboxd style)
@@ -242,7 +255,7 @@ export function Profile() {
               genre={movie.genres[0] || 'DRAMA'}
               ageRating={movie.age_rating}
               tagType="none"
-              linkTo={`/movies/${movie.id}`}
+              linkTo={`/movies/${movieRouteId(movie)}`}
             />
           ))}
         </div>
@@ -256,7 +269,7 @@ export function Profile() {
           
           <button
             type="button"
-            onClick={() => setActiveTab('diary')}
+            onClick={() => selectTab('diary')}
             className={`px-4 py-2 text-xs font-black uppercase transition-all cursor-pointer border-2 flex items-center gap-1.5 ${
               activeTab === 'diary'
                 ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_var(--border)]'
@@ -269,7 +282,7 @@ export function Profile() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('posts')}
+            onClick={() => selectTab('posts')}
             className={`px-4 py-2 text-xs font-black uppercase transition-all cursor-pointer border-2 flex items-center gap-1.5 ${
               activeTab === 'posts'
                 ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_var(--border)]'
@@ -282,7 +295,7 @@ export function Profile() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('watched')}
+            onClick={() => selectTab('watched')}
             className={`px-4 py-2 text-xs font-black uppercase transition-all cursor-pointer border-2 flex items-center gap-1.5 ${
               activeTab === 'watched'
                 ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_var(--border)]'
@@ -295,7 +308,7 @@ export function Profile() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('reviews')}
+            onClick={() => selectTab('reviews')}
             className={`px-4 py-2 text-xs font-black uppercase transition-all cursor-pointer border-2 flex items-center gap-1.5 ${
               activeTab === 'reviews'
                 ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_var(--border)]'
@@ -308,7 +321,7 @@ export function Profile() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('passport')}
+            onClick={() => selectTab('passport')}
             className={`px-4 py-2 text-xs font-black uppercase transition-all cursor-pointer border-2 flex items-center gap-1.5 ${
               activeTab === 'passport'
                 ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_var(--border)]'
@@ -321,7 +334,7 @@ export function Profile() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('lists')}
+            onClick={() => selectTab('lists')}
             className={`px-4 py-2 text-xs font-black uppercase transition-all cursor-pointer border-2 flex items-center gap-1.5 ${
               activeTab === 'lists'
                 ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_var(--border)]'
@@ -366,7 +379,7 @@ export function Profile() {
                 genre={movie.genres[0] || 'DRAMA'}
                 ageRating={movie.age_rating}
                 tagType="none"
-                linkTo={`/movies/${movie.id}`}
+                linkTo={`/movies/${movieRouteId(movie)}`}
               />
             ))}
           </div>

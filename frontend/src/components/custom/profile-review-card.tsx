@@ -1,3 +1,4 @@
+import { movieRouteId } from '../../lib/movie-route';
 import { useState } from 'react';
 import { ArrowClockwise, ChatCircle, Heart, Info, Star } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
@@ -36,7 +37,7 @@ export function ProfileReviewCard({
   return (
     <article className="w-full border-4 border-foreground/30 bg-background p-4 font-sans text-foreground shadow-[4px_4px_0px_0px_var(--border)] sm:p-5">
       <div className="flex items-start gap-3 sm:gap-4">
-        <Link to={`/movies/${movie.id}`} className="shrink-0 transition-opacity hover:opacity-80">
+        <Link to={`/movies/${movieRouteId(movie)}`} className="shrink-0 transition-opacity hover:opacity-80">
           <img
             src={movie.poster_url}
             alt={`Pôster de ${movie.title}`}
@@ -46,7 +47,7 @@ export function ProfileReviewCard({
 
         <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
-            <Link to={`/movies/${movie.id}`} className="block truncate font-display text-base font-black text-foreground hover:text-primary sm:text-lg">
+            <Link to={`/movies/${movieRouteId(movie)}`} className="block truncate font-display text-base font-black text-foreground hover:text-primary sm:text-lg">
               {movie.title}
             </Link>
             <p className="truncate font-sans text-xs font-bold text-foreground/60">
@@ -55,7 +56,7 @@ export function ProfileReviewCard({
             <p className="font-bold text-xs text-foreground/50">
               {movie.genres[0]} · {movie.release_year} · {movie.duration_display}
             </p>
-            <Link to={`/movies/${movie.id}`} className="inline-flex items-center gap-1 pt-2 font-sans text-[10px] font-black text-foreground/60 hover:text-primary">
+            <Link to={`/movies/${movieRouteId(movie)}`} className="inline-flex items-center gap-1 pt-2 font-sans text-[10px] font-black text-foreground/60 hover:text-primary">
               <Info size={13} weight="bold" /> Ver detalhes
             </Link>
           </div>

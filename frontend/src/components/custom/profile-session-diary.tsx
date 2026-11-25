@@ -1,3 +1,4 @@
+import { movieRouteId } from '../../lib/movie-route';
 import { Fragment } from 'react';
 import { ArrowClockwise, ChatText, Heart } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
@@ -63,7 +64,7 @@ export function ProfileSessionDiary({ entries }: ProfileSessionDiaryProps) {
                     </span>
                   </td>
                   <td className="px-3 py-2">
-                    <Link to={`/movies/${entry.movie.id}`} className="flex w-fit items-center gap-2 text-sm font-black text-foreground transition-colors hover:text-primary">
+                    <Link to={`/movies/${movieRouteId(entry.movie)}`} className="flex w-fit items-center gap-2 text-sm font-black text-foreground transition-colors hover:text-primary">
                       <img src={entry.movie.poster_url} alt="" className="h-12 w-8 shrink-0 border border-foreground/30 object-cover" />
                       <span>{entry.movie.title}</span>
                     </Link>

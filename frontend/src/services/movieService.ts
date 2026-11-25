@@ -167,10 +167,15 @@ export function normalizeTMDBMovie(raw: any): Movie {
     }
   }
 
+  const tmdbId = Number(raw.tmdb_id || raw.id || 0);
+  const internalId = Number(raw.numeric_id || (raw.tmdb_id ? raw.id : 0) || 0);
+
   return {
-    id: String(raw.id || raw.numeric_id || 'movie'),
-    numeric_id: Number(raw.id || raw.numeric_id || 0),
-    tmdb_id: Number(raw.id || raw.tmdb_id || 0),
+    // Movie endpoints and public URLs are keyed by TMDB id. The API's `id` can
+    // be its internal database id when `tmdb_id` is also present.
+    id: String(tmdbId || raw.id || raw.numeric_id || 'movie'),
+    numeric_id: internalId,
+    tmdb_id: tmdbId,
     title: raw.title || raw.name || 'Sem título',
     original_title: raw.original_title || raw.title || '',
     overview: raw.overview || 'Sinopse indisponível.',
@@ -331,6 +336,13 @@ export const movieService = {
 
   // Get movie details by ID
   async getMovieById(id: string | number): Promise<Movie | null> {
+    const localMatch = MOCK_MOVIES.find((movie) =>
+      movie.id === String(id) || movie.tmdb_id === Number(id),
+    );
+    // Slugs are only legacy local mock identifiers. Resolve them locally
+    // instead of sending them to an API endpoint that expects a TMDB id.
+    if (localMatch && Number.isNaN(Number(id))) return localMatch;
+
     // 1. Try Go backend
     try {
       const response = await api.get<Movie>(`/movies/${id}`);
@@ -357,8 +369,8 @@ export const movieService = {
     }
 
     // 3. Mock fallback
-    const found = MOCK_MOVIES.find((m) => m.id === id || m.numeric_id === Number(id));
-    return found || MOCK_MOVIES[0] || null;
+    const found = localMatch;
+    return found || null;
   },
 
   // Get TMDB recommendations for a movie

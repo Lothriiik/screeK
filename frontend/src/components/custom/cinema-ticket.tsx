@@ -18,6 +18,9 @@ export interface CinemaTicketProps {
   onQrClick?: () => void;
   snacks?: { name: string; quantity: number }[];
   actionButtons?: React.ReactNode;
+  featured?: boolean;
+  compact?: boolean;
+  notice?: string;
 }
 
 export const CinemaTicket: React.FC<CinemaTicketProps> = ({
@@ -37,19 +40,19 @@ export const CinemaTicket: React.FC<CinemaTicketProps> = ({
   onQrClick,
   snacks,
   actionButtons,
+  featured = false,
+  compact = false,
+  notice,
 }) => {
-  const isVip = ticketType === 'vip';
   const isUsed = ticketType === 'used';
   const isCancelled = ticketType === 'cancelled';
 
   // Dynamic colors for the header block matching the 4 Figma tickets
   const headerBg = isCancelled
-    ? 'bg-[#E8857C]' // Light Coral / Salmon Red
+    ? 'bg-[#E8857C]'
     : isUsed
-    ? 'bg-[#8D7B75]' // Taupe / Warm Grey
-    : isVip
-    ? 'bg-[#6A1B4D]' // Dark Wine
-    : 'bg-[#1E2B45]'; // Dark Navy (Standard)
+      ? 'bg-[#8D7B75]'
+      : 'bg-[#1E2B45]';
 
   // Status Badge in the footer
   const statusBadge = isCancelled ? (
@@ -70,14 +73,16 @@ export const CinemaTicket: React.FC<CinemaTicketProps> = ({
     qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(code)}`;
 
   return (
-    <div className="w-full max-w-[340px] sm:w-[340px] h-[450px] flex flex-col justify-between rounded-none border-4 border-foreground/40 bg-background font-display shadow-[6px_6px_0px_0px_var(--border)] overflow-hidden text-foreground">
+    <div className={`w-full ${compact ? 'h-[430px] min-h-[430px] max-w-none sm:w-auto' : featured ? 'sm:grid sm:h-[280px] sm:max-w-none sm:grid-cols-[1fr_190px] sm:grid-rows-[auto_1fr]' : 'max-w-[340px] sm:w-[340px]'} ${compact ? '' : 'h-[450px]'} flex flex-col justify-between rounded-none ${compact ? 'border-2' : 'border-4'} border-foreground/40 bg-background font-display ${compact ? '' : 'shadow-[6px_6px_0px_0px_var(--border)]'} overflow-hidden text-foreground`}>
       
       {/* 1. Header Block (Top Colored Area) */}
-      <div className={`${headerBg} p-4 text-white space-y-1.5 border-b-4 border-foreground/40 shrink-0`}>
+      <div className={`${headerBg} ${compact ? 'min-h-[116px]' : ''} p-4 text-white space-y-1.5 border-b-2 border-foreground/30 shrink-0 ${featured ? 'sm:col-start-1 sm:row-start-1' : ''}`}>
+        <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
         <span className="block text-[10px] font-extrabold uppercase tracking-widest opacity-75 truncate">
           {cinemaName}
         </span>
-        <h3 className="text-xl font-black uppercase tracking-tight leading-tight line-clamp-1">
+        <h3 className={`${compact ? 'text-lg' : 'text-xl'} font-black uppercase tracking-tight leading-tight line-clamp-2`}>
           {movieTitle}
         </h3>
 
@@ -97,10 +102,12 @@ export const CinemaTicket: React.FC<CinemaTicketProps> = ({
             </span>
           )}
         </div>
+        </div>
+        </div>
       </div>
 
       {/* 2. Middle Details (2x2 Grid + optional snacks) */}
-      <div className="p-4 flex-1 flex flex-col justify-between text-xs font-bold text-foreground/80 space-y-2">
+      <div className={`${compact ? 'min-h-0 flex-1 p-4' : 'p-4 flex-1'} flex flex-col justify-start text-xs font-bold text-foreground/80 space-y-2 ${featured ? 'sm:col-start-1 sm:row-start-2' : ''}`}>
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -129,24 +136,25 @@ export const CinemaTicket: React.FC<CinemaTicketProps> = ({
 
         {/* Snacks line if present */}
         {snacks && snacks.length > 0 && (
-          <div className="pt-1.5 border-t border-foreground/10 text-[11px] font-bold text-foreground/70 truncate">
+          <div className="mt-2 pt-1.5 border-t border-foreground/10 text-[11px] font-bold text-foreground/70 truncate">
             <span className="text-[10px] font-black uppercase text-foreground/50 mr-1">Bomboniere:</span>
             <span>{snacks.map((s) => `${s.quantity}x ${s.name}`).join(' • ')}</span>
           </div>
         )}
+        {notice && <div className="mt-auto min-h-8 border-t border-foreground/10 pt-2 text-[10px] font-bold text-foreground/70">{notice}</div>}
       </div>
 
       {/* Dashed Separator Line */}
-      <div className="border-b-2 border-dashed border-foreground/30 mx-4 shrink-0" />
+      {!compact && <div className={`border-b-2 border-dashed border-foreground/30 mx-4 shrink-0 ${featured ? 'sm:hidden' : ''}`} />}
 
       {/* 3. Footer Stub Section (QR Code & Status) */}
-      <div className="p-3 flex items-center justify-between gap-3 shrink-0 bg-muted/10 h-[76px]">
+      <div className={`p-3 flex ${compact ? 'min-h-[128px] flex-col items-stretch justify-between' : 'items-center justify-between'} gap-3 shrink-0 bg-muted/10 ${compact ? '' : 'h-[92px]'} ${featured ? 'sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:h-full sm:flex-col sm:justify-center sm:border-l-2 sm:border-dashed sm:border-foreground/30' : ''}`}>
         <div className="flex items-center gap-3">
-          {/* QR Code Container with High-Contrast White Background (Fixed 52x52px) */}
+          {/* QR Code Container with High-Contrast White Background */}
           <button
             type="button"
             onClick={onQrClick}
-            className="w-13 h-13 min-w-[52px] min-h-[52px] max-w-[52px] max-h-[52px] shrink-0 border-2 border-foreground/40 bg-white p-1 cursor-pointer overflow-hidden flex items-center justify-center shadow-[2px_2px_0px_0px_var(--border)] hover:scale-105 active:scale-95 transition-transform"
+            className={`${featured ? 'h-[68px] w-[68px] min-h-[68px] min-w-[68px] sm:h-[144px] sm:w-[144px] sm:min-h-[144px] sm:min-w-[144px]' : compact ? 'h-[62px] w-[62px] min-h-[62px] min-w-[62px]' : 'h-[68px] w-[68px] min-h-[68px] min-w-[68px]'} shrink-0 border-2 border-foreground/40 bg-white p-1 cursor-pointer overflow-hidden flex items-center justify-center ${compact ? '' : 'shadow-[2px_2px_0px_0px_var(--border)]'} hover:scale-105 active:scale-95 transition-transform`}
             title="Clique para ampliar o QR Code"
           >
             <img
@@ -165,7 +173,7 @@ export const CinemaTicket: React.FC<CinemaTicketProps> = ({
         </div>
 
         {/* Custom Actions if provided */}
-        {actionButtons && <div className="flex items-center gap-1.5">{actionButtons}</div>}
+        {actionButtons && <div className={`flex items-center gap-1.5 ${compact ? 'justify-end' : ''}`}>{actionButtons}</div>}
       </div>
 
     </div>

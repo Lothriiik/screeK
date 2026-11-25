@@ -72,7 +72,7 @@ export const MainLayout = () => {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans pb-16 md:pb-0 overflow-x-hidden">
       
-      <header className="sticky top-0 z-40 bg-background border-b-2 border-foreground/30 px-4 sm:px-12">
+      {path !== '/onboarding' && <header className="sticky top-0 z-40 bg-background border-b-2 border-foreground/30 px-4 sm:px-12">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 mx-auto flex items-center justify-between w-full h-16 sm:h-16">
           
           <div className="flex md:hidden items-center justify-between w-full">
@@ -171,6 +171,20 @@ export const MainLayout = () => {
                     className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
                     Cinemas
+                  </Link>
+                  <Link
+                    to="/tickets/find"
+                    onClick={() => setOpenDropdown(null)}
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
+                  >
+                    Localizar ingresso
+                  </Link>
+                  <Link
+                    to="/management/request-access"
+                    onClick={() => setOpenDropdown(null)}
+                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
+                  >
+                    Sou responsável por um cinema
                   </Link>
                   <div className="h-px bg-foreground/10 my-1" />
                   <Link
@@ -387,7 +401,7 @@ export const MainLayout = () => {
 
           </div>
         </div>
-      </header>
+      </header>}
 
       {/* Mobile Side Drawer (Menu Hamburguer Lateral) */}
       {isMobileMenuOpen && (
@@ -473,6 +487,20 @@ export const MainLayout = () => {
                     className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
                   >
                     Cinemas
+                  </Link>
+                  <Link
+                    to="/tickets/find"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                  >
+                    Localizar ingresso
+                  </Link>
+                  <Link
+                    to="/management/request-access"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                  >
+                    Sou responsável por um cinema
                   </Link>
                   <div className="h-px bg-foreground/10 my-1" />
                   <Link
@@ -626,7 +654,7 @@ export const MainLayout = () => {
         <Outlet />
       </main>
 
-      {!isBookingFunnel && (
+      {!isBookingFunnel && path !== '/onboarding' && (
         <>
           <footer className="bg-background border-t-2 border-foreground/30 py-10 px-4 sm:px-12 mt-12 mb-16 md:mb-0">
             <div className="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto">

@@ -99,7 +99,7 @@ export function ManagementStatistics() {
             }}
           >
             <SelectTrigger aria-label="Selecionar cinema" className="h-9 w-[190px] min-w-[190px] border-2 border-foreground/30 px-2 text-[10px] font-black uppercase">
-              <Buildings size={15} weight="bold" className="mr-1 shrink-0 text-secondary" />
+              <Buildings size={15} weight="bold" className="mr-1 shrink-0 text-primary" />
               <SelectValue>{selectedCinema?.name || 'Selecionar cinema'}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -139,7 +139,7 @@ export function ManagementStatistics() {
         {/* ── SECTION 1: KPIS DA SEMANA ── */}
         <section className="space-y-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-black uppercase tracking-tight text-foreground">
+            <h2 className="text-xl font-black uppercase tracking-tight text-primary">
               KPIs da Semana
             </h2>
             <span className="text-xs font-sans text-foreground/50">
@@ -152,7 +152,7 @@ export function ManagementStatistics() {
             {/* KPI 1 */}
             <div className="bg-background border-4 border-foreground/40 p-4 space-y-1 shadow-[4px_4px_0px_0px_var(--border)]">
               <span className="text-[10px] font-black uppercase text-foreground/50 tracking-wider block">FATURAMENTO</span>
-              <h3 className="text-2xl font-mono font-black text-primary leading-tight">R$48.3k</h3>
+              <h3 className="text-2xl font-mono font-black text-foreground leading-tight">R$48.3k</h3>
               <div className="flex items-center gap-1 text-[#34A853] text-[11px] font-mono font-bold">
                 <span>↑ +12.4%</span>
                 <span className="text-foreground/40 font-normal">vs. R$43k</span>
@@ -162,7 +162,7 @@ export function ManagementStatistics() {
             {/* KPI 2 */}
             <div className="bg-background border-4 border-foreground/40 p-4 space-y-1 shadow-[4px_4px_0px_0px_var(--border)]">
               <span className="text-[10px] font-black uppercase text-foreground/50 tracking-wider block">INGRESSOS</span>
-              <h3 className="text-2xl font-mono font-black text-secondary leading-tight">3.412</h3>
+              <h3 className="text-2xl font-mono font-black text-foreground leading-tight">3.412</h3>
               <div className="flex items-center gap-1 text-[#34A853] text-[11px] font-mono font-bold">
                 <span>↑ +8.1%</span>
                 <span className="text-foreground/40 font-normal">vs. 3.157</span>
@@ -182,7 +182,7 @@ export function ManagementStatistics() {
             {/* KPI 4 */}
             <div className="bg-background border-4 border-foreground/40 p-4 space-y-1 shadow-[4px_4px_0px_0px_var(--border)]">
               <span className="text-[10px] font-black uppercase text-foreground/50 tracking-wider block">TICKET MÉDIO</span>
-              <h3 className="text-2xl font-mono font-black text-primary leading-tight">R$41</h3>
+              <h3 className="text-2xl font-mono font-black text-foreground leading-tight">R$41</h3>
               <div className="flex items-center gap-1 text-[#34A853] text-[11px] font-mono font-bold">
                 <span>↑ +R$3</span>
                 <span className="text-foreground/40 font-normal">vs. R$38</span>
@@ -204,9 +204,9 @@ export function ManagementStatistics() {
           {/* 3 Insight Banners (Figma Exact) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
             
-            {/* Banner 1 (Atenção / Pink) */}
-            <div className="p-3.5 bg-secondary/10 border-2 border-secondary/40 space-y-1 text-xs">
-              <div className="flex items-center gap-1.5 font-black uppercase text-secondary">
+            {/* Banner 1 (Atenção) */}
+            <div className="p-3.5 bg-primary/10 border-2 border-primary/40 space-y-1 text-xs">
+              <div className="flex items-center gap-1.5 font-black uppercase text-primary">
                 <WarningCircle size={16} weight="fill" />
                 <span>Atenção: queda de vendas</span>
               </div>
@@ -243,7 +243,7 @@ export function ManagementStatistics() {
         {/* ── SECTION 2: SÉRIE HISTÓRICA (COMPONENTS CHART RECHARTS) ── */}
         <section className="space-y-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-black uppercase tracking-tight text-foreground">
+            <h2 className="text-xl font-black uppercase tracking-tight text-primary">
               Série Histórica
             </h2>
             <span className="text-xs font-sans text-foreground/50">
@@ -335,7 +335,7 @@ export function ManagementStatistics() {
         {/* ── SECTION 4: RANKINGS & QUADRANTES DE EFICIÊNCIA ── */}
         <section className="space-y-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-black uppercase tracking-tight text-foreground">
+            <h2 className="text-xl font-black uppercase tracking-tight text-primary">
               Rankings e Eficiência
             </h2>
             <span className="text-xs font-sans text-foreground/50">

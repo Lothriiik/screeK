@@ -3,7 +3,7 @@
  */
 
 export type TicketType = 'STANDARD' | 'HALF' | 'FREE' | 'VIP';
-export type TicketStatus = 'PENDING' | 'PAID' | 'CANCELLED';
+export type TicketStatus = 'PENDING' | 'PAID' | 'USED' | 'CANCELLED';
 export type PaymentMethod = 'PIX' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'APPLE_PAY' | 'GOOGLE_PAY';
 
 export interface SnackItem {

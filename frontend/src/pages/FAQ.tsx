@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Question, ArrowLeft, CaretDown, CaretUp } from '@phosphor-icons/react';
+import { Question, ArrowLeft, CaretDown, CaretUp, MagnifyingGlass } from '@phosphor-icons/react';
 
 const FAQ_ITEMS = [
   {
@@ -32,6 +32,22 @@ const FAQ_ITEMS = [
 
 export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('Todas');
+  const categories = ['Todas', 'Ingressos', 'Pagamento', 'Conta', 'Comunidade', 'IA & recomendações'];
+  const categoryTerms: Record<string, string[]> = {
+    Ingressos: ['ingresso', 'qr code', 'cancelar', 'meia-entrada'],
+    Pagamento: ['pagamento', 'reembolso', 'cancelar'],
+    Conta: ['conta', 'dados', 'senha'],
+    Comunidade: ['lista', 'comunidade'],
+    'IA & recomendações': ['recomendações', 'intelligence'],
+  };
+  const visibleItems = FAQ_ITEMS.filter((item) => {
+    const text = `${item.question} ${item.answer}`.toLocaleLowerCase('pt-BR');
+    const matchesQuery = !query.trim() || text.includes(query.trim().toLocaleLowerCase('pt-BR'));
+    const terms = categoryTerms[category];
+    return matchesQuery && (!terms || terms.some((term) => text.includes(term)));
+  });
 
   return (
     <div className="bg-background text-foreground font-display">
@@ -47,12 +63,7 @@ export function FAQ() {
             <span>Voltar para o Início</span>
           </Link>
 
-          <div className="flex items-center gap-2 text-primary">
-            <Question size={28} weight="bold" />
-            <span className="text-xs font-black uppercase tracking-wider">Central de Ajuda</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-black uppercase text-foreground tracking-tight">
+          <h1 className="text-3xl sm:text-5xl font-black uppercase text-primary tracking-tight">
             Perguntas Frequentes (FAQ)
           </h1>
           <p className="font-sans text-xs sm:text-sm text-foreground/70">
@@ -63,7 +74,15 @@ export function FAQ() {
 
       {/* Accordion List */}
       <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-10 space-y-4">
-        {FAQ_ITEMS.map((item, index) => {
+        <label className="relative block">
+          <MagnifyingGlass size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar uma dúvida: cancelar, QR Code, meia-entrada..." className="h-11 w-full border-2 border-primary bg-background pl-10 pr-3 text-sm outline-none focus:ring-1 focus:ring-primary" />
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((item) => <button key={item} type="button" onClick={() => setCategory(item)} className={`border-2 px-3 py-1.5 text-[10px] font-black uppercase ${category === item ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/30 hover:border-primary'}`}>{item}</button>)}
+        </div>
+        {visibleItems.length === 0 && <p className="border-2 border-dashed border-foreground/30 p-8 text-center text-sm text-foreground/60">Nenhuma dúvida encontrada. Fale com o suporte para receber ajuda.</p>}
+        {visibleItems.map((item, index) => {
           const isOpen = openIndex === index;
 
           return (

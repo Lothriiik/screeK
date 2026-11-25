@@ -35,12 +35,7 @@ export function Contact() {
             <span>Voltar para o Início</span>
           </Link>
 
-          <div className="flex items-center gap-2 text-secondary">
-            <ChatTeardropText size={28} weight="bold" />
-            <span className="text-xs font-black uppercase tracking-wider">Suporte &amp; Contato</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-black uppercase text-foreground tracking-tight">
+          <h1 className="text-3xl sm:text-5xl font-black uppercase text-primary tracking-tight">
             Fale com a Equipe screeK
           </h1>
           <p className="font-sans text-xs sm:text-sm text-foreground/70">
@@ -155,6 +150,7 @@ export function Contact() {
               Segunda a Domingo, das 09h às 23h (suporte especial para sessões noturnas nos cinemas parceiros).
             </p>
           </div>
+          <p className="font-sans text-xs text-foreground/70">Tempo de resposta esperado: em até 24 horas.</p>
         </div>
 
       </main>

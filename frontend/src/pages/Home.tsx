@@ -1,3 +1,4 @@
+import { movieRouteId } from '../lib/movie-route';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
@@ -22,7 +23,7 @@ const MOCK_HERO_SLIDES: CarouselSlide[] = MOCK_MOVIES.slice(0, 3).map((m) => ({
   ageRating: m.age_rating,
   directors: m.directors,
   synopsis: m.overview,
-  ticketLink: `/movies/${m.id}/sessions`,
+  ticketLink: `/movies/${movieRouteId(m)}/sessions`,
 }));
 
 // Movie sections mapped from Central Mock Store
@@ -38,7 +39,7 @@ const MOCK_NOW_PLAYING: MovieCardProps[] = MOCK_MOVIES.filter(
   ageRating: m.age_rating,
   tagType: 'release',
   eventLabel: 'ESTREIA',
-  linkTo: `/movies/${m.id}/sessions`,
+  linkTo: `/movies/${movieRouteId(m)}/sessions`,
 }));
 
 // Preview-only picks keep the recommendation marker visible while developing without API data.
@@ -56,7 +57,7 @@ const MOCK_RE_RELEASES: MovieCardProps[] = MOCK_MOVIES.filter(
   ageRating: m.age_rating,
   tagType: 're_release',
   eventLabel: 'REEXIBIÇÃO',
-  linkTo: `/movies/${m.id}/sessions`,
+  linkTo: `/movies/${movieRouteId(m)}/sessions`,
 }));
 
 const MOCK_UPCOMING: MovieCardProps[] = MOCK_MOVIES.filter(
@@ -73,7 +74,7 @@ const MOCK_UPCOMING: MovieCardProps[] = MOCK_MOVIES.filter(
   eventLabel: m.is_pre_sale ? 'PRÉ-VENDA' : m.status === 're_release' ? 'REEXIBIÇÃO' : undefined,
   releaseDate: m.release_date_display,
   isPreSale: m.is_pre_sale,
-  linkTo: `/movies/${m.id}/sessions`,
+  linkTo: `/movies/${movieRouteId(m)}/sessions`,
 }));
 
 interface MovieSectionProps {

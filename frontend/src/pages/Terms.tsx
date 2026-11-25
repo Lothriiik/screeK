@@ -16,12 +16,7 @@ export function Terms() {
             <span>Voltar para o Início</span>
           </Link>
 
-          <div className="flex items-center gap-2 text-primary">
-            <ShieldCheck size={28} weight="bold" />
-            <span className="text-xs font-black uppercase tracking-wider">Documentos Legais</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-black uppercase text-foreground tracking-tight">
+          <h1 className="text-3xl sm:text-5xl font-black uppercase text-primary tracking-tight">
             Termos de Uso
           </h1>
           <p className="font-sans text-xs sm:text-sm text-foreground/60">
@@ -31,7 +26,12 @@ export function Terms() {
       </section>
 
       {/* Content */}
-      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-10 space-y-8 font-sans text-xs sm:text-sm text-foreground/80 leading-relaxed">
+      <main className="mx-auto grid max-w-5xl grid-cols-1 gap-8 px-4 py-10 font-sans text-xs leading-relaxed text-foreground/80 sm:px-0 md:grid-cols-[190px_minmax(0,1fr)] sm:text-sm">
+        <nav aria-label="Nesta página" className="h-fit border-l-2 border-foreground/20 md:sticky md:top-24">
+          <span className="mb-2 block px-3 text-[9px] font-black uppercase tracking-wider text-foreground/50">Nesta página</span>
+          {['Objeto e serviços', 'Cadastro e responsabilidades', 'Compra e cancelamento', 'Meia-entrada', 'Conduta na comunidade'].map((label, index) => <a key={label} href={`#termo-${index + 1}`} className="block border-l-2 border-transparent px-3 py-2 text-[10px] font-bold hover:border-primary hover:bg-muted/30 hover:text-primary">{index + 1}. {label}</a>)}
+        </nav>
+        <div className="max-w-3xl space-y-7">
         
         <div className="p-4 bg-muted/20 border-2 border-foreground/20 flex gap-3 items-start">
           <Info size={20} weight="bold" className="text-primary shrink-0 mt-0.5" />
@@ -40,7 +40,7 @@ export function Terms() {
           </p>
         </div>
 
-        <section className="space-y-2">
+        <section id="termo-1" className="scroll-mt-24 space-y-2">
           <h2 className="text-base sm:text-lg font-black uppercase font-display text-foreground">
             1. Objeto e Serviços Oferecidos
           </h2>
@@ -49,7 +49,7 @@ export function Terms() {
           </p>
         </section>
 
-        <section className="space-y-2">
+        <section id="termo-2" className="scroll-mt-24 space-y-2">
           <h2 className="text-base sm:text-lg font-black uppercase font-display text-foreground">
             2. Cadastro e Responsabilidades do Usuário
           </h2>
@@ -58,7 +58,7 @@ export function Terms() {
           </p>
         </section>
 
-        <section className="space-y-2">
+        <section id="termo-3" className="scroll-mt-24 space-y-2">
           <h2 className="text-base sm:text-lg font-black uppercase font-display text-foreground">
             3. Compra de Ingressos e Cancelamento
           </h2>
@@ -67,7 +67,7 @@ export function Terms() {
           </p>
         </section>
 
-        <section className="space-y-2">
+        <section id="termo-4" className="scroll-mt-24 space-y-2">
           <h2 className="text-base sm:text-lg font-black uppercase font-display text-foreground">
             4. Regras de Meia-Entrada e Benefícios
           </h2>
@@ -76,7 +76,7 @@ export function Terms() {
           </p>
         </section>
 
-        <section className="space-y-2">
+        <section id="termo-5" className="scroll-mt-24 space-y-2">
           <h2 className="text-base sm:text-lg font-black uppercase font-display text-foreground">
             5. Conduta na Comunidade Social
           </h2>
@@ -85,6 +85,7 @@ export function Terms() {
           </p>
         </section>
 
+        </div>
       </main>
     </div>
   );

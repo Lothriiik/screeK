@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
 import { Register } from './pages/Register';
+import { Login } from './pages/Login';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { Home } from './pages/Home';
@@ -39,6 +40,14 @@ import { ManagementCinemas } from './pages/ManagementCinemas';
 import { ManagementCinemaForm } from './pages/ManagementCinemaForm';
 import { ManagementSchedule } from './pages/ManagementSchedule';
 import { ManagementStatistics } from './pages/ManagementStatistics';
+import { ManagementOperations } from './pages/ManagementOperations';
+import { ManagementAccessRequest } from './pages/ManagementAccessRequest';
+import { ManagementInvitation } from './pages/ManagementInvitation';
+import { PlatformAdmin } from './pages/PlatformAdmin';
+import { TicketLookup } from './pages/TicketLookup';
+import { TicketValidation } from './pages/TicketValidation';
+import { EmailVerification, SessionExpired } from './pages/AccountStatus';
+import { StateGallery } from './pages/StateGallery';
 import { AuthLayout } from './layouts/AuthLayout';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
@@ -52,6 +61,7 @@ import { ComponentsShowcaseScreen } from './screens/ComponentsShowcaseScreen';
 import { ScreenPrototypes } from './screens/ScreenPrototypes';
 
 const ROUTE_TITLES: Record<string, string> = {
+  '/login': 'Entrar na sua conta | screeK',
   '/': 'Ingressos & Comunidade Cinéfila | screeK',
   '/movies': 'Catálogo de Filmes & Sessões | screeK',
   '/cinemas': 'Cinemas & Salas | screeK',
@@ -77,10 +87,17 @@ const ROUTE_TITLES: Record<string, string> = {
   '/management/cinemas': 'Gestão de Cinemas & Salas | screeK B2B',
   '/management/cinemas/new': 'Cadastrar Novo Cinema | screeK B2B',
   '/management/schedule': 'Gestão de Sessões & Programação | screeK B2B',
+  '/management/statistics': 'Estatísticas & Ocupação | screeK B2B',
+  '/management/operations': 'Operações do Cinema | screeK B2B',
+  '/management/check-in': 'Validação de Ingressos | screeK B2B',
+  '/management/request-access': 'Solicitar Acesso de Gestor | screeK',
+  '/platform': 'Administração da Plataforma | screeK',
+  '/tickets/find': 'Encontrar meu ingresso | screeK',
+  '/verify-email': 'Confirmar e-mail | screeK',
+  '/session-expired': 'Sessão encerrada | screeK',
+  '/register': 'Criar Conta | screeK',
   '/statistics': 'Estatísticas & Ocupação | screeK B2B',
   '/management/stats': 'Estatísticas & Ocupação | screeK B2B',
-  '/login': 'Entrar na Conta | screeK',
-  '/register': 'Criar Conta | screeK',
   '/forgot-password': 'Recuperar Senha | screeK',
   '/reset-password': 'Redefinir Senha | screeK',
   '/forbidden': 'Acesso Restrito (403) | screeK',
@@ -144,19 +161,18 @@ export function App() {
       <Routes>
         {/* 1. Rotas Apenas para Visitantes Deslogados (Redirecionam se logado) */}
         <Route element={<PublicOnlyRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route element={<AuthLayout />}>
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
           </Route>
-          <Route path="/register" element={<Register />} />
         </Route>
 
         {/* Catálogo, busca, feed e páginas informativas podem ser vistos sem login. */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/components" element={<ComponentsShowcaseScreen />} />
-          <Route path="/prototypes" element={<ScreenPrototypes />} />
           <Route path="/cinemas/:id" element={<CinemaDetail />} />
           <Route path="/cinemas" element={<Cinemas />} />
           <Route path="/movies/:id/sessions" element={<MovieSessions />} />
@@ -182,6 +198,14 @@ export function App() {
           <Route path="/faq" element={<FAQ />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/support" element={<Contact />} />
+          <Route path="/tickets/find" element={<TicketLookup />} />
+          <Route path="/management/request-access" element={<ManagementAccessRequest />} />
+          <Route path="/management/invitations/:token" element={<ManagementInvitation />} />
+          <Route path="/verify-email" element={<EmailVerification />} />
+          <Route path="/session-expired" element={<SessionExpired />} />
+          <Route path="/components" element={import.meta.env.DEV ? <ComponentsShowcaseScreen /> : <NotFound />} />
+          <Route path="/prototypes" element={import.meta.env.DEV ? <ScreenPrototypes /> : <NotFound />} />
+          <Route path="/dev/states" element={import.meta.env.DEV ? <StateGallery /> : <NotFound />} />
           <Route path="/forbidden" element={<Forbidden />} />
 
           {/* Rotas Autenticadas do Usuário (USER, MANAGER, ADMIN) */}
@@ -212,9 +236,20 @@ export function App() {
             <Route path="/management/cinemas" element={<ManagementCinemas />} />
             <Route path="/management/cinemas/new" element={<ManagementCinemaForm />} />
             <Route path="/management/cinemas/:id/edit" element={<ManagementCinemaForm />} />
+            <Route path="/management/cinemas/:id/rooms" element={<ManagementCinemaForm />} />
             <Route path="/management/schedule" element={<ManagementSchedule />} />
-            <Route path="/statistics" element={<ManagementStatistics />} />
-            <Route path="/management/stats" element={<ManagementStatistics />} />
+            <Route path="/management/statistics" element={<ManagementStatistics />} />
+            <Route path="/management/operations" element={<ManagementOperations />} />
+            <Route path="/management/check-in" element={<TicketValidation />} />
+            <Route path="/statistics" element={<Navigate to="/management/statistics" replace />} />
+            <Route path="/management/stats" element={<Navigate to="/management/statistics" replace />} />
+          </Route>
+        </Route>
+
+        {/* Administração global. No ambiente real, o servidor também precisa impor ADMIN. */}
+        <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/platform" element={<PlatformAdmin />} />
           </Route>
         </Route>
 

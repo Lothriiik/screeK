@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { movieRouteId } from '../lib/movie-route';
 import { Link } from 'react-router-dom';
-import { ChartBar, Clock, FilmStrip, ShareNetwork, Star, TrendUp } from '@phosphor-icons/react';
+import { ChartBar, Clock, FilmStrip, ShareNetwork, Star } from '@phosphor-icons/react';
 import { ShareableStoryModal } from '../components/custom/shareable-story-modal';
 import { MOCK_STATS_ALL_TIME, MOCK_STATS_MONTH, MOCK_STATS_WEEK } from '../mocks/stats';
 import type { PeriodStats } from '../types/stats';
@@ -18,6 +19,7 @@ export function ProfileStats() {
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const stats = PERIODS[period];
   const maxGenreCount = Math.max(...stats.top_genres.map((item) => item.count));
+  const genreTotal = stats.top_genres.reduce((total, item) => total + item.count, 0);
 
   return (
     <div className="bg-background text-foreground font-display">
@@ -48,9 +50,8 @@ export function ProfileStats() {
             { label: 'Filmes', value: stats.total_movies, icon: FilmStrip },
             { label: 'Horas no cinema', value: `${stats.total_hours}h`, icon: Clock },
             { label: 'Nota média', value: stats.average_rating.toFixed(1), icon: Star },
-            { label: 'Período', value: period === 'all' ? 'Histórico' : period === 'month' ? 'Set/26' : 'Semana', icon: TrendUp },
           ].map(({ label, value, icon: Icon }) => (
-            <div key={label} className="border-4 border-foreground/35 bg-card p-4 shadow-[4px_4px_0px_0px_var(--border)]">
+            <div key={label} className="border-4 border-foreground/35 bg-background p-4 shadow-[4px_4px_0px_0px_var(--border)]">
               <Icon size={22} weight="bold" className="mb-5 text-primary" />
               <strong className="block text-2xl font-black">{value}</strong>
               <span className="font-mono text-[10px] font-black uppercase tracking-wider text-foreground/55">{label}</span>
@@ -59,31 +60,31 @@ export function ProfileStats() {
         </section>
 
         <section className="grid gap-8 lg:grid-cols-[1.35fr_1fr]">
-          <div className="border-4 border-foreground/35 bg-card p-5 shadow-[6px_6px_0px_0px_var(--border)]">
+          <div className="border-4 border-foreground/35 bg-background p-5 shadow-[6px_6px_0px_0px_var(--border)]">
             <div className="mb-5 flex items-center justify-between">
-              <div><span className="font-mono text-[10px] font-black uppercase text-primary">Preferências</span><h2 className="text-xl font-black uppercase">Gêneros mais vistos</h2></div>
+              <h2 className="text-xl font-black uppercase text-primary">Gêneros mais vistos</h2>
               <ChartBar size={24} weight="bold" />
             </div>
             <div className="space-y-4">
               {stats.top_genres.map((item) => (
                 <div key={item.genre}>
-                  <div className="mb-1 flex justify-between text-xs font-black uppercase"><span>{item.genre}</span><span>{item.count} filmes · {item.percentage}%</span></div>
+                  <div className="mb-1 flex justify-between text-xs font-black uppercase"><span>{item.genre}</span><span>{item.count} filmes · {genreTotal ? Math.round(item.count / genreTotal * 100) : 0}%</span></div>
                   <div className="h-3 border border-foreground/30 bg-background"><div className="h-full bg-primary" style={{ width: `${(item.count / maxGenreCount) * 100}%` }} /></div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="border-4 border-foreground/35 bg-card p-5 shadow-[6px_6px_0px_0px_var(--border)]">
+          <div className="border-4 border-foreground/35 bg-background p-5 shadow-[6px_6px_0px_0px_var(--border)]">
             <span className="font-mono text-[10px] font-black uppercase text-primary">Onde você assiste</span>
             <h2 className="mb-5 text-xl font-black uppercase">Cinemas favoritos</h2>
             <div className="space-y-3">{stats.top_cinemas.map((item, index) => <div key={item.name} className="flex items-center gap-3 border-b border-foreground/10 pb-3"><span className="font-mono text-sm font-black text-primary">0{index + 1}</span><span className="flex-1 text-sm font-bold">{item.name}</span><span className="font-mono text-xs text-foreground/55">{item.count}</span></div>)}</div>
           </div>
         </section>
 
-        <section className="border-4 border-foreground/35 bg-card p-5 shadow-[6px_6px_0px_0px_var(--border)]">
-          <div className="mb-5 flex items-center justify-between"><div><span className="font-mono text-[10px] font-black uppercase text-primary">Últimos registros</span><h2 className="text-xl font-black uppercase">Filmes do período</h2></div><Link to="/profile" className="text-xs font-black uppercase text-primary hover:underline">Ver diário</Link></div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">{stats.logs.map((log) => <Link key={log.id} to={`/movies/${log.movie_id}`} className="group"><div className="aspect-[2/3] overflow-hidden border-2 border-foreground/30 bg-muted"><img src={log.movie.poster_url} alt={log.movie.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" /></div><div className="mt-2 truncate text-xs font-black">{log.movie.title}</div><div className="flex items-center gap-1 text-[10px] font-bold text-secondary"><Star size={11} weight="fill" />{log.user_rating.toFixed(1)}</div></Link>)}</div>
+        <section className="border-4 border-foreground/35 bg-background p-5 shadow-[6px_6px_0px_0px_var(--border)]">
+          <div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-black uppercase text-primary">Filmes do período</h2><Link to="/profile" className="text-xs font-black uppercase text-primary hover:underline">Ver diário</Link></div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">{stats.logs.map((log) => <Link key={log.id} to={`/movies/${movieRouteId(log.movie)}`} className="group"><div className="aspect-[2/3] overflow-hidden border-2 border-foreground/30 bg-muted"><img src={log.movie.poster_url} alt={log.movie.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" /></div><div className="mt-2 truncate text-xs font-black">{log.movie.title}</div><div className="flex items-center gap-1 text-[10px] font-bold text-primary"><Star size={11} weight="fill" />{log.user_rating.toFixed(1)}</div></Link>)}</div>
         </section>
       </main>
 

@@ -1,3 +1,4 @@
+import { movieRouteId } from '../lib/movie-route';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -314,7 +315,7 @@ export function Feed() {
                 {MOCK_MOVIES.slice(0, 3).map((m) => (
                   <Link
                     key={m.id}
-                    to={`/movies/${m.id}`}
+                    to={`/movies/${movieRouteId(m)}`}
                     className="flex items-center gap-3 p-2 bg-muted/20 border border-foreground/10 hover:border-primary transition-all group"
                   >
                     <img

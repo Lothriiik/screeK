@@ -112,9 +112,10 @@ export function Onboarding() {
                   : 'bg-muted/40 text-foreground/60 border-foreground/20'
               }`}
             >
-              <span>2. Seleção de Filmes ({selectedMovieIds.length}/5)</span>
+              <span>2. Seleção de Filmes{step === 2 ? ` (${selectedMovieIds.length}/5)` : ""}</span>
             </div>
           </div>
+          <div className="flex justify-center"><button type="button" onClick={() => navigate('/movies')} className="text-[10px] font-black uppercase text-primary underline underline-offset-4">Pular por agora</button></div>
 
         </div>
       </section>

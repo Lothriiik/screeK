@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User,
   Bell,
@@ -20,8 +20,20 @@ import { StatusModal } from '../components/custom/status-modal';
 export function Settings() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'privacy' | 'security'>('profile');
+  type SettingsTab = 'profile' | 'notifications' | 'privacy' | 'security';
+  const validTabs: SettingsTab[] = ['profile', 'notifications', 'privacy', 'security'];
+  const initialTab = validTabs.includes(searchParams.get('tab') as SettingsTab) ? searchParams.get('tab') as SettingsTab : 'profile';
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+  useEffect(() => {
+    const tab = searchParams.get('tab') as SettingsTab;
+    setActiveTab(validTabs.includes(tab) ? tab : 'profile');
+  }, [searchParams]);
+  const selectTab = (tab: SettingsTab) => {
+    setActiveTab(tab);
+    setSearchParams(tab === 'profile' ? {} : { tab }, { replace: false });
+  };
 
   // Form states
   const [name, setName] = useState(user?.username || 'Lothrik Junior');
@@ -39,6 +51,7 @@ export function Settings() {
   // Privacy toggles
   const [isPrivateAccount, setIsPrivateAccount] = useState(false);
   const [showWatchedHistory, setShowWatchedHistory] = useState(true);
+  const [showFutureSessions, setShowFutureSessions] = useState(false);
   const [allowComments, setAllowComments] = useState(true);
 
   // Password state
@@ -46,6 +59,7 @@ export function Settings() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const passwordStrength = !newPassword ? 0 : Math.min(3, Number(newPassword.length >= 8) + Number(/[a-z]/i.test(newPassword) && /\d/.test(newPassword)) + Number(/[^a-z\d]/i.test(newPassword)));
 
   // Modal State for Account Deactivation
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
@@ -133,7 +147,7 @@ export function Settings() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => selectTab(tab.id as SettingsTab)}
                 className={`w-full p-3 text-left font-black text-xs uppercase flex items-center gap-2.5 transition-all cursor-pointer ${
                   isActive
                     ? 'bg-primary text-primary-foreground border-2 border-primary shadow-[2px_2px_0px_0px_var(--border)]'
@@ -346,6 +360,14 @@ export function Settings() {
                     <p className="text-foreground/70">Outros usuários podem comentar e debater em suas análises de filmes.</p>
                   </div>
                 </label>
+
+                <label className="flex items-start gap-3 p-3 bg-muted/20 border border-foreground/20 cursor-pointer">
+                  <input type="checkbox" checked={showFutureSessions} onChange={(e) => setShowFutureSessions(e.target.checked)} className="w-4 h-4 accent-primary mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="font-display font-black uppercase text-foreground text-xs block">Exibir sessões futuras</span>
+                    <p className="text-foreground/70">Mostrar no perfil público os cinemas e sessões dos seus próximos ingressos.</p>
+                  </div>
+                </label>
               </div>
 
               <div className="pt-2 border-t border-foreground/10 flex justify-end">
@@ -426,6 +448,10 @@ export function Settings() {
                       </span>
                     </div>
                   </div>
+                  <div aria-label={`Força da senha: ${passwordStrength} de 3`} className="space-y-1">
+                    <div className="flex gap-1">{[0, 1, 2].map((level) => <span key={level} className={`h-1.5 flex-1 ${passwordStrength > level ? passwordStrength === 3 ? 'bg-green-600' : 'bg-secondary' : 'bg-foreground/15'}`} />)}</div>
+                    <span className="text-[10px] font-bold uppercase text-foreground/55">Força: {['—', 'fraca', 'média', 'forte'][passwordStrength]}</span>
+                  </div>
                 </div>
 
                 <div className="pt-2 border-t border-foreground/10 flex justify-end">
@@ -439,6 +465,19 @@ export function Settings() {
                   </Button>
                 </div>
               </form>
+
+              <section className="border-2 border-foreground/30 bg-background p-5 space-y-3">
+                <h2 className="border-b border-foreground/15 pb-2 text-sm font-black uppercase">Sessões ativas</h2>
+                <div className="flex items-center justify-between gap-3 border-b border-foreground/10 py-2 text-xs"><div><strong className="block">Chrome · Windows <span className="text-green-700">●</span></strong><span className="text-foreground/60">Arapiraca, AL · este dispositivo</span></div><span className="text-[10px] uppercase text-foreground/50">Agora</span></div>
+                <div className="flex items-center justify-between gap-3 py-2 text-xs"><div><strong className="block">Safari · iPhone</strong><span className="text-foreground/60">São Paulo, SP · há 2 dias</span></div><Button type="button" variant="outline" size="sm" onClick={() => toast.success('Sessão encerrada.')}>Encerrar</Button></div>
+                <button type="button" onClick={() => toast.success('As outras sessões foram encerradas.')} className="text-[10px] font-black uppercase text-primary">Encerrar todas as outras ›</button>
+              </section>
+
+              <section className="border-2 border-foreground/30 bg-background p-5 space-y-3">
+                <h2 className="border-b border-foreground/15 pb-2 text-sm font-black uppercase">Seus dados (LGPD)</h2>
+                <p className="text-xs text-foreground/65">Baixe uma cópia dos seus dados ou solicite a exclusão definitiva da conta.</p>
+                <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" onClick={() => toast.success('Sua solicitação de exportação foi registrada.')}>Exportar meus dados</Button><Button type="button" variant="destructive" onClick={() => toast.info('A solicitação de exclusão será confirmada por e-mail.')}>Excluir conta</Button></div>
+              </section>
 
               {/* Danger Zone */}
               <div className="bg-background border-4 border-destructive/60 p-6 space-y-3 shadow-[6px_6px_0px_0px_rgba(239,68,68,0.4)]">

@@ -1,5 +1,6 @@
+import { movieRouteId } from '../lib/movie-route';
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Heart,
   BookmarkSimple,
@@ -105,6 +106,7 @@ function MovieDetailSkeleton() {
 
 export function MovieDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const { openModal } = useAuthModalStore();
   const { requireAuth } = useRequireAuth();
@@ -122,20 +124,19 @@ export function MovieDetail() {
           if (data) {
             setMovie(data);
             setUserRating(data.user_rating || 0);
+            if (data.tmdb_id && id !== String(data.tmdb_id)) navigate(`/movies/${data.tmdb_id}`, { replace: true });
           }
+          return movieService.getRecommendations(data?.tmdb_id || id);
+        })
+        .then((recs) => {
+          setSimilarMovies(recs || []);
           setIsLoading(false);
         })
         .catch(() => {
           setIsLoading(false);
         });
-
-      movieService.getRecommendations(id).then((recs) => {
-        if (recs && recs.length > 0) {
-          setSimilarMovies(recs);
-        }
-      });
     }
-  }, [id]);
+  }, [id, navigate]);
 
   useEffect(() => {
     if (movie) {
@@ -175,8 +176,11 @@ export function MovieDetail() {
     };
   }, []);
 
-  if (isLoading || !movie) {
+  if (isLoading) {
     return <MovieDetailSkeleton />;
+  }
+  if (!movie) {
+    return <main className="mx-auto flex min-h-[50vh] max-w-4xl flex-col items-center justify-center gap-3 px-6 text-center"><h1 className="font-display text-2xl font-black uppercase">Filme não encontrado</h1><p className="text-sm text-foreground/65">Esse identificador não corresponde a um filme disponível.</p><Link to="/movies" className="bg-primary px-5 py-3 text-xs font-black uppercase text-primary-foreground">Voltar ao catálogo</Link></main>;
   }
 
   const handleWatchedToggle = () => {
@@ -328,7 +332,7 @@ export function MovieDetail() {
                   </div>
                 </div>
                 <Button asChild size="lg" className="h-auto w-full px-2 py-3 text-center text-xs sm:px-3 sm:text-sm">
-                  <Link to={`/movies/${movie.id}/sessions`}>Ver sessões</Link>
+                  <Link to={`/movies/${movieRouteId(movie)}/sessions`}>Ver sessões</Link>
                 </Button>
               </div>
 
@@ -508,7 +512,7 @@ export function MovieDetail() {
                 genre={similarMovie.genres[0] || 'DRAMA'}
                 duration={similarMovie.duration_display}
                 ageRating={similarMovie.age_rating}
-                linkTo={`/movies/${similarMovie.id}`}
+                linkTo={`/movies/${movieRouteId(similarMovie)}`}
               />
             ))}
           </div>

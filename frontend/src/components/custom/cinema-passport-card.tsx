@@ -115,7 +115,7 @@ function cachePosterPalette(posterUrl: string, palette: PosterPaletteStyle) {
   try {
     window.localStorage.setItem(paletteCacheKey(posterUrl), JSON.stringify(palette));
   } catch {
-    // CartÃµes continuam funcionando quando o navegador bloqueia o armazenamento local.
+    // Cartões continuam funcionando quando o navegador bloqueia o armazenamento local.
   }
 }
 

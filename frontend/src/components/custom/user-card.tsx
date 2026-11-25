@@ -34,7 +34,7 @@ export const UserCard: React.FC<UserCardProps> = ({
   };
 
   return (
-    <div className="w-[200px] sm:w-[220px] bg-background border-4 border-foreground/40 p-5 flex flex-col items-center text-center font-display shadow-[4px_4px_0px_0px_var(--border)] text-foreground">
+    <div className="w-full min-w-0 max-w-[260px] bg-background border-4 border-foreground/40 p-3 flex flex-col items-center text-center font-display shadow-[4px_4px_0px_0px_var(--border)] text-foreground">
       {/* Avatar (Square) */}
       <img
         src={avatarUrl}
@@ -52,7 +52,7 @@ export const UserCard: React.FC<UserCardProps> = ({
 
       {/* Bio */}
       {bio && (
-        <p className="text-[11px] font-bold text-foreground/70 leading-tight mb-4 px-1 line-clamp-2 min-h-[32px]">
+        <p className="text-[11px] font-bold text-foreground/70 leading-tight mb-3 px-1 line-clamp-3 min-h-[42px] break-words">
           {bio}
         </p>
       )}
@@ -73,7 +73,7 @@ export const UserCard: React.FC<UserCardProps> = ({
       <button
         type="button"
         onClick={handleToggle}
-        className={`w-full mt-4 py-2 text-xs font-black uppercase tracking-wider border-2 border-transparent cursor-pointer shadow-[2px_2px_0px_0px_var(--border)] transition-all ${
+        className={`w-full mt-3 py-2 text-xs font-black uppercase tracking-wider border-2 border-transparent cursor-pointer shadow-[2px_2px_0px_0px_var(--border)] transition-all ${
           isFollowing
             ? 'bg-[#594242] hover:bg-[#6D5353] text-white'
             : 'bg-[#6A1B4D] hover:bg-[#80205D] text-white'

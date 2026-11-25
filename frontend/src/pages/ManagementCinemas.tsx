@@ -10,7 +10,8 @@ import {
   MagnifyingGlass,
   MapPin,
   Phone,
-  FilmStrip
+  FilmStrip,
+  Armchair
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MOCK_CINEMAS } from '../mocks/cinemas';
@@ -62,17 +63,9 @@ export function ManagementCinemas() {
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Buildings size={22} weight="bold" className="text-secondary" />
-                <span className="text-xs font-black uppercase text-foreground/60 tracking-wider">
-                  Rede de Exibição • screeK B2B
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-foreground">
-                Gerenciamento de Cinemas &amp; Salas
-              </h1>
-            </div>
+            <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-primary">
+              Gerenciamento de Cinemas &amp; Salas
+            </h1>
 
             {/* Create Cinema Button (Navigates to dedicated page) */}
             <Link
@@ -86,17 +79,17 @@ export function ManagementCinemas() {
 
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-            <div className="p-3.5 bg-muted/20 border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)]">
+            <div className="p-3.5 bg-background border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)]">
               <span className="text-[11px] font-black uppercase text-foreground/60 block">Total de Cinemas</span>
               <span className="text-2xl font-black text-foreground">{cinemas.length}</span>
             </div>
-            <div className="p-3.5 bg-muted/20 border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)]">
+            <div className="p-3.5 bg-background border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)]">
               <span className="text-[11px] font-black uppercase text-foreground/60 block">Salas Cadastradas</span>
-              <span className="text-2xl font-black text-secondary">
+              <span className="text-2xl font-black text-foreground">
                 {cinemas.reduce((acc, c) => acc + (c.rooms?.length || c.rooms_count || 0), 0)}
               </span>
             </div>
-            <div className="p-3.5 bg-muted/20 border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)]">
+            <div className="p-3.5 bg-background border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)]">
               <span className="text-[11px] font-black uppercase text-foreground/60 block">Poltronas / Capacidade</span>
               <span className="text-2xl font-black text-foreground">
                 {cinemas
@@ -109,9 +102,9 @@ export function ManagementCinemas() {
                   .toLocaleString()}
               </span>
             </div>
-            <div className="p-3.5 bg-muted/20 border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)]">
+            <div className="p-3.5 bg-background border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)]">
               <span className="text-[11px] font-black uppercase text-foreground/60 block">Salas Especiais (IMAX/VIP/4DX)</span>
-              <span className="text-2xl font-black text-[#34A853]">
+              <span className="text-2xl font-black text-foreground">
                 {cinemas.reduce(
                   (acc, c) =>
                     acc +
@@ -204,13 +197,14 @@ export function ManagementCinemas() {
                           {cinema.name}
                         </h3>
                         <div className="flex items-center gap-1.5 text-xs font-sans text-foreground/60">
-                          <MapPin size={14} weight="bold" className="shrink-0 text-secondary" />
+                          <MapPin size={14} weight="bold" className="shrink-0 text-primary" />
                           <span className="truncate">{cinema.address}</span>
                         </div>
                       </div>
 
                       {/* Actions: Edit & Delete */}
                       <div className="flex items-center gap-1 shrink-0">
+                        <Link to={`/management/cinemas/${cinema.id}/rooms`} className="p-2 border border-foreground/30 hover:bg-muted hover:text-primary transition-colors inline-block" title="Salas e mapa de assentos" aria-label={`Configurar salas de ${cinema.name}`}><Armchair size={16} weight="bold" /></Link>
                         <Link
                           to={`/management/cinemas/${cinema.id}/edit`}
                           className="p-2 border border-foreground/30 hover:bg-muted hover:text-primary transition-colors inline-block"
@@ -304,7 +298,7 @@ export function ManagementCinemas() {
                         <span>Sessões</span>
                       </Link>
                       <Link
-                        to={`/statistics?cinemaId=${cinema.id}`}
+                        to={`/management/statistics?cinemaId=${cinema.id}`}
                         className="px-3 py-1.5 bg-primary text-primary-foreground border-2 border-primary text-xs font-black uppercase flex items-center gap-1.5 transition-all shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 hover:bg-primary/90"
                       >
                         <ChartBar size={14} weight="bold" />

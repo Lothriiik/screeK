@@ -1,3 +1,4 @@
+import { movieRouteId } from '../lib/movie-route';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -295,7 +296,7 @@ export function CinemaDetail() {
                     />
                   </div>
                   <Link
-                      to={`/movies/${movie.id}/sessions`}
+                      to={`/movies/${movieRouteId(movie)}/sessions`}
                       onClick={(e) => e.stopPropagation()}
                       className=" inline-flex items-center gap-1 text-[11px] font-extrabold text-foreground/70 hover:text-primary cursor-pointer w-fit"
                     >
@@ -317,7 +318,7 @@ export function CinemaDetail() {
                     </div>
 
                     <Link
-                      to={`/movies/${movie.id}/sessions`}
+                      to={`/movies/${movieRouteId(movie)}/sessions`}
                       className="text-xl sm:text-2xl font-black uppercase text-foreground hover:text-primary transition-colors block"
                     >
                       {movie.title}

@@ -22,6 +22,7 @@ export function AdminLayout() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const selectedCinemaId = searchParams.get('cinemaId') || MOCK_CINEMAS[0]?.id || '';
   const managementPath = (path: string) => `${path}?cinemaId=${encodeURIComponent(selectedCinemaId)}`;
+  const scopedPath = (path: string) => `${path}${path.includes('?') ? '&' : '?'}cinemaId=${encodeURIComponent(selectedCinemaId)}`;
 
   useEffect(() => {
     const closeMenu = (event: MouseEvent) => {
@@ -34,8 +35,11 @@ export function AdminLayout() {
   }, []);
 
   const isCinemas = location.pathname.startsWith('/management/cinemas');
-  const isSchedule = (location.pathname.startsWith('/management') || location.pathname.startsWith('/management/schedule')) && !isCinemas;
-  const isStats = location.pathname.startsWith('/statistics') || location.pathname.startsWith('/management/stats');
+  const isPlatform = location.pathname.startsWith('/platform');
+  const isSchedule = location.pathname.startsWith('/management/schedule');
+  const isOperations = location.pathname.startsWith('/management/operations');
+  const isCheckIn = location.pathname.startsWith('/management/check-in');
+  const isStats = location.pathname.startsWith('/management/statistics') || location.pathname.startsWith('/management/stats');
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-display selection:bg-secondary selection:text-secondary-foreground">
@@ -49,7 +53,14 @@ export function AdminLayout() {
             </Link>
           </div>
 
-          <nav className="flex h-full items-center justify-center gap-1 sm:gap-3 xl:gap-6">
+          {isPlatform && <nav className="flex h-full min-w-0 items-center justify-center gap-0.5 overflow-x-auto sm:gap-1">
+            {[
+              ['overview', 'Visão geral'], ['access', 'Acessos'], ['cinemas', 'Cinemas'],
+              ['moderation', 'Moderação'], ['catalog', 'Catálogo'], ['fees', 'Taxas'],
+            ].map(([tab, label]) => <Link key={tab} to={`/platform?tab=${tab}`} className={`flex h-full shrink-0 items-center border-y-4 px-2 text-[9px] font-display font-extrabold uppercase tracking-wider transition-colors sm:px-2.5 sm:text-[10px] ${searchParams.get('tab') === tab || (!searchParams.get('tab') && tab === 'overview') ? 'border-secondary text-secondary' : 'border-transparent text-white/55 hover:text-white'}`}>{label}</Link>)}
+          </nav>}
+
+          {!isPlatform && <nav className="flex h-full items-center justify-center gap-1 sm:gap-3 xl:gap-6">
             <Link
               to={managementPath('/management/cinemas')}
               className={`flex h-full items-center border-y-4 px-2 text-[10px] font-display font-extrabold uppercase tracking-wider transition-colors sm:px-3 sm:text-xs ${isCinemas ? 'border-secondary text-secondary' : 'border-transparent text-white/55 hover:text-white'}`}
@@ -63,12 +74,25 @@ export function AdminLayout() {
               Sessões
             </Link>
             <Link
-              to={managementPath('/statistics')}
+              to={managementPath('/management/statistics')}
               className={`flex h-full items-center border-y-4 px-2 text-[10px] font-display font-extrabold uppercase tracking-wider transition-colors sm:px-3 sm:text-xs ${isStats ? 'border-secondary text-secondary' : 'border-transparent text-white/55 hover:text-white'}`}
             >
               Métricas
             </Link>
+            <Link
+              to={scopedPath('/management/operations?tab=orders')}
+              className={`flex h-full items-center border-y-4 px-2 text-[10px] font-display font-extrabold uppercase tracking-wider transition-colors sm:px-3 sm:text-xs ${isOperations ? 'border-secondary text-secondary' : 'border-transparent text-white/55 hover:text-white'}`}
+            >
+              Operações
+            </Link>
+            <Link
+              to={scopedPath('/management/check-in')}
+              className={`flex h-full items-center border-y-4 px-2 text-[10px] font-display font-extrabold uppercase tracking-wider transition-colors sm:px-3 sm:text-xs ${isCheckIn ? 'border-secondary text-secondary' : 'border-transparent text-white/55 hover:text-white'}`}
+            >
+              Portaria
+            </Link>
           </nav>
+          }
 
           {/* Right: Quick actions, Status, Theme & Admin Profile */}
           <div className="flex items-center justify-end gap-2 sm:gap-3">

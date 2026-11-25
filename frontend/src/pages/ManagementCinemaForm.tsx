@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Buildings,
   ArrowLeft,
@@ -16,7 +16,6 @@ import {
   Warning,
   Tag,
   Percent,
-  CaretDown,
   Calendar as CalendarIcon,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
@@ -25,6 +24,7 @@ import type { Cinema, Room, RoomType, CinemaPricingItem } from '../types/cinema'
 import { CinemaFormSectionHeading } from '../components/custom/cinema-form-section-heading';
 import { CinemaRoomEditor } from '../components/custom/cinema-room-editor';
 import { Calendar } from '../components/ui/calendar';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 import { format } from 'date-fns';
 
 const AVAILABLE_AMENITIES = [
@@ -110,7 +110,19 @@ const DEFAULT_DAYS_SCHEDULE: DaySchedule[] = [
 export function ManagementCinemaForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<'dados' | 'salas' | 'precos'>('dados');
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeSection, setActiveSection] = useState<'dados' | 'salas' | 'precos'>(() => searchParams.get('section') === 'salas' || (!searchParams.has('section') && location.pathname.endsWith('/rooms')) ? 'salas' : searchParams.get('section') === 'precos' ? 'precos' : 'dados');
+
+  useEffect(() => {
+    const section = searchParams.get('section');
+    if (!section && location.pathname.endsWith('/rooms')) { setActiveSection('salas'); return; }
+    if (section === 'dados' || section === 'salas' || section === 'precos') setActiveSection(section);
+  }, [searchParams, location.pathname]);
+  const selectSection = (section: 'dados' | 'salas' | 'precos') => {
+    setActiveSection(section);
+    setSearchParams(section === 'dados' && !location.pathname.endsWith('/rooms') ? {} : { section }, { replace: false });
+  };
 
   const isEditing = Boolean(id);
   const existingCinema = useMemo(() => {
@@ -463,7 +475,7 @@ export function ManagementCinemaForm() {
                   type="button"
                   role="tab"
                   aria-selected={activeSection === section.id}
-                  onClick={() => setActiveSection(section.id as typeof activeSection)}
+                  onClick={() => selectSection(section.id as typeof activeSection)}
                   className={`border-b-4 px-5 py-3 text-xs font-black uppercase tracking-wide transition-colors ${
                     activeSection === section.id
                       ? 'border-secondary bg-secondary text-secondary-foreground'
@@ -1016,17 +1028,18 @@ export function ManagementCinemaForm() {
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <Accordion type="multiple" className="space-y-3">
                     {promotions.map((promo) => (
-                      <details
+                      <AccordionItem
                         key={promo.id}
+                        value={promo.id}
                         className={`promotion-accordion border-2 transition-all ${
                           promo.isActive
                             ? 'bg-muted/20 border-foreground/30'
                             : 'bg-muted/10 border-foreground/15 opacity-60'
                         }`}
                       >
-                        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 p-3 marker:hidden [&::-webkit-details-marker]:hidden">
+                        <AccordionTrigger className="flex cursor-pointer flex-wrap items-center gap-3 p-3 text-left hover:bg-transparent hover:no-underline">
                           <span className="text-xs font-black uppercase text-foreground">
                             {promo.type === 'half_price' ? 'MEIA-ENTRADA' : promo.type === 'fixed_price' ? 'PREÇO FIXO' : promo.type === 'percentage_off' ? 'DESCONTO PERCENTUAL' : 'DESCONTO EM REAIS'}
                             {' · '}{promo.days.length ? promo.days.join(' · ') : 'Sem dias'}
@@ -1034,9 +1047,8 @@ export function ManagementCinemaForm() {
                           <span className={`ml-auto text-[10px] font-black uppercase ${promo.isActive ? 'text-[#34A853]' : 'text-foreground/40'}`}>
                             {promo.isActive ? 'Ativa' : 'Pausada'}
                           </span>
-                          <CaretDown className="promotion-accordion-caret text-secondary transition-transform [[details[open]>summary>&]]:rotate-180" size={16} weight="bold" aria-hidden="true" />
-                        </summary>
-                        <div className="space-y-3 border-t border-foreground/10 p-4">
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-3 border-t border-foreground/10 p-4">
                         <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 border-b border-foreground/10 pb-2">
                           <div className="flex items-center gap-2 flex-1 min-w-[200px]">
                             <span className="px-1.5 py-0.5 bg-secondary text-secondary-foreground text-[10px] font-black uppercase">
@@ -1169,10 +1181,10 @@ export function ManagementCinemaForm() {
                           />
                         </div>
 
-                        </div>
-                      </details>
+                        </AccordionContent>
+                      </AccordionItem>
                     ))}
-                  </div>
+                  </Accordion>
                 )}
 
               </div>

@@ -54,7 +54,7 @@ function RecommendationSection({ title, badge, badgeColor, items, busyMovie, onF
     <section className="relative w-full space-y-4">
       {/* Section Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl sm:text-2xl font-black uppercase text-foreground">
+        <h2 className="text-xl sm:text-2xl font-black uppercase text-primary">
           {title}
         </h2>
         <div className="flex items-center gap-3">
@@ -92,7 +92,8 @@ function RecommendationSection({ title, badge, badgeColor, items, busyMovie, onF
         {items.map(item => {
           const movie = item.movie;
           const title = movie?.title || `Filme #${item.movie_id}`;
-          const moviePath = `/movies/${movie?.id || item.movie_id}`;
+          // `movie_id` may be the internal DB key; public movie routes use TMDB.
+          const moviePath = `/movies/${movie?.tmdb_id || item.tmdb_id || movie?.id || item.movie_id}`;
           const tags = extractReasonTags(item.reason);
           
           return (
@@ -214,10 +215,7 @@ export function Intelligence() {
       <header className="page-divider px-4 py-8 sm:px-0">
         <div className="mx-auto flex max-w-4xl md:max-w-5xl lg:max-w-6xl flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-foreground/60">
-              <Brain size={20} weight="bold" className="text-secondary" /> Recomendações personalizadas
-            </div>
-            <h1 className="text-3xl font-black uppercase tracking-tight sm:text-4xl">screeK Intelligence</h1>
+            <h1 className="text-3xl font-black uppercase tracking-tight text-primary sm:text-4xl">screeK Intelligence</h1>
             <p className="mt-2 max-w-2xl text-sm text-foreground/65">Metade da lista vem da sua Watchlist e metade traz filmes fora dela. Marque o que te interessa para ajustar as próximas sugestões.</p>
           </div>
           <div className="flex gap-2">
@@ -232,7 +230,7 @@ export function Intelligence() {
       <main className="mx-auto max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 py-8 space-y-12">
         {error && <div role="alert" className="border-2 border-destructive/40 bg-destructive/5 p-4 text-sm shadow-[3px_3px_0px_0px_var(--border)]">{error}</div>}
         {loading ? <p className="py-16 text-center text-sm text-foreground/60">Carregando recomendações…</p> : null}
-        {!loading && !error && items.length === 0 && <div className="py-16 text-center"><Compass size={32} className="mx-auto mb-3 text-secondary"/><p className="font-bold">Ainda não há recomendações para mostrar.</p><p className="mt-1 text-sm text-foreground/60">Adicione filmes à Watchlist ou importe seu histórico do Letterboxd.</p></div>}
+        {!loading && !error && items.length === 0 && <div className="py-16 text-center"><Compass size={32} className="mx-auto mb-3 text-primary"/><p className="font-bold">Ainda não há recomendações para mostrar.</p><p className="mt-1 text-sm text-foreground/60">Adicione filmes à Watchlist ou importe seu histórico do Letterboxd.</p></div>}
 
         {!loading && items.length > 0 && (
           <>

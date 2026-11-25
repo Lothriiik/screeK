@@ -1,3 +1,4 @@
+import { movieRouteId } from '../lib/movie-route';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -39,20 +40,25 @@ export function MovieSessions() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [movie, setMovie] = useState<Movie>(
-    (id ? getMovieById(id) : undefined) || MOCK_MOVIES[0]
-  );
+  const [movie, setMovie] = useState<Movie>((id ? getMovieById(id) : undefined) || MOCK_MOVIES[0]);
+  const [movieUnavailable, setMovieUnavailable] = useState(false);
+  const [movieResolved, setMovieResolved] = useState(false);
 
   useEffect(() => {
     if (id) {
       movieService.getMovieById(id).then((data) => {
         if (data) {
           setMovie(data);
+          if (data.tmdb_id && id !== String(data.tmdb_id)) navigate(`/movies/${data.tmdb_id}/sessions`, { replace: true });
+          setMovieUnavailable(false);
           document.title = `Sessões: ${data.title} | screeK`;
+        } else {
+          setMovieUnavailable(true);
         }
-      });
+        setMovieResolved(true);
+      }).catch(() => { setMovieUnavailable(true); setMovieResolved(true); });
     }
-  }, [id]);
+  }, [id, navigate]);
 
   const [selectedDate, setSelectedDate] = useState('20');
   const [selectedFormat, setSelectedFormat] = useState('ALL');
@@ -69,7 +75,7 @@ export function MovieSessions() {
       ? rawSessions
       : [
           {
-            id: `${movie.id}-sess-1`,
+            id: `${movieRouteId(movie)}-sess-1`,
             numeric_id: 101,
             movie_id: movie.id,
             cinema_id: 'cinemark-bourbon',
@@ -84,7 +90,7 @@ export function MovieSessions() {
             format: 'IMAX',
           },
           {
-            id: `${movie.id}-sess-2`,
+            id: `${movieRouteId(movie)}-sess-2`,
             numeric_id: 102,
             movie_id: movie.id,
             cinema_id: 'cinemark-bourbon',
@@ -99,7 +105,7 @@ export function MovieSessions() {
             format: 'VIP',
           },
           {
-            id: `${movie.id}-sess-3`,
+            id: `${movieRouteId(movie)}-sess-3`,
             numeric_id: 103,
             movie_id: movie.id,
             cinema_id: 'cinemark-bourbon',
@@ -114,7 +120,7 @@ export function MovieSessions() {
             format: '2D',
           },
           {
-            id: `${movie.id}-sess-4`,
+            id: `${movieRouteId(movie)}-sess-4`,
             numeric_id: 201,
             movie_id: movie.id,
             cinema_id: 'itau-augusta',
@@ -129,7 +135,7 @@ export function MovieSessions() {
             format: '2D',
           },
           {
-            id: `${movie.id}-sess-5`,
+            id: `${movieRouteId(movie)}-sess-5`,
             numeric_id: 202,
             movie_id: movie.id,
             cinema_id: 'itau-augusta',
@@ -144,7 +150,7 @@ export function MovieSessions() {
             format: '2D',
           },
           {
-            id: `${movie.id}-sess-6`,
+            id: `${movieRouteId(movie)}-sess-6`,
             numeric_id: 301,
             movie_id: movie.id,
             cinema_id: 'cinesystem-freicaneca',
@@ -159,7 +165,7 @@ export function MovieSessions() {
             format: '2D',
           },
           {
-            id: `${movie.id}-sess-7`,
+            id: `${movieRouteId(movie)}-sess-7`,
             numeric_id: 302,
             movie_id: movie.id,
             cinema_id: 'cinesystem-freicaneca',
@@ -174,7 +180,7 @@ export function MovieSessions() {
             format: 'VIP',
           },
           {
-            id: `${movie.id}-sess-8`,
+            id: `${movieRouteId(movie)}-sess-8`,
             numeric_id: 401,
             movie_id: movie.id,
             cinema_id: 'uci-nycc',
@@ -189,7 +195,7 @@ export function MovieSessions() {
             format: 'IMAX',
           },
           {
-            id: `${movie.id}-sess-9`,
+            id: `${movieRouteId(movie)}-sess-9`,
             numeric_id: 402,
             movie_id: movie.id,
             cinema_id: 'uci-nycc',
@@ -251,13 +257,16 @@ export function MovieSessions() {
     { key: 'DUB', label: 'Dublado' },
   ];
 
+  if (!movieResolved) return <main className="mx-auto flex min-h-[50vh] items-center justify-center px-6"><p className="animate-pulse text-xs font-black uppercase tracking-widest text-foreground/60">Carregando sessões...</p></main>;
+  if (movieUnavailable) return <main className="mx-auto flex min-h-[50vh] max-w-4xl flex-col items-center justify-center gap-3 px-6 text-center"><h1 className="font-display text-2xl font-black uppercase">Filme não encontrado</h1><p className="text-sm text-foreground/65">Não há sessões associadas a esse identificador.</p><Link to="/movies" className="bg-primary px-5 py-3 text-xs font-black uppercase text-primary-foreground">Voltar ao catálogo</Link></main>;
+
   return (
     <div className="bg-background text-foreground font-display">
       <section className="relative w-full overflow-hidden border-b-4 border-foreground/40 bg-tertiary">
         <div className="absolute inset-0 scale-105 bg-cover bg-center opacity-65" style={{ backgroundImage: `url(${movie.backdrop_url})` }} />
         <div className="absolute inset-0 bg-foreground/80 backdrop-blur-[2px]" />
         <div className="relative z-10 mx-auto w-full max-w-4xl space-y-5 px-4 py-8 md:max-w-5xl lg:max-w-6xl sm:px-0">
-          <Link to={`/movies/${movie.id}`} className="inline-flex items-center gap-2 text-xs font-black uppercase text-background/70 transition-colors hover:text-background">
+          <Link to={`/movies/${movieRouteId(movie)}`} className="inline-flex items-center gap-2 text-xs font-black uppercase text-background/70 transition-colors hover:text-background">
             <ArrowLeft size={16} weight="bold" /> Detalhes do filme
           </Link>
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_345px] lg:gap-8">
@@ -282,7 +291,7 @@ export function MovieSessions() {
                     <BookmarkSimple size={14} weight={isInWatchlist ? 'fill' : 'bold'} /> Watchlist
                   </Button>
                   <Button asChild variant="ghost" size="sm" className="border-2 border-background/80 text-background hover:bg-background hover:text-foreground shadow-none">
-                    <Link to={`/movies/${movie.id}`}>Ver detalhes <CaretRight size={14} weight="bold" /></Link>
+                    <Link to={`/movies/${movieRouteId(movie)}`}>Ver detalhes <CaretRight size={14} weight="bold" /></Link>
                   </Button>
                 </div>
               </div>

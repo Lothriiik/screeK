@@ -1,3 +1,4 @@
+import { movieRouteId } from '../lib/movie-route';
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
@@ -10,35 +11,27 @@ import {
   Spinner,
   BookmarksSimple,
   MapPin,
-  Heart
 } from '@phosphor-icons/react';
 import { MovieCard } from '../components/custom/movie-card';
 import { UserCard } from '../components/custom/user-card';
-import { TagChip } from '../components/custom/tag-chip';
+import { MovieListCard } from '../components/custom/movie-list-card';
+import { CinemaListingCard, getCinemaListings } from '../components/custom/cinema-listing-card';
 import { EmptyState } from '../components/custom/empty-state';
 import { SearchResultCount } from '../components/custom/search-result-count';
 import { MOCK_MOVIES, MOCK_PEOPLE, MOCK_USERS } from '../mocks';
 import { MOCK_MOVIE_LISTS } from '../mocks/lists';
-import { MOCK_CINEMAS } from '../mocks/cinemas';
+
 import { movieService } from '../services/movieService';
 import type { Movie } from '../types/movie';
 
 type SearchTab = 'movies' | 'people' | 'users' | 'lists' | 'cinemas';
 
 const VIBE_SUGGESTIONS = [
-  'Batman',
-  'Spider-Man',
-  'Oppenheimer',
-  'Duna',
-  'Chainsaw Man',
-  'Speed Racer',
-  'Wachowski',
-  'Denis Villeneuve',
-  'Christopher Nolan',
   'Terror',
   'Sci-Fi',
   'Anime',
   'Cult',
+  'Wachowski',
 ];
 
 export function Search() {
@@ -141,37 +134,30 @@ export function Search() {
   }, [query]);
 
   // Filtered Cinemas
+  const cinemaListings = useMemo(() => getCinemaListings(), []);
   const filteredCinemas = useMemo(() => {
     const cleanQ = query.trim().toLowerCase();
-    if (!cleanQ) return MOCK_CINEMAS;
-    return MOCK_CINEMAS.filter(
+    if (!cleanQ) return [...cinemaListings].sort((a, b) => Number.parseFloat(a.distance || '999') - Number.parseFloat(b.distance || '999'));
+    return cinemaListings.filter(
       (c) =>
         c.name.toLowerCase().includes(cleanQ) ||
         c.chain.toLowerCase().includes(cleanQ) ||
         c.neighborhood.toLowerCase().includes(cleanQ) ||
         c.city.toLowerCase().includes(cleanQ) ||
         c.amenities.some((a) => a.toLowerCase().includes(cleanQ))
-    );
+    ).sort((a, b) => Number.parseFloat(a.distance || '999') - Number.parseFloat(b.distance || '999'));
   }, [query]);
 
   return (
     <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. BIG SEARCH HERO BAR ─── */}
-      <section className="bg-background page-divider px-4 sm:px-0 py-8">
+      <section className="bg-background px-4 sm:px-0 py-8">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
           
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Sparkle size={20} weight="fill" className="text-secondary" />
-              <span className="text-xs font-black uppercase text-foreground/60 tracking-wider">
-                Explorar Acervo &amp; Comunidade
-              </span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-foreground">
-              Busca Global
-            </h1>
-          </div>
+          <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-primary">
+            Busca Global
+          </h1>
 
           {/* Search Input Container */}
           <div className="relative flex items-center">
@@ -206,10 +192,9 @@ export function Search() {
           </div>
 
           {/* Quick Suggestions Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-black uppercase text-foreground/40 shrink-0">
-              Sugestões:
-            </span>
+              Em alta:</span>
             {VIBE_SUGGESTIONS.map((tag) => (
               <button
                 key={tag}
@@ -223,7 +208,7 @@ export function Search() {
           </div>
 
           {/* 3 Main Tabs (Filmes, Pessoas, Usuários) */}
-          <div className="flex items-center gap-2 border-b-2 border-foreground/20 pt-2 pb-1 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 border-b-2 border-foreground/20 pt-2 overflow-x-auto scrollbar-none">
             <button
               type="button"
               onClick={() => handleTabChange('movies')}
@@ -295,6 +280,23 @@ export function Search() {
 
       {/* ─── 2. SEARCH RESULTS ─── */}
       <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 py-8">
+        {!query.trim() && activeTab === 'movies' ? (
+          <div className="space-y-8">
+            <section className="space-y-3">
+              <h2 className="text-xs font-black uppercase tracking-wider text-foreground/55">Buscas recentes</h2>
+              <div className="flex flex-wrap gap-2">{['Duna', 'Villeneuve', 'giallo'].map((term) => <button key={term} type="button" onClick={() => handleQueryChange(term)} className="border-2 border-foreground/30 px-3 py-2 text-xs font-bold hover:border-primary">{term} <span aria-hidden="true">×</span></button>)}</div>
+            </section>
+            <section className="space-y-3">
+              <div className="flex items-center justify-between border-b border-foreground/20 pb-2"><h2 className="font-black uppercase">Em alta na comunidade</h2><Link to="/movies" className="text-[10px] font-black uppercase text-primary">Ver catálogo ›</Link></div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">{MOCK_MOVIES.slice(0, 5).map((movie) => <MovieCard key={movie.id} id={movie.id} title={movie.title} posterUrl={movie.poster_url} rating={movie.global_rating} duration={movie.duration_display} genre={movie.genres[0] || 'DRAMA'} ageRating={movie.age_rating} linkTo={`/movies/${movieRouteId(movie)}`} />)}</div>
+            </section>
+            <section className="space-y-3">
+              <h2 className="border-b border-foreground/20 pb-2 font-black uppercase">Cinéfilos para seguir</h2>
+              <div className="flex flex-wrap items-stretch gap-4">{MOCK_USERS.slice(0, 3).map((user) => <UserCard key={user.id} id={user.id} name={user.name} handle={user.username} avatarUrl={user.avatar_url} bio={user.bio} followersCount={user.followers_count} moviesCount={user.watched_count} isFollowingInitial={user.is_following} />)}</div>
+            </section>
+          </div>
+        ) : (
+        <>
         
         {/* ─── TAB 1: FILMES ─── */}
         {activeTab === 'movies' && (
@@ -314,7 +316,7 @@ export function Search() {
                     onClick={() => setMovieFilter(f.key as any)}
                     className={`px-3 py-1 text-xs font-bold uppercase transition-all cursor-pointer border-2 ${
                       movieFilter === f.key
-                        ? 'bg-foreground text-background border-foreground shadow-[2px_2px_0px_0px_var(--border)]'
+                        ? 'bg-primary text-primary-foreground border-primary'
                         : 'bg-background text-foreground/70 border-foreground/30 hover:bg-muted'
                     }`}
                   >
@@ -362,7 +364,7 @@ export function Search() {
                     }
                     releaseDate={movie.status === 'upcoming' ? movie.release_date_display : undefined}
                     isPreSale={movie.is_pre_sale}
-                    linkTo={`/movies/${movie.id}`}
+                    linkTo={`/movies/${movieRouteId(movie)}`}
                   />
                 ))}
               </div>
@@ -378,7 +380,7 @@ export function Search() {
             {filteredPeople.length === 0 ? (
               <EmptyState icon={<User size={44} weight="bold" />} title="Nenhuma pessoa encontrada" description="Tente buscar pelo nome completo ou sobrenome do diretor ou ator." className="mx-auto max-w-lg space-y-3 border-solid border-foreground/40 bg-background p-12 shadow-[6px_6px_0px_0px_var(--border)]" iconContainerClassName="mb-0 border-0 bg-transparent p-0 text-foreground/40" titleClassName="text-xl" descriptionClassName="mt-0 text-xs font-normal text-foreground/70" />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredPeople.map((person) => (
                   <Link
                     key={person.id}
@@ -418,7 +420,7 @@ export function Search() {
             {filteredUsers.length === 0 ? (
               <EmptyState icon={<Users size={44} weight="bold" />} title="Nenhum usuário encontrado" description="Não encontramos nenhum perfil com esse nome de usuário ou bio." className="mx-auto max-w-lg space-y-3 border-solid border-foreground/40 bg-background p-12 shadow-[6px_6px_0px_0px_var(--border)]" iconContainerClassName="mb-0 border-0 bg-transparent p-0 text-foreground/40" titleClassName="text-xl" descriptionClassName="mt-0 text-xs font-normal text-foreground/70" />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 justify-items-center sm:justify-items-start">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {filteredUsers.map((user) => (
                   <UserCard
                     key={user.id}
@@ -445,51 +447,8 @@ export function Search() {
             {filteredLists.length === 0 ? (
               <EmptyState icon={<BookmarksSimple size={44} weight="bold" />} title="Nenhuma lista encontrada" description="Tente buscar por outro termo ou por tags como #sci-fi, #horror, #cult." className="mx-auto max-w-lg space-y-3 border-solid border-foreground/40 bg-background p-12 shadow-[6px_6px_0px_0px_var(--border)]" iconContainerClassName="mb-0 border-0 bg-transparent p-0 text-foreground/40" titleClassName="text-xl" descriptionClassName="mt-0 text-xs font-normal text-foreground/70" />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredLists.map((list) => (
-                  <Link
-                    key={list.id}
-                    to={`/lists/${list.id}`}
-                    className="bg-card border-4 border-foreground/40 p-4 shadow-[4px_4px_0px_0px_var(--border)] hover:-translate-y-1 hover:border-primary transition-all flex flex-col justify-between group"
-                  >
-                    <div className="space-y-2">
-                      <div className="aspect-[16/9] w-full overflow-hidden border-2 border-border bg-muted relative">
-                        {list.backdrop_url && (
-                          <img
-                            src={list.backdrop_url}
-                            alt={list.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                          />
-                        )}
-                        <span className="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 text-[10px] font-mono font-bold text-white">
-                          {list.movie_ids.length} filmes
-                        </span>
-                      </div>
-
-                      <h3 className="font-black text-base uppercase text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                        {list.title}
-                      </h3>
-                      <p className="font-sans text-xs text-muted-foreground line-clamp-2">
-                        {list.description}
-                      </p>
-
-                      {list.tags && list.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {list.tags.slice(0, 3).map((t) => (
-                            <TagChip key={t} tag={t} size="sm" />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between border-t border-border pt-3 mt-3 text-xs font-mono text-muted-foreground">
-                      <span>@{list.author_username}</span>
-                      <span className="flex items-center gap-1 text-rose-500 font-bold">
-                        <Heart size={12} weight="fill" /> {list.likes_count}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredLists.map((list) => <MovieListCard key={list.id} list={list} />)}
               </div>
             )}
           </div>
@@ -503,57 +462,15 @@ export function Search() {
             {filteredCinemas.length === 0 ? (
               <EmptyState icon={<MapPin size={44} weight="bold" />} title="Nenhum cinema encontrado" description="Tente buscar pelo nome da rede (Cinemark, Cinépolis), bairro ou cidade." className="mx-auto max-w-lg space-y-3 border-solid border-foreground/40 bg-background p-12 shadow-[6px_6px_0px_0px_var(--border)]" iconContainerClassName="mb-0 border-0 bg-transparent p-0 text-foreground/40" titleClassName="text-xl" descriptionClassName="mt-0 text-xs font-normal text-foreground/70" />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCinemas.map((cinema) => (
-                  <Link
-                    key={cinema.id}
-                    to={`/cinemas/${cinema.id}`}
-                    className="bg-card border-4 border-foreground/40 p-4 shadow-[4px_4px_0px_0px_var(--border)] hover:-translate-y-1 hover:border-primary transition-all flex flex-col justify-between group"
-                  >
-                    <div className="space-y-2">
-                      <div className="aspect-[16/9] w-full overflow-hidden border-2 border-border bg-muted relative">
-                        {cinema.image_url && (
-                          <img
-                            src={cinema.image_url}
-                            alt={cinema.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                          />
-                        )}
-                        <span className="absolute top-2 left-2 bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-mono font-bold uppercase">
-                          {cinema.chain}
-                        </span>
-                      </div>
-
-                      <h3 className="font-black text-base uppercase text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                        {cinema.name}
-                      </h3>
-                      <p className="font-sans text-xs text-muted-foreground line-clamp-2">
-                        {cinema.address}
-                      </p>
-
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {cinema.amenities.slice(0, 3).map((a) => (
-                          <span
-                            key={a}
-                            className="px-2 py-0.5 text-[10px] font-mono font-bold bg-muted border border-border"
-                          >
-                            {a}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between border-t border-border pt-3 mt-3 text-xs font-mono">
-                      <span className="text-muted-foreground">{cinema.distance} de você</span>
-                      <span className="font-bold text-primary group-hover:underline">Ver Sessões →</span>
-                    </div>
-                  </Link>
-                ))}
+              <div className="grid grid-cols-1 gap-4">
+                {filteredCinemas.map((cinema) => <CinemaListingCard key={cinema.id} cinema={cinema} />)}
               </div>
             )}
           </div>
         )}
 
+        </>
+        )}
       </main>
     </div>
   );

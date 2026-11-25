@@ -15,7 +15,7 @@ import type { NotificationItem, NotificationType } from '../types/social';
 
 export function Notifications() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(MOCK_NOTIFICATIONS);
-  const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'UNREAD' | 'TICKET' | 'SOCIAL'>('ALL');
 
   const handleMarkAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
@@ -30,6 +30,8 @@ export function Notifications() {
 
   const filtered = notifications.filter((n) => {
     if (filter === 'UNREAD') return !n.is_read;
+    if (filter === 'TICKET') return n.type === 'TICKET_REMINDER' || n.type === 'PRE_SALE_ALERT';
+    if (filter === 'SOCIAL') return ['LIKE', 'COMMENT', 'FOLLOW', 'FRIEND_SESSION'].includes(n.type);
     return true;
   });
 
@@ -43,11 +45,11 @@ export function Notifications() {
   const getNotificationIcon = (type: NotificationType) => {
     switch (type) {
       case 'TICKET_REMINDER':
-        return <Ticket size={20} weight="fill" className="text-secondary" />;
+        return <Ticket size={20} weight="fill" className="text-primary" />;
       case 'LIKE':
         return <Heart size={20} weight="fill" className="text-primary" />;
       case 'COMMENT':
-        return <ChatCircle size={20} weight="fill" className="text-secondary" />;
+        return <ChatCircle size={20} weight="fill" className="text-primary" />;
       case 'FOLLOW':
         return <UserPlus size={20} weight="bold" className="text-primary" />;
       case 'PRE_SALE_ALERT':
@@ -67,17 +69,9 @@ export function Notifications() {
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-4">
           
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Bell size={24} weight="bold" className="text-primary" />
-                <span className="text-xs font-black uppercase text-foreground/60 tracking-wider">
-                  Central de Alertas &amp; Atividades
-                </span>
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-black uppercase text-foreground tracking-tight">
-                Notificações {unreadCount > 0 && <span className="text-secondary">({unreadCount})</span>}
-              </h1>
-            </div>
+            <h1 className="text-3xl sm:text-4xl font-black uppercase text-primary tracking-tight">
+              Notificações {unreadCount > 0 && <span className="text-foreground/70">({unreadCount})</span>}
+            </h1>
 
             {unreadCount > 0 && (
               <button
@@ -92,7 +86,7 @@ export function Notifications() {
           </div>
 
           {/* Filter Subtabs */}
-          <div className="flex items-center gap-2 border-b-2 border-foreground/20 pb-1">
+          <div className="flex items-center gap-2 overflow-x-auto border-b-2 border-foreground/20 pb-1">
             <button
               type="button"
               onClick={() => setFilter('ALL')}
@@ -104,6 +98,8 @@ export function Notifications() {
             >
               Todas ({notifications.length})
             </button>
+            <button type="button" onClick={() => setFilter('TICKET')} className={`px-3 py-1.5 text-xs font-black uppercase border-2 ${filter === 'TICKET' ? 'bg-primary text-primary-foreground border-primary' : 'border-transparent text-foreground/70 hover:border-foreground/30'}`}>Ingressos</button>
+            <button type="button" onClick={() => setFilter('SOCIAL')} className={`px-3 py-1.5 text-xs font-black uppercase border-2 ${filter === 'SOCIAL' ? 'bg-primary text-primary-foreground border-primary' : 'border-transparent text-foreground/70 hover:border-foreground/30'}`}>Social</button>
 
             <button
               type="button"
@@ -201,8 +197,8 @@ function NotificationRow({ item, onMarkRead, getIcon }: NotificationRowProps) {
       onClick={() => onMarkRead(item.id)}
       className={`p-4 border-2 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
         !item.is_read
-          ? 'bg-muted/30 border-primary shadow-[3px_3px_0px_0px_var(--border)]'
-          : 'bg-background border-foreground/20 shadow-[1px_1px_0px_0px_var(--border)]'
+          ? 'bg-muted/30 border-foreground/20 border-l-4 border-l-primary shadow-none'
+          : 'bg-background border-foreground/20 shadow-none'
       }`}
     >
       <div className="flex items-start gap-3.5 min-w-0">
@@ -238,14 +234,16 @@ function NotificationRow({ item, onMarkRead, getIcon }: NotificationRowProps) {
       </div>
 
       {/* Action link if present */}
-      {item.link_to && (
+      {item.link_to && item.type === 'TICKET_REMINDER' ? (
         <Link
           to={item.link_to}
-          className="px-3 py-1.5 bg-primary text-primary-foreground font-black text-[11px] uppercase tracking-wider border border-primary shrink-0 self-end sm:self-center hover:bg-primary/90 transition-colors shadow-[1px_1px_0px_0px_var(--border)]"
+          className="px-3 py-1.5 bg-primary text-primary-foreground font-black text-[11px] uppercase tracking-wider border border-primary shrink-0 self-end sm:self-center hover:bg-primary/90 transition-colors"
         >
           {item.action_label || 'Ver'}
         </Link>
-      )}
+      ) : item.link_to ? (
+        <Link to={item.link_to} className="shrink-0 self-end text-[10px] font-black uppercase text-primary hover:underline sm:self-center">{item.action_label || 'Ver'} ›</Link>
+      ) : null}
     </div>
   );
 }

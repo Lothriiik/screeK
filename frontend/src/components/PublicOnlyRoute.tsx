@@ -8,7 +8,7 @@ export function PublicOnlyRoute() {
   // If already authenticated, redirect to the redirect param or /feed / /management based on role
   if (accessToken && user) {
     const redirect = searchParams.get('redirect');
-    if (redirect) {
+    if (redirect?.startsWith('/') && !redirect.startsWith('//')) {
       return <Navigate to={redirect} replace />;
     }
     if (user.role === 'MANAGER' || user.role === 'ADMIN') {

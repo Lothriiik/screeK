@@ -41,7 +41,7 @@ export function FeedDetail() {
             <button
               type="button"
               onClick={() => navigate('/feed')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-card hover:bg-muted border-2 border-foreground/40 text-foreground text-xs font-black uppercase transition-all shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-background hover:bg-muted border-2 border-foreground/40 text-foreground text-xs font-black uppercase transition-all shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               <ArrowLeft size={16} weight="bold" />
               <span>Voltar ao Feed</span>
@@ -50,24 +50,16 @@ export function FeedDetail() {
             <button
               type="button"
               onClick={handleShare}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-card hover:bg-muted border-2 border-foreground/40 text-foreground text-xs font-black uppercase transition-all shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-background hover:bg-muted border-2 border-foreground/40 text-foreground text-xs font-black uppercase transition-all shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               <ShareNetwork size={16} weight="bold" />
               <span className="hidden sm:inline">Compartilhar</span>
             </button>
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <ChatCircleText size={20} weight="bold" className="text-secondary" />
-              <span className="text-xs font-black uppercase text-foreground/60 tracking-wider">
-                Discussão Cinéfila • screeK Social
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-foreground">
-              Publicação de {post.name}
-            </h1>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-primary">
+            Publicação de {post.name}
+          </h1>
 
         </div>
       </section>
