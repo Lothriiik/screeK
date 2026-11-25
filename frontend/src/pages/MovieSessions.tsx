@@ -4,11 +4,16 @@ import {
   ArrowLeft,
   MapPin,
   Info,
-  CaretRight
+  CaretRight,
+  Heart,
+  BookmarkSimple,
+  Play,
+  UsersThree,
 } from '@phosphor-icons/react';
+import { Button } from '../components/ui/button';
 
 import { SessionChip } from '../components/custom/session-card';
-import { getMovieById, getCinemas, getSessionsByMovie, MOCK_MOVIES } from '../mocks';
+import { getMovieById, getCinemas, getSessionsByMovie, MOCK_MOVIES, MOCK_USERS } from '../mocks';
 import { movieService } from '../services/movieService';
 import type { Movie } from '../types/movie';
 import type { Session } from '../types/session';
@@ -52,6 +57,8 @@ export function MovieSessions() {
   const [selectedDate, setSelectedDate] = useState('20');
   const [selectedFormat, setSelectedFormat] = useState('ALL');
   const [selectedAudio, setSelectedAudio] = useState('ALL');
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
 
   // Query sessions for this movie from central store or generate for TMDB movie
   const rawSessions = getSessionsByMovie(movie.id);
@@ -198,16 +205,25 @@ export function MovieSessions() {
           },
         ];
 
+  const friendsAtSessions = MOCK_USERS
+    .filter((friend) => friend.favorite_movie_ids?.includes(movie.id))
+    .slice(0, Math.min(3, allSessions.length))
+    .map((friend, index) => ({
+      ...friend,
+      session: allSessions[index],
+    }));
+
   // Group sessions by cinema
   const cinemaSchedules = allCinemas
     .map((cinema) => {
-      const sessions = allSessions.filter((s) => s.cinema_id === cinema.id);
+      const sessions = allSessions.filter((s) => s.cinema_id === cinema.id && s.date === selectedDate);
       return {
         ...cinema,
         sessions,
       };
     })
-    .filter((c) => c.sessions.length > 0);
+    .filter((c) => c.sessions.length > 0)
+    .sort((a, b) => (a.city === 'Arapiraca' ? -1 : 0) - (b.city === 'Arapiraca' ? -1 : 0));
 
   // Filter schedules
   const filteredCinemas = cinemaSchedules
@@ -237,61 +253,80 @@ export function MovieSessions() {
 
   return (
     <div className="bg-background text-foreground font-display">
-      {/* ─── 1. MOVIE HEADER BANNER ─── */}
       <section className="relative w-full overflow-hidden border-b-4 border-foreground/40 bg-tertiary">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-60 scale-105"
-          style={{ backgroundImage: `url(${movie.backdrop_url})` }}
-        />
+        <div className="absolute inset-0 scale-105 bg-cover bg-center opacity-65" style={{ backgroundImage: `url(${movie.backdrop_url})` }} />
         <div className="absolute inset-0 bg-foreground/80 backdrop-blur-[2px]" />
-
-        <div className="relative z-10 max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 mx-auto w-full py-8 space-y-6">
-          <Link
-            to={`/movies/${movie.id}`}
-            className="inline-flex items-center px-1.5 py-1.5 bg-card hover:bg-card/90 border-2 border-foreground/40 text-foreground text-xs font-black uppercase transition-all shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5"
-          >
-            <ArrowLeft size={16} weight="bold" />
+        <div className="relative z-10 mx-auto w-full max-w-4xl space-y-5 px-4 py-8 md:max-w-5xl lg:max-w-6xl sm:px-0">
+          <Link to={`/movies/${movie.id}`} className="inline-flex items-center gap-2 text-xs font-black uppercase text-background/70 transition-colors hover:text-background">
+            <ArrowLeft size={16} weight="bold" /> Detalhes do filme
           </Link>
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_345px] lg:gap-8">
+            <div className="flex flex-col gap-5 text-background sm:flex-row sm:gap-7">
+              <img src={movie.poster_url} alt={movie.title} className="mx-auto aspect-[2/3] w-36 shrink-0 border-4 border-background/80 object-cover sm:mx-0 sm:w-40" />
+              <div className="flex min-w-0 flex-col items-start gap-3">
+                <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-wider text-background/75">
+                  <span>{movie.duration_display}</span>
+                  {movie.genres.map((genre) => <span key={genre} className="border border-background/50 px-2 py-1">{genre}</span>)}
+                  <span className="bg-[#FF9900] px-2 py-1 text-white">{movie.age_rating}</span>
+                </div>
+                <h1 className="text-2xl font-black uppercase leading-none tracking-tight sm:text-4xl">{movie.title}</h1>
+                <p className="max-w-2xl text-sm leading-relaxed text-background/80">{movie.overview}</p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  <Button asChild variant="ghost" size="sm" className="border-2 border-background/80 text-background hover:bg-background hover:text-foreground shadow-none">
+                    <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${movie.title} trailer`)}`} target="_blank" rel="noreferrer"><Play size={14} weight="fill" /> Trailer</a>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setIsFavorite((value) => !value)} className={`border-2 border-background/80 text-background hover:bg-background hover:text-foreground shadow-none ${isFavorite ? 'bg-primary text-primary-foreground' : ''}`}>
+                    <Heart size={14} weight={isFavorite ? 'fill' : 'bold'} /> {isFavorite ? 'Favoritado' : 'Favoritar'}
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setIsInWatchlist((value) => !value)} className={`border-2 border-background/80 text-background hover:bg-background hover:text-foreground shadow-none ${isInWatchlist ? 'bg-primary text-primary-foreground' : ''}`}>
+                    <BookmarkSimple size={14} weight={isInWatchlist ? 'fill' : 'bold'} /> Watchlist
+                  </Button>
+                  <Button asChild variant="ghost" size="sm" className="border-2 border-background/80 text-background hover:bg-background hover:text-foreground shadow-none">
+                    <Link to={`/movies/${movie.id}`}>Ver detalhes <CaretRight size={14} weight="bold" /></Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
 
-          <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-start">
-            <div className='flex flex-col'>
-              <div className="w-32 sm:w-40 border-4 border-background/40 overflow-hidden shrink-0">
-                <img
-                  src={movie.poster_url}
-                  alt={movie.title}
-                  className="w-full h-full object-cover"
-                />
+            <aside className="border-2 border-background/40 bg-foreground/50 p-4 text-background backdrop-blur-sm">
+              <div className="mb-2 flex items-center justify-between border-b border-background/25 pb-2">
+                <h2 className="flex items-center gap-2 font-mono text-[10px] font-black uppercase tracking-wider"><UsersThree size={15} /> Amigos nas sessões</h2>
+                <Link to="/feed" className="text-[10px] font-black uppercase text-secondary hover:underline">Ver todos ·</Link>
               </div>
-              <Link
-                  to={`/movies/${movie.id}/sessions`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="mt-4 inline-flex items-center gap-1 text-[11px] font-extrabold text-background/70 hover:text-primary cursor-pointer w-fit"
-                >
-                  <Info size={14} />
-                  <span>Ver Detalhes do Filme</span>
-              </Link>
-            </div>
-    
-            <div className="space-y-2 text-white">
-              <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase text-white/80">
-                <span>{movie.duration_display}</span>
-                <span>•</span>
-                <span>{movie.genres.join(', ')}</span>
-                <span className="bg-[#FF9900] text-white px-1.5 py-0.5 text-[10px]">
-                  {movie.age_rating}
-                </span>
+              <div className="divide-y divide-background/20">
+                {friendsAtSessions.map((friend) => {
+                  const cinema = allCinemas.find((item) => item.id === friend.session.cinema_id);
+                  const date = DATES.find((item) => item.dayOfMonth === friend.session.date);
+                  const dateLabel = date?.isToday ? 'Hoje' : `${date?.dayOfWeek ?? ''} ${date?.dayOfMonth ?? ''}`.trim();
+                  const timeLabel = `${dateLabel} · ${friend.session.start_time}`;
+                  const cinemaLabel = cinema?.name || 'Cinema';
+                  return (
+                    <div key={friend.id} className="flex items-center gap-2 py-2.5">
+                      <div className="relative h-8 w-8 shrink-0" title={`${friend.name}: ${timeLabel} · ${cinemaLabel}`}>
+                        <img src={friend.avatar_url} alt="" className="h-8 w-8 rounded-full border-2 border-background/70 object-cover" />
+                        <span aria-label="Tem sessão marcada" className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-foreground bg-secondary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-black">{friend.name} <span className="font-normal text-background/60">@{friend.username}</span></p>
+                        <p className="truncate text-[10px] text-background/70">{timeLabel} · {cinemaLabel}</p>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => navigate(`/checkout/seats?session=${friend.session.id}`)} className="h-7 shrink-0 border-2 border-secondary px-2 text-[9px] text-secondary shadow-none hover:bg-secondary hover:text-secondary-foreground">
+                        Ir junto
+                      </Button>
+                    </div>
+                  );
+                })}
+                {friendsAtSessions.length === 0 && <p className="py-3 text-xs text-background/70">Nenhum amigo marcou sessão deste filme ainda.</p>}
               </div>
-              <h1 className="text-2xl sm:text-4xl font-black uppercase tracking-tight">
-                {movie.title}
-              </h1>
-            </div>
+              <p className="mt-2 text-[10px] text-background/65">{friendsAtSessions.length} amigos já assistiram · confira quem vai nos horários abaixo.</p>
+            </aside>
           </div>
         </div>
       </section>
 
       {/* ─── 2. DATE SELECTOR STRIP ─── */}
-      <section className="sticky top-0 z-20 bg-background pt-6 px-4 sm:px-0 py-3">
-        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 mx-auto flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <section className="bg-background px-4 py-6 sm:px-0">
+        <div className="mx-auto flex w-full max-w-4xl flex-col justify-between gap-4 md:max-w-5xl md:flex-row md:items-end lg:max-w-6xl">
           
           {/* Dates Bar */}
           <div className="flex items-end gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -365,14 +400,12 @@ export function MovieSessions() {
       </section>
 
       {/* ─── 3. CINEMAS & SESSIONS LIST ─── */}
-      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 mx-auto py-8 space-y-6">
-        <div className="flex items-center justify-between  pb-2">
-          <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground">
-            Sessões
-          </h2>
-          <span className="text-xs font-bold text-foreground/60 font-sans">
-            {filteredCinemas.length} {filteredCinemas.length === 1 ? 'complexo' : 'complexos'}
-          </span>
+      <main className="mx-auto w-full max-w-4xl space-y-4 px-4 pb-8 pt-2 md:max-w-5xl lg:max-w-6xl sm:px-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-black uppercase tracking-tight text-foreground sm:text-2xl">Sessões</h2>
+          </div>
+          <span className="text-[10px] font-bold uppercase text-foreground/60">{filteredCinemas.length} complexos</span>
         </div>
 
         {filteredCinemas.length === 0 ? (
@@ -384,11 +417,9 @@ export function MovieSessions() {
             </p>
           </div>
         ) : (
-          filteredCinemas.map((cinema) => (
-            <article
-              key={cinema.id}
-              className="bg-background border-4 border-foreground/40 shadow-[6px_6px_0px_0px_var(--border)] p-6 space-y-4"
-            >
+          filteredCinemas.map((cinema) => {
+            return (
+            <article key={cinema.id} className={`space-y-3 border-2 bg-background p-4 sm:p-5 ${cinema.city === 'Arapiraca' ? 'border-primary' : 'border-foreground/35'}`}>
               {/* Cinema Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-foreground/20 pb-3">
                 <div>
@@ -396,9 +427,9 @@ export function MovieSessions() {
                     <span className="bg-primary text-primary-foreground text-[10px] font-black uppercase px-2 py-0.5">
                       {cinema.chain}
                     </span>
-                    <Link
+                  <Link
                       to={`/cinemas/${cinema.id}`}
-                      className="text-lg sm:text-xl font-black uppercase hover:text-primary transition-colors"
+                    className="text-base font-black uppercase transition-colors hover:text-primary sm:text-lg"
                     >
                       {cinema.name}
                     </Link>
@@ -409,10 +440,10 @@ export function MovieSessions() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 self-start sm:self-center">
+              <div className="flex items-center gap-1.5 self-start sm:self-center">
                   <Link
                     to={`/cinemas/${cinema.id}`}
-                    className="text-xs font-black uppercase text-primary hover:underline flex items-center gap-1"
+                    className="flex items-center gap-1 text-[10px] font-black uppercase text-primary hover:underline"
                   >
                     <span>Ver Complexo</span>
                     <CaretRight size={14} weight="bold" />
@@ -422,10 +453,10 @@ export function MovieSessions() {
 
               {/* Sessions Chips Grid */}
               <div className="space-y-2">
-                <span className="text-[11px] font-black uppercase text-foreground/60 block tracking-wider">
+                <span className="block font-mono text-[9px] font-black uppercase tracking-wider text-foreground/55">
                   Horários:
                 </span>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2.5">
                   {cinema.sessions.map((sess) => (
                     <SessionChip
                       key={sess.id}
@@ -433,13 +464,14 @@ export function MovieSessions() {
                       roomName={sess.room_name}
                       audioFormat={sess.audio}
                       screenFormat={sess.format}
+                      compact
                       onClick={() => navigate(`/checkout/seats?session=${sess.id}`)}
                     />
                   ))}
                 </div>
               </div>
             </article>
-          ))
+          ); })
         )}
       </main>
     </div>

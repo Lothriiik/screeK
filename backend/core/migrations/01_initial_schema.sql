@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS movies (
     original_title VARCHAR(255),
     overview TEXT,
     poster_url TEXT,
+    poster_palette_json TEXT,
+    poster_palette_poster_url TEXT,
     backdrop_url TEXT,
     release_date DATE,
     vote_average FLOAT,
@@ -36,6 +38,9 @@ CREATE TABLE IF NOT EXISTS movies (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE movies ADD COLUMN IF NOT EXISTS poster_palette_json TEXT;
+ALTER TABLE movies ADD COLUMN IF NOT EXISTS poster_palette_poster_url TEXT;
 
 CREATE TABLE IF NOT EXISTS genres (
     id INTEGER PRIMARY KEY,

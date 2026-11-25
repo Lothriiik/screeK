@@ -103,6 +103,11 @@
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Outfit', sans-serif;
     }
+
+    /* Long-form reading text stays in Inter, even inside display-styled sections. */
+    p, li, blockquote, dd {
+        font-family: 'Inter', sans-serif;
+    }
 }
 
 /* ===== VIEW TRANSITIONS — Circle with Blur ===== */
@@ -332,4 +337,9 @@
   to {
     transform: scaleX(0);
   }
+}
+
+/* ===== PROMOTION ACCORDION CARET ROTATION ===== */
+details.promotion-accordion[open] > summary .promotion-accordion-caret {
+  transform: rotate(180deg);
 }

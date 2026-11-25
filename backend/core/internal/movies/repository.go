@@ -7,6 +7,7 @@ import (
 
 type MoviesRepository interface {
 	SaveMovie(ctx context.Context, movie *Movie) error
+	SaveMoviePosterPalette(ctx context.Context, tmdbID int, posterURL string, palette *PosterPalette) error
 	GetMovieByTMDBID(ctx context.Context, tmdbID int) (*Movie, error)
 	GetMovieByID(ctx context.Context, id int) (*Movie, error)
 	GetMovieByTitleAndYear(ctx context.Context, title string, year int) (*Movie, error)

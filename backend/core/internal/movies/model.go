@@ -10,31 +10,46 @@ type TMDBMovie = tmdb.TMDBMovie
 type TMDBPersonMovieCast = tmdb.TMDBPersonMovieCast
 
 type Movie struct {
-	ID               int           `json:"id"`
-	TMDBID           int           `json:"tmdb_id"`
-	Title            string        `json:"title"`
-	OriginalTitle    string        `json:"original_title"`
-	Overview         string        `json:"overview"`
-	PosterURL        string        `json:"poster_url"`
-	BackdropURL      string        `json:"backdrop_url"`
-	UpdatedAt        time.Time     `json:"-"`
-	ReleaseDate      time.Time     `json:"release_date"`
-	Status           string        `json:"status"`
-	Runtime          int           `json:"runtime"`
-	OriginalLanguage string        `json:"original_language"`
-	SpokenLanguages  string        `json:"spoken_languages"`
-	VoteAverage      float64       `json:"vote_average"`
-	VoteCount        int           `json:"vote_count"`
-	Popularity       float64       `json:"popularity"`
-	Budget           int64         `json:"budget"`
-	Revenue          int64         `json:"revenue"`
-	Countries        []string      `json:"countries"`
-	Keywords         []string      `json:"keywords"`
-	Studios          []string      `json:"studios"`
-	Certification    string        `json:"certification"`
-	Year             int           `json:"year,omitempty"`
-	Genres           []Genre       `gorm:"-" json:"genres"`
-	Credits          []MovieCredit `gorm:"-" json:"credits"`
+	ID               int            `json:"id"`
+	TMDBID           int            `json:"tmdb_id"`
+	Title            string         `json:"title"`
+	OriginalTitle    string         `json:"original_title"`
+	Overview         string         `json:"overview"`
+	PosterURL        string         `json:"poster_url"`
+	PosterPalette    *PosterPalette `json:"poster_palette,omitempty" gorm:"-"`
+	BackdropURL      string         `json:"backdrop_url"`
+	UpdatedAt        time.Time      `json:"-"`
+	ReleaseDate      time.Time      `json:"release_date"`
+	Status           string         `json:"status"`
+	Runtime          int            `json:"runtime"`
+	OriginalLanguage string         `json:"original_language"`
+	SpokenLanguages  string         `json:"spoken_languages"`
+	VoteAverage      float64        `json:"vote_average"`
+	VoteCount        int            `json:"vote_count"`
+	Popularity       float64        `json:"popularity"`
+	Budget           int64          `json:"budget"`
+	Revenue          int64          `json:"revenue"`
+	Countries        []string       `json:"countries"`
+	Keywords         []string       `json:"keywords"`
+	Studios          []string       `json:"studios"`
+	Certification    string         `json:"certification"`
+	Year             int            `json:"year,omitempty"`
+	Genres           []Genre        `gorm:"-" json:"genres"`
+	Credits          []MovieCredit  `gorm:"-" json:"credits"`
+}
+
+// PosterPalette contains precomputed colors for styling a movie's poster card.
+// Values are CSS colors and remain empty until the poster has been processed.
+type PosterPalette struct {
+	Frame    string `json:"frame"`
+	Accent   string `json:"accent"`
+	OnAccent string `json:"on_accent"`
+	Title    string `json:"title"`
+	OnTitle  string `json:"on_title"`
+	Panel    string `json:"panel"`
+	OnPanel  string `json:"on_panel"`
+	Rating   string `json:"rating"`
+	OnRating string `json:"on_rating"`
 }
 
 type Genre struct {

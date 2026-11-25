@@ -10,7 +10,6 @@ import (
 	movietmdb "github.com/StartLivin/screek/backend/internal/movies/tmdb"
 )
 
-
 type UserSearchProvider interface {
 	SearchUsers(ctx context.Context, query string) ([]UserSearchResult, error)
 }
@@ -85,6 +84,7 @@ func (s *MovieService) SearchMovies(ctx context.Context, query string) ([]Movie,
 func (s *MovieService) GetMovieDetails(ctx context.Context, tmdbID int) (*Movie, error) {
 	localMovie, err := s.store.GetMovieByTMDBID(ctx, tmdbID)
 	if err == nil && localMovie != nil {
+		s.ensurePosterPalette(ctx, localMovie)
 		return localMovie, nil
 	}
 
@@ -97,11 +97,30 @@ func (s *MovieService) GetMovieDetails(ctx context.Context, tmdbID int) (*Movie,
 	if err != nil {
 		return nil, err
 	}
+	s.ensurePosterPalette(ctx, savedMovie)
 	return savedMovie, nil
 }
 
 func (s *MovieService) GetMovieByID(ctx context.Context, id int) (*Movie, error) {
-	return s.store.GetMovieByID(ctx, id)
+	movie, err := s.store.GetMovieByID(ctx, id)
+	if err != nil || movie == nil {
+		return movie, err
+	}
+	s.ensurePosterPalette(ctx, movie)
+	return movie, nil
+}
+
+func (s *MovieService) ensurePosterPalette(ctx context.Context, movie *Movie) {
+	if movie == nil || movie.PosterPalette != nil || movie.PosterURL == "" {
+		return
+	}
+	palette, err := ExtractPosterPalette(ctx, movie.PosterURL)
+	if err != nil {
+		return
+	}
+	if s.store.SaveMoviePosterPalette(ctx, movie.TMDBID, movie.PosterURL, palette) == nil {
+		movie.PosterPalette = palette
+	}
 }
 
 func (s *MovieService) MatchMovieByTitleAndYear(ctx context.Context, title string, year int) (*Movie, error) {

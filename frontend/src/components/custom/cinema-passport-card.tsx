@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Star, X } from '@phosphor-icons/react';
 import screeKLogo from '../../assets/logos/logo-full.svg';
+import type { PosterPaletteColors } from '../../types/movie';
 
 export type CinemaPassportPalette =
   | 'navy-pink'
@@ -62,6 +63,8 @@ type PosterPaletteStyle = CSSProperties & {
   '--passport-on-title'?: string;
   '--passport-panel'?: string;
   '--passport-on-panel'?: string;
+  '--passport-rating'?: string;
+  '--passport-on-rating'?: string;
 };
 
 const POSTER_PALETTE_FALLBACK: PosterPaletteStyle = {
@@ -72,9 +75,63 @@ const POSTER_PALETTE_FALLBACK: PosterPaletteStyle = {
   '--passport-on-title': 'rgb(var(--background-rgb))',
   '--passport-panel': 'rgb(var(--tertiary-rgb) / 0.88)',
   '--passport-on-panel': 'rgb(var(--tertiary-foreground-rgb))',
+  '--passport-rating': 'rgb(var(--secondary-rgb))',
+  '--passport-on-rating': 'rgb(var(--secondary-foreground-rgb))',
 };
 
 type RGB = [number, number, number];
+const PALETTE_CACHE_PREFIX = 'screek:cinema-passport-palette:v1:';
+const PALETTE_STYLE_KEYS = [
+  '--passport-frame',
+  '--passport-accent',
+  '--passport-on-accent',
+  '--passport-title',
+  '--passport-on-title',
+  '--passport-panel',
+  '--passport-on-panel',
+  '--passport-rating',
+  '--passport-on-rating',
+] as const;
+
+function paletteCacheKey(posterUrl: string) {
+  return `${PALETTE_CACHE_PREFIX}${posterUrl}`;
+}
+
+function readCachedPosterPalette(posterUrl: string): PosterPaletteStyle | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const serialized = window.localStorage.getItem(paletteCacheKey(posterUrl));
+    if (!serialized) return undefined;
+    const cached = JSON.parse(serialized) as Record<string, unknown>;
+    if (!PALETTE_STYLE_KEYS.every((key) => typeof cached[key] === 'string')) return undefined;
+    return Object.fromEntries(PALETTE_STYLE_KEYS.map((key) => [key, cached[key]])) as PosterPaletteStyle;
+  } catch {
+    return undefined;
+  }
+}
+
+function cachePosterPalette(posterUrl: string, palette: PosterPaletteStyle) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(paletteCacheKey(posterUrl), JSON.stringify(palette));
+  } catch {
+    // CartÃµes continuam funcionando quando o navegador bloqueia o armazenamento local.
+  }
+}
+
+function posterColorsToStyle(palette: PosterPaletteColors): PosterPaletteStyle {
+  return {
+    '--passport-frame': palette.frame,
+    '--passport-accent': palette.accent,
+    '--passport-on-accent': palette.on_accent,
+    '--passport-title': palette.title,
+    '--passport-on-title': palette.on_title,
+    '--passport-panel': palette.panel,
+    '--passport-on-panel': palette.on_panel,
+    '--passport-rating': palette.rating,
+    '--passport-on-rating': palette.on_rating,
+  };
+}
 
 function colorTextColor([r, g, b]: RGB) {
   const luminance = (value: number) => {
@@ -92,6 +149,10 @@ function toCssColor([r, g, b]: RGB) {
 
 function darken([r, g, b]: RGB, amount: number): RGB {
   return [r, g, b].map((channel) => Math.round(channel * (1 - amount))) as RGB;
+}
+
+function colorDistance(first: RGB, second: RGB) {
+  return Math.sqrt(first.reduce((total, channel, index) => total + (channel - second[index]) ** 2, 0));
 }
 
 function extractPosterPalette(image: HTMLImageElement): PosterPaletteStyle | undefined {
@@ -132,6 +193,8 @@ function extractPosterPalette(image: HTMLImageElement): PosterPaletteStyle | und
     const frame = darken(dominant, 0.28);
     const title = darken(dominant, 0.62);
     const panelText = colorTextColor(darken(dominant, 0.12));
+    const rating = [accent, frame, title]
+      .sort((first, second) => colorDistance(second, dominant) - colorDistance(first, dominant))[0];
 
     return {
       '--passport-frame': toCssColor(frame),
@@ -141,6 +204,8 @@ function extractPosterPalette(image: HTMLImageElement): PosterPaletteStyle | und
       '--passport-on-title': colorTextColor(title),
       '--passport-panel': `rgb(${dominant.join(' ')} / 0.88)`,
       '--passport-on-panel': panelText,
+      '--passport-rating': toCssColor(rating),
+      '--passport-on-rating': colorTextColor(rating),
     };
   } catch {
     // Imagens externas sem CORS permanecem utilizáveis e usam a paleta de fallback.
@@ -159,6 +224,7 @@ export interface CinemaPassportCardProps {
   seats: string[];
   date: string;
   palette?: CinemaPassportPalette;
+  posterColors?: PosterPaletteColors;
 }
 
 export function CinemaPassportCard({
@@ -172,10 +238,15 @@ export function CinemaPassportCard({
   seats,
   date,
   palette = 'navy-pink',
+  posterColors,
 }: CinemaPassportCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [posterPaletteStyle, setPosterPaletteStyle] = useState<PosterPaletteStyle>();
+  const [posterPaletteStyle, setPosterPaletteStyle] = useState<PosterPaletteStyle | undefined>(() =>
+    palette === 'poster'
+      ? (posterColors ? posterColorsToStyle(posterColors) : readCachedPosterPalette(posterUrl) ?? POSTER_PALETTE_FALLBACK)
+      : undefined
+  );
   const colors = PALETTES[palette];
 
   useEffect(() => {
@@ -184,19 +255,35 @@ export function CinemaPassportCard({
       return;
     }
 
+    if (posterColors) {
+      const serverPalette = posterColorsToStyle(posterColors);
+      setPosterPaletteStyle(serverPalette);
+      cachePosterPalette(posterUrl, serverPalette);
+      return;
+    }
+
+    const cachedPalette = readCachedPosterPalette(posterUrl);
+    if (cachedPalette) {
+      setPosterPaletteStyle(cachedPalette);
+      return;
+    }
+
     setPosterPaletteStyle(POSTER_PALETTE_FALLBACK);
     let cancelled = false;
     const image = new Image();
     image.crossOrigin = 'anonymous';
     image.onload = () => {
-      if (!cancelled) setPosterPaletteStyle(extractPosterPalette(image));
-    };
-    image.onerror = () => {
-      if (!cancelled) setPosterPaletteStyle(undefined);
+      if (!cancelled) {
+        const extractedPalette = extractPosterPalette(image);
+        if (extractedPalette) {
+          cachePosterPalette(posterUrl, extractedPalette);
+          setPosterPaletteStyle(extractedPalette);
+        }
+      }
     };
     image.src = posterUrl;
     return () => { cancelled = true; };
-  }, [palette, posterUrl]);
+  }, [palette, posterUrl, posterColors]);
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -235,7 +322,7 @@ export function CinemaPassportCard({
                   <span className="mb-[0.6cqw] block text-[clamp(7px,2.65cqw,9px)] font-normal tracking-[0.44cqw] opacity-80">CINEMA</span>
                   {cinemaName}
                 </span>
-                <span className={`flex shrink-0 items-center gap-[1.2cqw] px-[2.35cqw] py-[0.88cqw] font-display text-[clamp(9px,4.12cqw,14px)] font-extrabold ${colors.badge}`}>
+                <span className={`flex shrink-0 items-center gap-[1.2cqw] px-[2.35cqw] py-[0.88cqw] font-display text-[clamp(9px,4.12cqw,14px)] font-extrabold ${palette === 'poster' ? 'bg-[var(--passport-rating)] text-[var(--passport-on-rating)]' : colors.badge}`}>
                   <Star size="1em" weight="fill" /> {rating.toFixed(1)}
                 </span>
               </span>

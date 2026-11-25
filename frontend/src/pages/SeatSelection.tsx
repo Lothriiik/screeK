@@ -71,10 +71,12 @@ export function SeatSelection() {
 
   const [currentStep, setCurrentStep] = useState<BookingStep>('seats');
   const [seats] = useState<SeatConfig[]>(generateSeatMap);
-  const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>(['C8']);
-  const [ticketTypes, setTicketTypes] = useState<Record<string, TicketType>>({ C8: 'inteira' });
+  const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
+  const [ticketTypes, setTicketTypes] = useState<Record<string, TicketType>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [timeLeft, setTimeLeft] = useState<number>(600); // 10 minutes
+  const [timerStarted, setTimerStarted] = useState<boolean>(false);
+  const [pixGenerated, setPixGenerated] = useState<boolean>(false);
 
   // Optional snack combos
   const [snacks, setSnacks] = useState<SnackItem[]>([
@@ -99,23 +101,27 @@ export function SeatSelection() {
   const [buyerCpf, setBuyerCpf] = useState('123.456.789-00');
   const [buyerEmail, setBuyerEmail] = useState('uander@cinepass.com');
 
-  // Countdown timer
+  // Countdown timer - only start after first seat selected
   useEffect(() => {
+    if (!timerStarted || selectedSeatIds.length === 0) return;
+
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
           toast.error('O tempo de reserva expirou. Selecione seus assentos novamente.');
           setSelectedSeatIds([]);
+          setTicketTypes({});
           setCurrentStep('seats');
-          return 0;
+          setTimerStarted(false);
+          return 600;
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [timerStarted, selectedSeatIds.length]);
 
   const handleSeatClick = (seat: SeatConfig) => {
     if (seat.isOccupied) return;
@@ -127,6 +133,10 @@ export function SeatSelection() {
         delete next[seat.id];
         return next;
       });
+      // Stop timer if no seats selected
+      if (selectedSeatIds.length === 1) {
+        setTimerStarted(false);
+      }
     } else {
       if (selectedSeatIds.length >= 8) {
         toast.warning('Limite máximo de 8 assentos por compra.');
@@ -134,6 +144,14 @@ export function SeatSelection() {
       }
       setSelectedSeatIds((prev) => [...prev, seat.id]);
       setTicketTypes((prev) => ({ ...prev, [seat.id]: 'inteira' }));
+      
+      // Start timer on first seat selection
+      if (selectedSeatIds.length === 0) {
+        setTimerStarted(true);
+        toast.success(`Assento ${seat.id} selecionado! Timer iniciado.`);
+      } else {
+        toast.success(`Assento ${seat.id} selecionado!`);
+      }
     }
   };
 
@@ -200,6 +218,19 @@ export function SeatSelection() {
     } else if (currentStep === 'tickets') {
       setCurrentStep('payment');
     } else if (currentStep === 'payment') {
+      if (paymentMethod === 'pix') {
+        // Check if time is too low for PIX
+        if (timeLeft < 90) {
+          toast.error('Tempo insuficiente para pagamento via PIX. Por favor, resete a seleção ou escolha cartão.');
+          return;
+        }
+        
+        if (!pixGenerated) {
+          toast.warning('Clique em "Gerar Código PIX" para continuar.');
+          return;
+        }
+      }
+      
       toast.success('Pagamento confirmado com sucesso!');
       setCurrentStep('confirmation');
     }
@@ -216,7 +247,7 @@ export function SeatSelection() {
   };
 
   return (
-    <div className="bg-background text-foreground pb-28 font-display">
+    <div className="bg-background text-foreground pb-6 font-display">
       {/* ─── 1. TOP HEADER NAVIGATION (CENTERED STEP PROGRESS ONLY) ─── */}
       <section className=" sticky top-0 z-30 pt-4">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-center">
@@ -269,7 +300,7 @@ export function SeatSelection() {
             {/* ETAPA 1: SALA & SELEÇÃO DE ASSENTOS (STADIUM CURVED MAP)          */}
             {/* ═════════════════════════════════════════════════════════════════ */}
             {currentStep === 'seats' && (
-              <div className="bg-card border-4 border-foreground/40 p-6 sm:p-8 shadow-[6px_6px_0px_0px_var(--border)] space-y-8 flex flex-col items-center">
+              <div className="bg-background border-4 border-foreground/40 p-6 sm:p-8 shadow-[6px_6px_0px_0px_var(--border)] space-y-8 flex flex-col items-center">
                 {/* Screen Projection Header */}
                 <div className="w-full text-center space-y-3">
                   <span className="font-display font-black text-xs uppercase tracking-[0.3em] text-foreground/50">
@@ -350,7 +381,7 @@ export function SeatSelection() {
             {/* ═════════════════════════════════════════════════════════════════ */}
             {currentStep === 'tickets' && (
               <div className="space-y-6">
-                <div className="bg-card border-4 border-foreground/40 p-6 shadow-[6px_6px_0px_0px_var(--border)] space-y-6">
+                <div className="bg-background border-4 border-foreground/40 p-6 shadow-[6px_6px_0px_0px_var(--border)] space-y-6">
                   <div>
                     <h2 className="text-xl sm:text-2xl font-black text-foreground">
                       Escolha o tipo de ingresso
@@ -399,7 +430,7 @@ export function SeatSelection() {
                               className={`p-3 text-left border-2 transition-all cursor-pointer ${
                                 currentType === 'inteira'
                                   ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_var(--border)]'
-                                  : 'bg-card text-foreground border-foreground/30 hover:bg-muted'
+                                  : 'bg-background text-foreground border-foreground/30 hover:bg-muted/30'
                               }`}
                             >
                               <div className="font-black text-xs uppercase">Inteira</div>
@@ -414,7 +445,7 @@ export function SeatSelection() {
                               className={`p-3 text-left border-2 transition-all cursor-pointer ${
                                 currentType === 'meia'
                                   ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_var(--border)]'
-                                  : 'bg-card text-foreground border-foreground/30 hover:bg-muted'
+                                  : 'bg-background text-foreground border-foreground/30 hover:bg-muted/30'
                               }`}
                             >
                               <div className="font-black text-xs uppercase">Meia-Entrada</div>
@@ -429,7 +460,7 @@ export function SeatSelection() {
                               className={`p-3 text-left border-2 transition-all cursor-pointer ${
                                 currentType === 'itau'
                                   ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_var(--border)]'
-                                  : 'bg-card text-foreground border-foreground/30 hover:bg-muted'
+                                  : 'bg-background text-foreground border-foreground/30 hover:bg-muted/30'
                               }`}
                             >
                               <div className="font-black text-xs uppercase">Itaú 50%</div>
@@ -444,7 +475,7 @@ export function SeatSelection() {
                 </div>
 
                 {/* Optional Snacks & Combos Box */}
-                <div className="bg-card border-4 border-foreground/40 p-6 shadow-[6px_6px_0px_0px_var(--border)] space-y-4">
+                <div className="bg-background border-4 border-foreground/40 p-6 shadow-[6px_6px_0px_0px_var(--border)] space-y-4">
                   <div>
                     <h3 className="text-lg font-black text-foreground">Bomboniere & Combos de Pipoca</h3>
                     <p className="font-sans text-xs text-foreground/70">
@@ -473,7 +504,7 @@ export function SeatSelection() {
                               type="button"
                               onClick={() => updateSnackQuantity(snack.id, -1)}
                               disabled={snack.quantity === 0}
-                              className="w-7 h-7 bg-card border-2 border-foreground/40 text-foreground font-black flex items-center justify-center hover:bg-muted disabled:opacity-30 cursor-pointer"
+                              className="w-7 h-7 bg-background border-2 border-foreground/40 text-foreground font-black flex items-center justify-center hover:bg-muted/30 disabled:opacity-30 cursor-pointer"
                             >
                               -
                             </button>
@@ -495,162 +526,221 @@ export function SeatSelection() {
             )}
 
             {/* ═════════════════════════════════════════════════════════════════ */}
-            {/* ETAPA 3: PAGAMENTO (PIX & CARTÃO)                                 */}
+            {/* ETAPA 3: PAGAMENTO (DADOS PESSOAIS → PIX/CARTÃO)                 */}
             {/* ═════════════════════════════════════════════════════════════════ */}
             {currentStep === 'payment' && (
-              <div className="bg-card border-4 border-foreground/40 p-6 sm:p-8 shadow-[6px_6px_0px_0px_var(--border)] space-y-6">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-foreground">Forma de Pagamento</h2>
-                  <p className="font-sans text-xs text-foreground/70 mt-1">
-                    Selecione o meio de pagamento para emitir seus ingressos digitais.
-                  </p>
-                </div>
-
-                {/* Payment Method Selector */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('pix')}
-                    className={`p-4 border-2 flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
-                      paymentMethod === 'pix'
-                        ? 'bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px_0px_var(--border)]'
-                        : 'bg-background text-foreground border-foreground/40 hover:bg-muted'
-                    }`}
-                  >
-                    <QrCode size={22} weight="bold" />
-                    <span className="font-black text-sm">PIX Instantâneo</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('credit_card')}
-                    className={`p-4 border-2 flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
-                      paymentMethod === 'credit_card'
-                        ? 'bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px_0px_var(--border)]'
-                        : 'bg-background text-foreground border-foreground/40 hover:bg-muted'
-                    }`}
-                  >
-                    <CreditCard size={22} weight="bold" />
-                    <span className="font-black text-sm">Cartão de Crédito</span>
-                  </button>
-                </div>
-
-                {/* PIX Content Area */}
-                {paymentMethod === 'pix' && (
-                  <div className="p-6 bg-background border-2 border-foreground/40 space-y-5 text-center shadow-sm">
-                    <div className="w-44 h-44 mx-auto bg-card border-2 border-foreground/40 p-2 flex items-center justify-center shadow-sm">
-                      {/* Visual QR Code Mock */}
-                      <div className="w-full h-full border-2 border-dashed border-foreground/30 flex flex-col items-center justify-center p-2 bg-foreground/5">
-                        <QrCode size={96} className="text-primary" weight="bold" />
-                        <span className="text-[9px] font-sans text-muted-foreground uppercase font-bold mt-1">
-                          QR Code Dinâmico PIX
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="font-black text-xs text-foreground uppercase">Código Copia e Cola</span>
-                      <div className="flex items-center gap-2 max-w-md mx-auto">
-                        <input
-                          type="text"
-                          readOnly
-                          value="00020126580014br.gov.bcb.pix0136cinepass-speed-racer-pix5204000053039865802BR"
-                          className="flex-1 bg-muted/50 border-2 border-foreground/30 px-3 py-2 text-xs font-mono text-foreground/80 outline-none select-all"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard?.writeText('00020126580014br.gov.bcb.pix0136cinepass-speed-racer-pix5204000053039865802BR');
-                            toast.success('Código PIX copiado!');
-                          }}
-                          className="px-3.5 py-2 bg-card hover:bg-muted border-2 border-foreground/40 text-foreground font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
-                        >
-                          <Copy size={16} />
-                          <span>Copiar</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <p className="font-sans text-xs text-foreground/70 max-w-md mx-auto">
-                      Abra o app do seu banco, escolha <strong>Pagar com PIX</strong> e escaneie o código ou cole a chave acima. A aprovação é imediata!
+              <div className="space-y-6">
+                
+                {/* Buyer Information Section - FIRST */}
+                <div className="bg-background border-4 border-foreground/40 p-6 shadow-[6px_6px_0px_0px_var(--border)] space-y-4">
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-foreground">Dados para Envio do Ingresso</h2>
+                    <p className="font-sans text-xs text-foreground/70 mt-1">
+                      Insira suas informações para receber os vouchers digitais.
                     </p>
                   </div>
-                )}
-
-                {/* Credit Card Content Area */}
-                {paymentMethod === 'credit_card' && (
-                  <div className="p-6 bg-background border-2 border-foreground/40 space-y-4 shadow-sm">
-                    <div className="space-y-1">
-                      <label className="block text-xs font-black uppercase text-foreground/70">Número do Cartão</label>
-                      <input
-                        type="text"
-                        placeholder="•••• •••• •••• ••••"
-                        defaultValue="4532 •••• •••• 8892"
-                        className="w-full bg-card border-2 border-foreground/30 px-3.5 py-2.5 text-sm font-mono text-foreground outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="block text-xs font-black uppercase text-foreground/70">Validade</label>
-                        <input
-                          type="text"
-                          placeholder="MM/AA"
-                          defaultValue="08/29"
-                          className="w-full bg-card border-2 border-foreground/30 px-3.5 py-2.5 text-sm font-mono text-foreground outline-none focus:border-primary"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="block text-xs font-black uppercase text-foreground/70">CVV</label>
-                        <input
-                          type="text"
-                          placeholder="123"
-                          defaultValue="789"
-                          className="w-full bg-card border-2 border-foreground/30 px-3.5 py-2.5 text-sm font-mono text-foreground outline-none focus:border-primary"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-xs font-black uppercase text-foreground/70">Nome Impresso no Cartão</label>
-                      <input
-                        type="text"
-                        defaultValue="UANDER SILVA"
-                        className="w-full bg-card border-2 border-foreground/30 px-3.5 py-2.5 text-sm font-sans uppercase text-foreground outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Buyer Information Section */}
-                <div className="p-4 bg-muted/20 border-2 border-foreground/30 space-y-3">
-                  <span className="block text-xs font-black uppercase text-foreground/70">
-                    Dados para Envio do Ingresso
-                  </span>
+                  
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Nome Completo"
-                      value={buyerName}
-                      onChange={(e) => setBuyerName(e.target.value)}
-                      className="bg-card border border-foreground/30 px-3 py-2 text-xs font-sans text-foreground outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="CPF"
-                      value={buyerCpf}
-                      onChange={(e) => setBuyerCpf(e.target.value)}
-                      className="bg-card border border-foreground/30 px-3 py-2 text-xs font-sans text-foreground outline-none"
-                    />
-                    <input
-                      type="email"
-                      placeholder="E-mail"
-                      value={buyerEmail}
-                      onChange={(e) => setBuyerEmail(e.target.value)}
-                      className="bg-card border border-foreground/30 px-3 py-2 text-xs font-sans text-foreground outline-none"
-                    />
+                    <div className="space-y-1">
+                      <label className="block text-xs font-black uppercase text-foreground/70">Nome Completo</label>
+                      <input
+                        type="text"
+                        placeholder="Nome Completo"
+                        value={buyerName}
+                        onChange={(e) => setBuyerName(e.target.value)}
+                        className="w-full bg-background border-2 border-foreground/30 px-3 py-2.5 text-sm font-sans text-foreground outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-black uppercase text-foreground/70">CPF</label>
+                      <input
+                        type="text"
+                        placeholder="000.000.000-00"
+                        value={buyerCpf}
+                        onChange={(e) => setBuyerCpf(e.target.value)}
+                        className="w-full bg-background border-2 border-foreground/30 px-3 py-2.5 text-sm font-sans text-foreground outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-black uppercase text-foreground/70">E-mail</label>
+                      <input
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={buyerEmail}
+                        onChange={(e) => setBuyerEmail(e.target.value)}
+                        className="w-full bg-background border-2 border-foreground/30 px-3 py-2.5 text-sm font-sans text-foreground outline-none focus:border-primary"
+                      />
+                    </div>
                   </div>
+                </div>
+
+                {/* Payment Method Section - SECOND */}
+                <div className="bg-background border-4 border-foreground/40 p-6 sm:p-8 shadow-[6px_6px_0px_0px_var(--border)] space-y-6">
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-foreground">Forma de Pagamento</h2>
+                    <p className="font-sans text-xs text-foreground/70 mt-1">
+                      Selecione o meio de pagamento para emitir seus ingressos digitais.
+                    </p>
+                  </div>
+
+                  {/* Payment Method Selector */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod('pix');
+                        setPixGenerated(false);
+                      }}
+                      className={`p-4 border-2 flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+                        paymentMethod === 'pix'
+                          ? 'bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px_0px_var(--border)]'
+                          : 'bg-background text-foreground border-foreground/40 hover:bg-muted'
+                      }`}
+                    >
+                      <QrCode size={22} weight="bold" />
+                      <span className="font-black text-sm">PIX Instantâneo</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('credit_card')}
+                      className={`p-4 border-2 flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+                        paymentMethod === 'credit_card'
+                          ? 'bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px_0px_var(--border)]'
+                          : 'bg-background text-foreground border-foreground/40 hover:bg-muted'
+                      }`}
+                    >
+                      <CreditCard size={22} weight="bold" />
+                      <span className="font-black text-sm">Cartão de Crédito</span>
+                    </button>
+                  </div>
+
+                  {/* PIX Content Area */}
+                  {paymentMethod === 'pix' && (
+                    <div className="p-6 bg-background border-2 border-foreground/40 space-y-5 text-center shadow-sm">
+                      
+                      {/* Warning if time is low */}
+                      {timeLeft < 90 && (
+                        <div className="p-3 bg-destructive/10 border-2 border-destructive text-destructive text-left">
+                          <span className="font-black text-xs block mb-1">⚠️ TEMPO INSUFICIENTE</span>
+                          <span className="font-sans text-xs">
+                            Menos de 1:30 restante. Por favor, resete a seleção de assentos ou escolha pagamento por cartão.
+                          </span>
+                        </div>
+                      )}
+                      
+                      {!pixGenerated ? (
+                        <div className="space-y-4 py-6">
+                          <div className="w-32 h-32 mx-auto bg-muted/20 border-2 border-dashed border-foreground/30 flex items-center justify-center">
+                            <QrCode size={72} className="text-foreground/40" weight="bold" />
+                          </div>
+                          <p className="font-sans text-sm text-foreground/70 max-w-md mx-auto">
+                            Clique no botão abaixo para gerar o código PIX e concluir o pagamento instantaneamente.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (timeLeft < 90) {
+                                toast.error('Tempo insuficiente para PIX. Escolha cartão ou resete os assentos.');
+                                return;
+                              }
+                              setPixGenerated(true);
+                              toast.success('Código PIX gerado com sucesso!');
+                            }}
+                            disabled={timeLeft < 90}
+                            className="px-8 py-3 bg-primary text-primary-foreground font-black text-sm uppercase shadow-[3px_3px_0px_0px_var(--border)] hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                          >
+                            Gerar Código PIX
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-44 h-44 mx-auto bg-background border-2 border-foreground/40 p-2 flex items-center justify-center shadow-sm">
+                            {/* Visual QR Code Mock */}
+                            <div className="w-full h-full border-2 border-dashed border-foreground/30 flex flex-col items-center justify-center p-2 bg-foreground/5">
+                              <QrCode size={96} className="text-primary" weight="bold" />
+                              <span className="text-[9px] font-sans text-muted-foreground uppercase font-bold mt-1">
+                                QR Code Dinâmico PIX
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="font-black text-xs text-foreground uppercase">Código Copia e Cola</span>
+                            <div className="flex items-center gap-2 max-w-md mx-auto">
+                              <input
+                                type="text"
+                                readOnly
+                                value="00020126580014br.gov.bcb.pix0136cinepass-speed-racer-pix5204000053039865802BR"
+                                className="flex-1 bg-muted/50 border-2 border-foreground/30 px-3 py-2 text-xs font-mono text-foreground/80 outline-none select-all"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard?.writeText('00020126580014br.gov.bcb.pix0136cinepass-speed-racer-pix5204000053039865802BR');
+                                  toast.success('Código PIX copiado!');
+                                }}
+                                className="px-3.5 py-2 bg-background hover:bg-muted border-2 border-foreground/40 text-foreground font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+                              >
+                                <Copy size={16} />
+                                <span>Copiar</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <p className="font-sans text-xs text-foreground/70 max-w-md mx-auto">
+                            Abra o app do seu banco, escolha <strong>Pagar com PIX</strong> e escaneie o código ou cole a chave acima. A aprovação é imediata!
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Credit Card Content Area */}
+                  {paymentMethod === 'credit_card' && (
+                    <div className="p-6 bg-background border-2 border-foreground/40 space-y-4 shadow-sm">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-black uppercase text-foreground/70">Número do Cartão</label>
+                        <input
+                          type="text"
+                          placeholder="•••• •••• •••• ••••"
+                          defaultValue="4532 •••• •••• 8892"
+                          className="w-full bg-background border-2 border-foreground/30 px-3.5 py-2.5 text-sm font-mono text-foreground outline-none focus:border-primary"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="block text-xs font-black uppercase text-foreground/70">Validade</label>
+                          <input
+                            type="text"
+                            placeholder="MM/AA"
+                            defaultValue="08/29"
+                            className="w-full bg-background border-2 border-foreground/30 px-3.5 py-2.5 text-sm font-mono text-foreground outline-none focus:border-primary"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-xs font-black uppercase text-foreground/70">CVV</label>
+                          <input
+                            type="text"
+                            placeholder="123"
+                            defaultValue="789"
+                            className="w-full bg-background border-2 border-foreground/30 px-3.5 py-2.5 text-sm font-mono text-foreground outline-none focus:border-primary"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-xs font-black uppercase text-foreground/70">Nome Impresso no Cartão</label>
+                        <input
+                          type="text"
+                          defaultValue="UANDER SILVA"
+                          className="w-full bg-background border-2 border-foreground/30 px-3.5 py-2.5 text-sm font-sans uppercase text-foreground outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -659,7 +749,7 @@ export function SeatSelection() {
             {/* ETAPA 4: INGRESSO DIGITAL EMITIDO COM SUCESSO!                   */}
             {/* ═════════════════════════════════════════════════════════════════ */}
             {currentStep === 'confirmation' && (
-              <div className="bg-card border-4 border-foreground/40 p-8 shadow-[6px_6px_0px_0px_var(--border)] text-center space-y-6">
+                <div className="bg-background border-4 border-foreground/40 p-8 shadow-[6px_6px_0px_0px_var(--border)] text-center space-y-6">
                 <div className="w-16 h-16 bg-success text-white rounded-none border-2 border-foreground/40 flex items-center justify-center mx-auto shadow-md">
                   <CheckCircle size={36} weight="fill" />
                 </div>
@@ -706,7 +796,7 @@ export function SeatSelection() {
                   </div>
 
                   <div className="pt-3 border-t-2 border-dashed border-foreground/30 text-center space-y-2">
-                    <div className="w-36 h-36 mx-auto bg-card border-2 border-foreground/40 p-2 flex items-center justify-center shadow-sm">
+                    <div className="w-36 h-36 mx-auto bg-background border-2 border-foreground/40 p-2 flex items-center justify-center shadow-sm">
                       <QrCode size={110} className="text-primary" weight="bold" />
                     </div>
                     <span className="font-mono text-xs font-black tracking-widest text-foreground/80 block">
@@ -746,53 +836,41 @@ export function SeatSelection() {
               subtotal={subtotal}
               serviceFee={serviceFee}
               totalPrice={totalPrice}
-              showTimer={currentStep !== 'confirmation'}
+              showTimer={currentStep !== 'confirmation' && timerStarted}
               timerSeconds={timeLeft}
+              onConfirm={currentStep === 'confirmation' ? () => navigate('/') : handleNextStep}
+              confirmButtonText={
+                currentStep === 'seats'
+                  ? 'Avançar →'
+                  : currentStep === 'tickets'
+                  ? 'Pagamento →'
+                  : currentStep === 'payment'
+                  ? paymentMethod === 'pix' 
+                    ? (pixGenerated ? 'Confirmar Pagamento PIX' : 'Aguardando Código PIX')
+                    : 'Pagar com Cartão →'
+                  : 'Voltar para Home'
+              }
+              disabledConfirm={
+                selectedSeatIds.length === 0 || 
+                (currentStep === 'payment' && paymentMethod === 'pix' && !pixGenerated)
+              }
             />
+            
+            {/* Back Button below summary */}
+            {currentStep !== 'confirmation' && (
+              <button
+                type="button"
+                onClick={handlePrevStep}
+                className="w-full mt-3 px-4 py-2.5 bg-background hover:bg-muted border-2 border-foreground/40 text-foreground font-black text-xs uppercase transition-all shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <ArrowLeft size={16} weight="bold" />
+                <span>Voltar</span>
+              </button>
+            )}
           </div>
 
         </div>
       </main>
-
-      {/* ─── 3. FIXED BOTTOM NAVIGATION BAR ─── */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t-4 border-foreground/40 shadow-[0_-4px_12px_rgba(0,0,0,0.15)]">
-        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
-          {/* Left: Voltar Button */}
-          <button
-            type="button"
-            onClick={handlePrevStep}
-            className="px-4 sm:px-6 py-2 rounded-md bg-background hover:bg-muted border-2 border-foreground/40 text-foreground font-black text-xs uppercase transition-all shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer flex items-center gap-1.5 shrink-0"
-          >
-            <ArrowLeft size={16} weight="bold" />
-            <span>Voltar</span>
-          </button>
-
-          {/* Right: Total + Step Forward Action Button */}
-          <div className="flex items-center gap-3 sm:gap-6">
-            <div className="text-right">
-              <span className="text-[9px] sm:text-[10px] font-sans uppercase font-bold text-foreground/60 block leading-none">Total</span>
-              <span className="text-base sm:text-lg font-black text-secondary leading-tight">
-                R$ {totalPrice.toFixed(2).replace('.', ',')}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={currentStep === 'confirmation' ? () => navigate('/') : handleNextStep}
-              disabled={selectedSeatIds.length === 0}
-              className="px-4 sm:px-0 py-2.5 rounded-md bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground font-black text-xs sm:text-sm uppercase transition-all shadow-[3px_3px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
-            >
-              {currentStep === 'seats'
-                ? 'Avançar →'
-                : currentStep === 'tickets'
-                ? 'Pagamento →'
-                : currentStep === 'payment'
-                ? 'Pagar Agora →'
-                : 'Home'}
-            </button>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

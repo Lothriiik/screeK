@@ -1,19 +1,37 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 import {
-  CalendarBlank,
-  ChartBar,
-  Buildings,
   ArrowSquareOut,
   Sun,
-  Moon
+  Moon,
+  CaretDown,
+  SignOut,
 } from '@phosphor-icons/react';
 import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
+import { MOCK_CINEMAS } from '../mocks/cinemas';
+import logoFull from '../assets/logos/logo-full.svg';
 
 export function AdminLayout() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const { theme, toggleTheme } = useThemeStore();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const selectedCinemaId = searchParams.get('cinemaId') || MOCK_CINEMAS[0]?.id || '';
+  const managementPath = (path: string) => `${path}?cinemaId=${encodeURIComponent(selectedCinemaId)}`;
+
+  useEffect(() => {
+    const closeMenu = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', closeMenu);
+    return () => document.removeEventListener('mousedown', closeMenu);
+  }, []);
 
   const isCinemas = location.pathname.startsWith('/management/cinemas');
   const isSchedule = (location.pathname.startsWith('/management') || location.pathname.startsWith('/management/schedule')) && !isCinemas;
@@ -23,106 +41,84 @@ export function AdminLayout() {
     <div className="min-h-screen bg-background text-foreground flex flex-col font-display selection:bg-secondary selection:text-secondary-foreground">
       
       {/* ─── DEDICATED B2B ADMIN HEADER ─── */}
-      <header className="bg-[#1A2744] text-white border-b-2 border-foreground/30 px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-4 z-40 shrink-0">
-        
-        {/* Left: Brand & Main Admin Navigation */}
-        <div className="flex items-center gap-2 sm:gap-6">
-          
-          <Link to="/management/cinemas" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-primary text-primary-foreground font-black text-sm flex items-center justify-center border border-white/20 shadow-sm shrink-0">
-              SK
-            </div>
-            <div className="hidden sm:flex flex-col">
-              <span className="text-xs font-black uppercase tracking-wider text-white group-hover:text-primary transition-colors leading-none">
-                screeK B2B
-              </span>
-              <span className="text-[10px] text-white/50 font-sans leading-tight">
-                Painel do Cinema
-              </span>
-            </div>
-          </Link>
-
-          <div className="h-5 w-px bg-white/20 hidden sm:block" />
-
-          {/* Navigation Links */}
-          <nav className="flex items-center gap-1">
-            <Link
-              to="/management/cinemas"
-              className={`px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-black uppercase flex items-center gap-1.5 transition-all border ${
-                isCinemas
-                  ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]'
-                  : 'text-white/70 hover:text-white border-transparent hover:bg-white/10'
-              }`}
-            >
-              <Buildings size={15} weight="bold" />
-              <span>Cinemas &amp; Salas</span>
+      <header className="z-40 h-16 shrink-0 border-b-2 border-foreground/30 bg-[#1A2744] px-4 text-white sm:px-12">
+        <div className="mx-auto grid h-full w-full max-w-4xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 md:max-w-5xl lg:max-w-6xl sm:px-0">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+            <Link to={managementPath('/management/cinemas')} className="group flex shrink-0 items-center">
+              <img src={logoFull} alt="screeK" className="h-6 w-auto" />
             </Link>
+          </div>
 
+          <nav className="flex h-full items-center justify-center gap-1 sm:gap-3 xl:gap-6">
             <Link
-              to="/management/schedule"
-              className={`px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-black uppercase flex items-center gap-1.5 transition-all border ${
-                isSchedule
-                  ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]'
-                  : 'text-white/70 hover:text-white border-transparent hover:bg-white/10'
-              }`}
+              to={managementPath('/management/cinemas')}
+              className={`flex h-full items-center border-y-4 px-2 text-[10px] font-display font-extrabold uppercase tracking-wider transition-colors sm:px-3 sm:text-xs ${isCinemas ? 'border-secondary text-secondary' : 'border-transparent text-white/55 hover:text-white'}`}
             >
-              <CalendarBlank size={15} weight="bold" />
-              <span>Sessões</span>
+              Cinema
             </Link>
-
             <Link
-              to="/statistics"
-              className={`px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-black uppercase flex items-center gap-1.5 transition-all border ${
-                isStats
-                  ? 'bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]'
-                  : 'text-white/70 hover:text-white border-transparent hover:bg-white/10'
-              }`}
+              to={managementPath('/management/schedule')}
+              className={`flex h-full items-center border-y-4 px-2 text-[10px] font-display font-extrabold uppercase tracking-wider transition-colors sm:px-3 sm:text-xs ${isSchedule ? 'border-secondary text-secondary' : 'border-transparent text-white/55 hover:text-white'}`}
             >
-              <ChartBar size={15} weight="bold" />
-              <span>BI / Métricas</span>
+              Sessões
+            </Link>
+            <Link
+              to={managementPath('/statistics')}
+              className={`flex h-full items-center border-y-4 px-2 text-[10px] font-display font-extrabold uppercase tracking-wider transition-colors sm:px-3 sm:text-xs ${isStats ? 'border-secondary text-secondary' : 'border-transparent text-white/55 hover:text-white'}`}
+            >
+              Métricas
             </Link>
           </nav>
 
-        </div>
-
-        {/* Right: Quick actions, Status, Theme & Admin Profile */}
-        <div className="flex items-center gap-3">
+          {/* Right: Quick actions, Status, Theme & Admin Profile */}
+          <div className="flex items-center justify-end gap-2 sm:gap-3">
           
           {/* Public App Switch */}
           <Link
             to="/"
-            className="px-2.5 py-1 text-[11px] font-bold text-white/70 hover:text-white flex items-center gap-1 border border-white/20 hover:border-white/40 transition-colors hidden md:flex"
+            className="hidden border border-white/20 p-1.5 text-white/70 transition-colors hover:border-white/40 hover:text-secondary md:flex"
             title="Voltar para a experiência do usuário"
+            aria-label="Ir para o app público"
           >
-            <span>Ir para o App Público</span>
-            <ArrowSquareOut size={13} weight="bold" />
+            <ArrowSquareOut size={17} weight="bold" />
           </Link>
 
           {/* Theme Toggle */}
           <button
             type="button"
             onClick={toggleTheme}
-            className="p-1.5 text-white/70 hover:text-white border border-white/20 hover:bg-white/10 transition-colors cursor-pointer"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center border-2 border-white/30 text-white/70 transition-colors hover:border-secondary hover:text-secondary"
             title="Alternar Tema"
           >
             {theme === 'dark' ? <Sun size={15} weight="bold" className="text-warning" /> : <Moon size={15} weight="bold" className="text-primary" />}
           </button>
 
           {/* Admin Avatar Badge */}
-          <div className="flex items-center gap-2 pl-2 border-l border-white/20">
-            <div className="w-7 h-7 bg-secondary text-secondary-foreground font-black text-xs flex items-center justify-center border border-white/30">
-              {user ? user.username.slice(0, 2).toUpperCase() : 'AD'}
-            </div>
-            <div className="hidden lg:flex flex-col text-left">
-              <span className="text-xs font-black uppercase leading-tight text-white">
-                {user ? user.username : 'Gerente Operacional'}
+          <div ref={userMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsUserMenuOpen((open) => !open)}
+              aria-expanded={isUserMenuOpen}
+              className="flex cursor-pointer items-center gap-2 border-2 border-white/30 bg-transparent px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.35)] transition-colors hover:border-secondary"
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden border border-white/40 bg-white/10 text-[10px] font-black text-white">
+                {user?.avatar_url ? <img src={user.avatar_url} alt="" className="h-full w-full object-cover" /> : user?.username.slice(0, 2).toUpperCase() || 'AD'}
               </span>
-              <span className="text-[9px] text-[#34A853] font-bold leading-none flex items-center gap-1">
-                ● Operador Ativo
-              </span>
-            </div>
+              <span className="hidden max-w-24 truncate text-xs font-black uppercase tracking-wider text-white sm:block">{user?.username || 'Operador'}</span>
+              <CaretDown size={14} weight="bold" className={`text-white/70 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isUserMenuOpen && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-48 border-2 border-foreground/40 bg-background py-1 text-foreground shadow-[4px_4px_0px_0px_var(--border)]">
+                <Link to="/profile" onClick={() => setIsUserMenuOpen(false)} className="block px-4 py-2 text-xs font-bold hover:bg-muted">Meu perfil</Link>
+                <button type="button" onClick={() => { setIsUserMenuOpen(false); logout(); }} className="flex w-full items-center gap-2 border-t border-foreground/10 px-4 py-2 text-left text-xs font-bold text-destructive hover:bg-destructive/10">
+                  <SignOut size={14} weight="bold" /> Sair
+                </button>
+              </div>
+            )}
           </div>
 
+        </div>
         </div>
 
       </header>

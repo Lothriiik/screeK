@@ -81,6 +81,17 @@ export function normalizeTMDBMovie(raw: any): Movie {
     });
   }
 
+  // The backend already returns normalized credits as an array; recover crew names from that shape too.
+  if (Array.isArray(raw.credits)) {
+    raw.credits.forEach((credit: any) => {
+      const role = String(credit.role || credit.job || '').toLowerCase();
+      const name = credit.person?.name || credit.name;
+      if (!name) return;
+      if (role.includes('director') && !directors.includes(name)) directors.push(name);
+      if (/(writer|screenplay|story|author)/.test(role) && !writers.includes(name)) writers.push(name);
+    });
+  }
+
   // Fallback se veio em formato direto
   if (directors.length === 0 && Array.isArray(raw.directors) && raw.directors.length > 0) {
     directors.push(...raw.directors);

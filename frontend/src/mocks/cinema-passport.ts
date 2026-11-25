@@ -51,6 +51,7 @@ export const MOCK_CINEMA_PASSPORT = MOCK_USER_TICKETS
       ticketCode: ticket.id.replace('TXN-', 'SKR-'),
       movieTitle: movie.title,
       posterUrl: movie.poster_url,
+      posterColors: movie.poster_palette,
       rating: notes.rating,
       cinemaName: ticket.cinema_name,
       roomName: ticket.room_name,

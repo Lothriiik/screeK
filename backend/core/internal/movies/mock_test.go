@@ -3,8 +3,8 @@ package movies
 import (
 	"context"
 
-	"github.com/stretchr/testify/mock"
 	movietmdb "github.com/StartLivin/screek/backend/internal/movies/tmdb"
+	"github.com/stretchr/testify/mock"
 )
 
 type MockMoviesRepo struct {
@@ -13,6 +13,11 @@ type MockMoviesRepo struct {
 
 func (m *MockMoviesRepo) SaveMovie(ctx context.Context, movie *Movie) error {
 	args := m.Called(ctx, movie)
+	return args.Error(0)
+}
+
+func (m *MockMoviesRepo) SaveMoviePosterPalette(ctx context.Context, tmdbID int, posterURL string, palette *PosterPalette) error {
+	args := m.Called(ctx, tmdbID, posterURL, palette)
 	return args.Error(0)
 }
 

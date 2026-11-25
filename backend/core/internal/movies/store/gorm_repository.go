@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -68,6 +69,30 @@ func (s *Store) SaveMovie(ctx context.Context, movie *movies.Movie) error {
 		movie.ID = record.ID
 	}
 	return result.Error
+}
+
+func (s *Store) SaveMoviePosterPalette(ctx context.Context, tmdbID int, posterURL string, palette *movies.PosterPalette) error {
+	if palette == nil {
+		return nil
+	}
+	serialized, err := json.Marshal(palette)
+	if err != nil {
+		return err
+	}
+	result := s.db.WithContext(ctx).
+		Model(&MovieRecord{}).
+		Where("tmdb_id = ? AND poster_url = ?", tmdbID, posterURL).
+		UpdateColumns(map[string]any{
+			"poster_palette_json":       string(serialized),
+			"poster_palette_poster_url": posterURL,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (s *Store) GetMovieByID(ctx context.Context, id int) (*movies.Movie, error) {
@@ -231,6 +256,10 @@ func (s *Store) SaveMovieDetails(ctx context.Context, tmdbData *movietmdb.TMDBMo
 	result := s.db.WithContext(ctx).Where("tmdb_id = ?", movieRec.TMDBID).First(&existingMovie)
 	if result.Error == nil {
 		movieRec.ID = existingMovie.ID
+		if existingMovie.PosterURL == movieRec.PosterURL && movieRec.PosterPaletteJSON == "" {
+			movieRec.PosterPaletteJSON = existingMovie.PosterPaletteJSON
+			movieRec.PosterPalettePosterURL = existingMovie.PosterPalettePosterURL
+		}
 		s.db.WithContext(ctx).Where("movie_id = ?", movieRec.ID).Delete(&MovieCreditRecord{})
 	}
 

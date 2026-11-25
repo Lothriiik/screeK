@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/StartLivin/screek/backend/internal/movies"
@@ -37,6 +38,14 @@ func MovieToDomain(r *MovieRecord) *movies.Movie {
 		credits = append(credits, *CreditToDomain(&c))
 	}
 
+	var posterPalette *movies.PosterPalette
+	if r.PosterPaletteJSON != "" && r.PosterPalettePosterURL == r.PosterURL {
+		var decoded movies.PosterPalette
+		if json.Unmarshal([]byte(r.PosterPaletteJSON), &decoded) == nil {
+			posterPalette = &decoded
+		}
+	}
+
 	return &movies.Movie{
 		ID:               r.ID,
 		TMDBID:           r.TMDBID,
@@ -44,6 +53,7 @@ func MovieToDomain(r *MovieRecord) *movies.Movie {
 		OriginalTitle:    r.OriginalTitle,
 		Overview:         r.Overview,
 		PosterURL:        r.PosterURL,
+		PosterPalette:    posterPalette,
 		BackdropURL:      r.BackdropURL,
 		UpdatedAt:        r.UpdatedAt,
 		ReleaseDate:      r.ReleaseDate,
@@ -79,31 +89,43 @@ func MovieToRecord(d *movies.Movie) *MovieRecord {
 	}
 
 	return &MovieRecord{
-		ID:               d.ID,
-		TMDBID:           d.TMDBID,
-		Title:            d.Title,
-		OriginalTitle:    d.OriginalTitle,
-		Overview:         d.Overview,
-		PosterURL:        d.PosterURL,
-		BackdropURL:      d.BackdropURL,
-		UpdatedAt:        d.UpdatedAt,
-		ReleaseDate:      d.ReleaseDate,
-		Status:           d.Status,
-		Runtime:          d.Runtime,
-		OriginalLanguage: d.OriginalLanguage,
-		SpokenLanguages:  d.SpokenLanguages,
-		VoteAverage:      d.VoteAverage,
-		VoteCount:        d.VoteCount,
-		Popularity:       d.Popularity,
-		Budget:           d.Budget,
-		Revenue:          d.Revenue,
-		Countries:        joinList(d.Countries),
-		Keywords:         joinList(d.Keywords),
-		Studios:          joinList(d.Studios),
-		Certification:    d.Certification,
-		Genres:           genres,
-		Credits:          credits,
+		ID:                d.ID,
+		TMDBID:            d.TMDBID,
+		Title:             d.Title,
+		OriginalTitle:     d.OriginalTitle,
+		Overview:          d.Overview,
+		PosterURL:         d.PosterURL,
+		PosterPaletteJSON: marshalPosterPalette(d.PosterPalette),
+		BackdropURL:       d.BackdropURL,
+		UpdatedAt:         d.UpdatedAt,
+		ReleaseDate:       d.ReleaseDate,
+		Status:            d.Status,
+		Runtime:           d.Runtime,
+		OriginalLanguage:  d.OriginalLanguage,
+		SpokenLanguages:   d.SpokenLanguages,
+		VoteAverage:       d.VoteAverage,
+		VoteCount:         d.VoteCount,
+		Popularity:        d.Popularity,
+		Budget:            d.Budget,
+		Revenue:           d.Revenue,
+		Countries:         joinList(d.Countries),
+		Keywords:          joinList(d.Keywords),
+		Studios:           joinList(d.Studios),
+		Certification:     d.Certification,
+		Genres:            genres,
+		Credits:           credits,
 	}
+}
+
+func marshalPosterPalette(palette *movies.PosterPalette) string {
+	if palette == nil {
+		return ""
+	}
+	serialized, err := json.Marshal(palette)
+	if err != nil {
+		return ""
+	}
+	return string(serialized)
 }
 
 func GenreToDomain(r *GenreRecord) *movies.Genre {

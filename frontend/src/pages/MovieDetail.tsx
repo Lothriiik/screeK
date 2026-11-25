@@ -1,21 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  Star,
   Heart,
   BookmarkSimple,
   Check,
   ShareNetwork,
-  FilmStrip,
   ArrowLeft,
+  CaretLeft,
   X,
   CaretRight,
   SignIn,
-  GlobeHemisphereWest,
-  Buildings,
-  Translate,
-  ListPlus,
   Sparkle,
+  CaretDown,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
@@ -23,8 +19,9 @@ import { Button } from '../components/ui/button';
 import { ReviewRow } from '../components/custom/review-row';
 import { StarRating } from '../components/custom/star-rating';
 import { MovieCard } from '../components/custom/movie-card';
-import { InfoBlock } from '../components/custom/info-block';
 import { RatingDistribution } from '../components/custom/rating-distribution';
+import { PersonCard } from '../components/custom/person-card';
+import { SectionHeading } from '../components/custom/section-heading';
 import { ShareableStoryModal } from '../components/custom/shareable-story-modal';
 import { AddToListModal } from '../components/custom/add-to-list-modal';
 import { LogDiaryModal } from '../components/custom/log-diary-modal';
@@ -32,7 +29,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useAuthModalStore } from '../stores/authModalStore';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { movieService } from '../services/movieService';
-import type { Movie } from '../types/movie';
+import type { Movie, Person } from '../types/movie';
 
 function MovieDetailSkeleton() {
   return (
@@ -152,10 +149,31 @@ export function MovieDetail() {
   const [userRating, setUserRating] = useState<number>(0);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showStoryModal, setShowStoryModal] = useState(false);
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
   const [showAddToListModal, setShowAddToListModal] = useState(false);
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [reviewText, setReviewText] = useState('');
   const [containsSpoilers, setContainsSpoilers] = useState(false);
+  const castContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const closeShareMenu = (event: MouseEvent) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target as Node)) {
+        setShowShareOptions(false);
+      }
+    };
+    const closeShareMenuOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowShareOptions(false);
+    };
+
+    document.addEventListener('mousedown', closeShareMenu);
+    document.addEventListener('keydown', closeShareMenuOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeShareMenu);
+      document.removeEventListener('keydown', closeShareMenuOnEscape);
+    };
+  }, []);
 
   if (isLoading || !movie) {
     return <MovieDetailSkeleton />;
@@ -222,440 +240,219 @@ export function MovieDetail() {
     }
   };
 
+  const getCreditsForRole = (role: 'DIRECTOR' | 'WRITER') =>
+    movie.credits.filter((credit) => credit.role.toUpperCase() === role);
+
+  const scrollCast = (direction: 'left' | 'right') => {
+    castContainerRef.current?.scrollBy({
+      left: direction === 'left' ? -500 : 500,
+      behavior: 'smooth',
+    });
+  };
+
+  const peopleLinks = (names: string[], role: 'DIRECTOR' | 'WRITER') => names
+    .filter((name) => name && !/não informad/i.test(name))
+    .map((name, index) => {
+      const credit = getCreditsForRole(role).find((item) => item.person.name.toLowerCase() === name.toLowerCase());
+      const href = credit
+        ? `/people/${credit.person.tmdb_id ?? credit.person.id}`
+        : `/search?q=${encodeURIComponent(name)}&tab=people`;
+      return (
+        <span key={`${role}-${name}`}>
+          {index > 0 && ', '}
+          <Link to={href} className="font-bold text-white underline decoration-white/40 underline-offset-2 hover:text-secondary hover:decoration-secondary">{name}</Link>
+        </span>
+      );
+    });
+
+  const castCardCandidates: Array<{ key: string; person: Person; subtitle: string; href?: string }> = [
+    ...movie.credits.filter((credit) => credit.role.toUpperCase() === 'ACTOR').map((credit) => ({
+      key: `actor-${credit.id}`,
+      person: { ...credit.person, role_display: 'Atuação' },
+      subtitle: credit.character || 'Personagem não informado',
+    })),
+    ...(['DIRECTOR', 'WRITER'] as const).flatMap((role) => {
+      const names = role === 'DIRECTOR' ? movie.directors : movie.writers;
+      const label = role === 'DIRECTOR' ? 'Direção' : 'Roteiro';
+      return names
+        .filter((name) => name && !/não informad/i.test(name))
+        .map((name) => {
+          const credit = getCreditsForRole(role).find((item) => item.person.name.toLowerCase() === name.toLowerCase());
+          const person = credit?.person ?? {
+            id: 0,
+            name,
+            initials: name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase(),
+          };
+          return {
+            key: `${role}-${name}`,
+            person: { ...person, role_display: 'Equipe' },
+            subtitle: label,
+            href: credit
+              ? `/people/${credit.person.tmdb_id ?? credit.person.id}`
+              : `/search?q=${encodeURIComponent(name)}&tab=people`,
+          };
+        });
+    }),
+  ];
+  const castCards = castCardCandidates.reduce<typeof castCardCandidates>((cards, card) => {
+    const existing = cards.find((item) => item.person.name.toLowerCase() === card.person.name.toLowerCase());
+    if (existing) {
+      if (!existing.subtitle.includes(card.subtitle)) existing.subtitle = `${existing.subtitle} · ${card.subtitle}`;
+    } else {
+      cards.push(card);
+    }
+    return cards;
+  }, []);
+
   return (
-    <div className="bg-background text-foreground pb-20 font-display">
+    <div className="bg-background pb-0 font-display text-foreground">
       {/* ─── 1. HERO BACKDROP SECTION ─── */}
       <section className="relative w-full overflow-hidden border-b-4 border-foreground/40 bg-tertiary">
-        {/* Backdrop Background Image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-65 scale-105 transition-transform duration-700"
-          style={{ backgroundImage: `url(${movie.backdrop_url})` }}
-        />
-        
-        {/* Dark Tertiary Overlay Filter */}
+        <div className="absolute inset-0 scale-105 bg-cover bg-center opacity-65 transition-transform duration-700" style={{ backgroundImage: `url(${movie.backdrop_url})` }} />
         <div className="absolute inset-0 bg-foreground/75 backdrop-blur-[1px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-tertiary/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-tertiary/40 to-foreground/35" />
 
-        {/* Aligned 7xl Container */}
-        <div className="relative z-10 max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-          {/* Voltar Button */}
-          <Link
-            to="/movies"
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-black/40 hover:bg-black/60 text-white text-xs font-black uppercase tracking-wider border border-white/30 backdrop-blur-md transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)]"
-          >
-            <ArrowLeft size={16} weight="bold" />
-            <span>Voltar ao Catálogo</span>
+        <div className="relative z-10 mx-auto w-full max-w-4xl space-y-6 px-4 py-8 md:max-w-5xl lg:max-w-6xl sm:px-6 lg:px-8">
+          <Link to="/movies" className="inline-flex items-center gap-2 border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-white backdrop-blur-md transition-colors hover:bg-black/60">
+            <ArrowLeft size={16} weight="bold" /><span>Voltar ao catálogo</span>
           </Link>
 
-          {/* Hero Content: Poster + Info */}
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-6 lg:gap-8 pt-2">
-            
-            {/* Left: Poster */}
-            <div className="w-48 sm:w-56 md:w-64 shrink-0 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)] border-4 border-white/80 relative group">
-              <img
-                src={movie.poster_url}
-                alt={movie.title}
-                className="w-full aspect-[2/3] object-cover bg-muted"
-              />
-              <div className="absolute top-2 left-2 flex items-center gap-1.5">
-                <span
-                  className={`px-2 py-0.5 text-xs font-black uppercase shadow-sm ${getAgeRatingBg(
-                    movie.age_rating
-                  )}`}
-                >
-                  {movie.age_rating}
-                </span>
-                {movie.is_in_theaters && (
-                  <span className="px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-wider shadow-sm">
-                    Em Cartaz
-                  </span>
-                )}
+          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_310px] xl:gap-8">
+            <div className="grid items-start gap-5 text-white sm:grid-cols-[minmax(150px,210px)_minmax(0,1fr)] sm:gap-7">
+              <div className="mx-auto flex w-36 shrink-0 flex-col gap-3 sm:mx-0 sm:w-full">
+                <div className="relative border-4 border-white/80">
+                  <img src={movie.poster_url} alt={movie.title} className="aspect-[2/3] w-full bg-muted object-cover" />
+                  <div className="absolute left-2 top-2 flex items-center gap-1.5">
+                    <span className={`px-2 py-0.5 text-xs font-black uppercase ${getAgeRatingBg(movie.age_rating)}`}>{movie.age_rating}</span>
+                    {movie.is_in_theaters && <span className="bg-primary px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary-foreground">Em cartaz</span>}
+                  </div>
+                </div>
+                <Button asChild size="lg" className="h-auto w-full px-2 py-3 text-center text-xs sm:px-3 sm:text-sm">
+                  <Link to={`/movies/${movie.id}/sessions`}>Ver sessões</Link>
+                </Button>
+              </div>
+
+              <div className="flex min-w-0 flex-col items-start gap-5 pt-1 sm:pt-0">
+                <div className="w-full">
+                  <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-wider text-white/80">
+                    <span>{movie.release_year}</span><span>·</span><span>{movie.duration_display}</span>
+                    {movie.origin_country && <><span>·</span><span className="text-white">{movie.origin_country}</span></>}
+                    {movie.genres.map((genre) => <span key={genre} className="border border-white/40 bg-white/10 px-2 py-0.5 text-[10px]">{genre}</span>)}
+                  </div>
+                  <h1 className="text-2xl font-black uppercase tracking-tight text-white sm:text-4xl md:text-5xl">{movie.title}</h1>
+                  {movie.original_title && <p className="mt-1 text-xs font-bold uppercase text-white/60 sm:text-sm">Título original: {movie.original_title}</p>}
+                </div>
+
+                <div className="space-y-1.5 text-xs text-white/80">
+                  <p><span className="font-mono text-[10px] font-black uppercase tracking-wider text-white/55">Direção</span> {peopleLinks(movie.directors, 'DIRECTOR')}</p>
+                  <p><span className="font-mono text-[10px] font-black uppercase tracking-wider text-white/55">Roteiro</span> {peopleLinks(movie.writers, 'WRITER')}</p>
+                </div>
               </div>
             </div>
 
-            {/* Right: Info & Stats */}
-            <div className="flex-1 space-y-5 text-white w-full">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-wider text-white/80 mb-2">
-                  <span>{movie.release_year}</span>
-                  <span>•</span>
-                  <span>{movie.duration_display}</span>
-                  {movie.origin_country && (
-                    <>
-                      <span>•</span>
-                      <span className="text-white font-black">{movie.origin_country}</span>
-                    </>
-                  )}
-                  <span>•</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {movie.genres.map((genre) => (
-                      <span
-                        key={genre}
-                        className="px-2 py-0.5 border border-white/40 bg-white/10 text-[10px]"
-                      >
-                        {genre}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <h1 className="text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white drop-shadow-md">
-                  {movie.title}
-                </h1>
-                {movie.original_title && (
-                  <p className="text-xs sm:text-sm font-bold text-white/60 mt-1 uppercase">
-                    Título Original: {movie.original_title}
-                  </p>
-                )}
+            <aside className="border-2 border-white/30 bg-foreground/80 text-background backdrop-blur-md">
+              <div className="grid grid-cols-3 divide-x divide-white/20 border-b border-white/20">
+                <button type="button" onClick={handleWatchedToggle} className="flex min-h-16 flex-col items-center justify-center gap-1 px-2 py-2 text-[10px] font-black uppercase text-white/75 transition-colors hover:bg-white/10 hover:text-white"><Check size={19} weight={watched ? 'fill' : 'bold'} className={watched ? 'text-primary' : ''} />{watched ? 'Assistido' : 'Assisti'}</button>
+                <button type="button" onClick={handleLikedToggle} className="flex min-h-16 flex-col items-center justify-center gap-1 px-2 py-2 text-[10px] font-black uppercase text-white/75 transition-colors hover:bg-white/10 hover:text-white"><Heart size={19} weight={liked ? 'fill' : 'bold'} className={liked ? 'text-secondary' : ''} />{liked ? 'Curtido' : 'Curtir'}</button>
+                <button type="button" onClick={handleWatchlistToggle} className="flex min-h-16 flex-col items-center justify-center gap-1 px-2 py-2 text-[10px] font-black uppercase text-white/75 transition-colors hover:bg-white/10 hover:text-white"><BookmarkSimple size={19} weight={inWatchlist ? 'fill' : 'bold'} className={inWatchlist ? 'text-secondary' : ''} />Watchlist</button>
               </div>
 
-              {/* Direction & Writing (Visível e destacado) */}
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-1 px-3 bg-white/10 border border-white/20 backdrop-blur-sm max-w-xl text-xs">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-white/60 font-mono font-black uppercase text-[10px] tracking-wider">
-                    Direção
-                  </span>
-                  <span className="font-extrabold text-sm text-white">
-                    {movie.directors && movie.directors.length > 0 && !movie.directors[0].includes('não informad')
-                      ? movie.directors.join(', ')
-                      : 'Não informada'}
-                  </span>
-                </div>
-                <div className="h-4 w-px bg-white/20 hidden sm:block" />
-                <div className="flex items-baseline gap-2">
-                  <span className="text-white/60 font-mono font-black uppercase text-[10px] tracking-wider">
-                    Roteiro
-                  </span>
-                  <span className="font-extrabold text-sm text-white">
-                    {movie.writers && movie.writers.length > 0 && !movie.writers[0].includes('não informad')
-                      ? movie.writers.join(', ')
-                      : 'Não informado'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Ratings Section: SUA NOTA + CURVA BONITINHA DA COMUNIDADE */}
-              <div className="space-y-3 max-w-xl pt-1">
-                {/* 1. SUA NOTA */}
+              <div className="space-y-2 border-b border-white/20 p-4">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-white/70"><span>Sua avaliação</span><span className="font-mono text-sm text-secondary">{userRating > 0 ? userRating.toFixed(1) : '—'}</span></div>
                 {isAuthenticated ? (
-                  <div className="p-3.5 sm:p-4 bg-white/10 border-2 border-white/30 backdrop-blur-sm space-y-2 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
-                        <Star size={16} weight="fill" className="text-amber-400" />
-                        <span>Sua Avaliação</span>
-                      </span>
-                      <span className="text-sm sm:text-base font-black text-amber-400 font-mono">
-                        {userRating > 0 ? `${userRating.toFixed(1)} ★` : 'Não avaliado'}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-                      <StarRating
-                        value={userRating}
-                        onChange={(r) => {
-                          setUserRating(r);
-                          toast.success(`Nota ${r} ★ registrada!`);
-                        }}
-                        size={22}
-                        starColor="text-amber-400"
-                        emptyColor="text-white/30"
-                        showValue={false}
-                      />
-                      <span className="text-[11px] font-sans text-white/70">
-                        {userRating > 0 ? 'Clique para alterar nota' : 'Clique nas estrelas para avaliar'}
-                      </span>
-                    </div>
-                  </div>
+                  <StarRating value={userRating} onChange={(rating) => { setUserRating(rating); toast.success(`Nota ${rating} ★ registrada!`); }} size={22} starColor="text-secondary" emptyColor="text-white/30" showValue={false} />
                 ) : (
-                  <div className="p-3.5 sm:p-4 bg-white/10 border-2 border-white/30 backdrop-blur-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)]">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <Star size={16} weight="fill" className="text-amber-400" />
-                        <span className="text-xs font-black uppercase tracking-wider text-white">
-                          Sua Avaliação • screeK
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/75 font-sans">
-                        Faça login para dar nota, registrar no seu diário e ver o que seus amigos acharam.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => openModal('login')}
-                      className="px-3.5 py-1.5 bg-primary text-primary-foreground text-xs font-black uppercase flex items-center gap-1.5 border border-primary hover:bg-primary/90 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)] cursor-pointer shrink-0"
-                    >
-                      <SignIn size={15} weight="bold" />
-                      <span>Entrar / Avaliar</span>
-                    </button>
-                  </div>
+                  <button type="button" onClick={() => openModal('login')} className="flex w-full items-center justify-between text-xs font-bold text-white/65 hover:text-white"><span>Entre para avaliar</span><SignIn size={15} weight="bold" /></button>
                 )}
+              </div>
 
-                {/* 2. CURVA DE NOTAS DA COMUNIDADE (Em vez de caixas brutas soltas) */}
-                <div className="p-3 bg-white/10 border-2 border-white/20 backdrop-blur-sm">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-mono font-black text-white/80 uppercase tracking-wider">
-                      Curva de Notas da Comunidade
-                    </span>
-                    <span className="text-[10px] font-mono text-white/60">
-                      {movie.global_votes || '20k'} avaliações
-                    </span>
-                  </div>
-                  <RatingDistribution
-                    variant="compact"
-                    averageRating={movie.global_rating}
-                    totalVotes={movie.global_votes || '20k'}
-                    distribution={movie.rating_distribution}
-                  />
+              <div className="divide-y divide-white/20">
+                <button type="button" onClick={handleOpenReviewModal} className="flex w-full items-center justify-between px-4 py-3 text-left text-xs font-bold text-white/85 transition-colors hover:bg-white/10">Escrever review <CaretRight size={14} weight="bold" /></button>
+                <button type="button" onClick={() => requireAuth(() => setShowAddToListModal(true))} className="flex w-full items-center justify-between px-4 py-3 text-left text-xs font-bold text-white/85 transition-colors hover:bg-white/10">Adicionar a listas <CaretRight size={14} weight="bold" /></button>
+                <div ref={shareMenuRef} className="relative">
+                  <Button type="button" variant="ghost" onClick={() => setShowShareOptions((open) => !open)} aria-haspopup="menu" aria-expanded={showShareOptions} className="h-auto w-full justify-between px-4 py-3 text-left text-xs font-bold text-white/85 hover:bg-white/10 hover:text-white shadow-none"><span className="flex items-center gap-2"><ShareNetwork size={15} weight="bold" />Compartilhar</span><CaretDown size={14} weight="bold" className={`transition-transform ${showShareOptions ? 'rotate-180' : ''}`} /></Button>
+                  {showShareOptions && <div role="menu" className="absolute right-2 top-full z-30 mt-1 w-48 border-2 border-foreground/40 bg-background py-1 text-foreground">
+                    <button type="button" role="menuitem" onClick={async () => { try { await navigator.clipboard.writeText(window.location.href); toast.success('Link copiado para a área de transferência!'); } catch { toast.error('Não foi possível copiar o link.'); } setShowShareOptions(false); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-bold transition-colors hover:bg-primary/10 hover:text-primary"><ShareNetwork size={15} weight="bold" />Copiar link</button>
+                    <button type="button" role="menuitem" onClick={() => { setShowShareOptions(false); setShowStoryModal(true); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-bold transition-colors hover:bg-primary/10 hover:text-primary"><Sparkle size={15} weight="fill" />Criar Story</button>
+                  </div>}
                 </div>
               </div>
 
-              {/* Blocky Action Grid (Inspirado no Gibizin / Letterboxd) */}
-              <div className="space-y-2 pt-2 max-w-xl">
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  {/* 1. Já Assisti */}
-                  <button
-                    type="button"
-                    onClick={handleWatchedToggle}
-                    className={`h-16 flex flex-col items-center justify-center p-1 border-2 text-[10px] font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 ${
-                      watched
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-card text-foreground border-white/40 hover:bg-muted'
-                    }`}
-                  >
-                    <Check size={18} weight={watched ? 'bold' : 'regular'} className="mb-0.5" />
-                    <span className="leading-tight text-center">{watched ? 'Assistido' : 'Já Assisti'}</span>
-                  </button>
-
-                  {/* 2. Favoritar */}
-                  <button
-                    type="button"
-                    onClick={handleLikedToggle}
-                    className={`h-16 flex flex-col items-center justify-center p-1 border-2 text-[10px] font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 ${
-                      liked
-                        ? 'bg-[#DC3545] text-white border-[#DC3545]'
-                        : 'bg-card text-foreground border-white/40 hover:bg-muted'
-                    }`}
-                  >
-                    <Heart size={18} weight={liked ? 'fill' : 'regular'} className="mb-0.5" />
-                    <span className="leading-tight text-center">{liked ? 'Favorito' : 'Favoritar'}</span>
-                  </button>
-
-                  {/* 3. Watchlist */}
-                  <button
-                    type="button"
-                    onClick={handleWatchlistToggle}
-                    className={`h-16 flex flex-col items-center justify-center p-1 border-2 text-[10px] font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 ${
-                      inWatchlist
-                        ? 'bg-secondary text-secondary-foreground border-secondary'
-                        : 'bg-card text-foreground border-white/40 hover:bg-muted'
-                    }`}
-                  >
-                    <BookmarkSimple size={18} weight={inWatchlist ? 'fill' : 'regular'} className="mb-0.5" />
-                    <span className="leading-tight text-center">{inWatchlist ? 'Salvo' : 'Watchlist'}</span>
-                  </button>
-
-                  {/* 4. Review */}
-                  <button
-                    type="button"
-                    onClick={handleOpenReviewModal}
-                    className="h-16 flex flex-col items-center justify-center p-1 bg-card text-foreground border-2 border-white/40 hover:bg-muted text-[10px] font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5"
-                  >
-                    <FilmStrip size={18} weight="bold" className="mb-0.5" />
-                    <span className="leading-tight text-center">Review</span>
-                  </button>
-
-                  {/* 5. 📸 Story Social */}
-                  <button
-                    type="button"
-                    onClick={() => setShowStoryModal(true)}
-                    className="h-16 flex flex-col items-center justify-center p-1 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-white border-2 border-emerald-400/80 hover:bg-emerald-500/30 text-[10px] font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] active:translate-x-0.5 active:translate-y-0.5"
-                    title="Gerar Story para Instagram"
-                  >
-                    <Sparkle size={18} weight="fill" className="mb-0.5 text-emerald-400" />
-                    <span className="leading-tight text-center text-emerald-300">📸 Story</span>
-                  </button>
-
-                  {/* 6. Link */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard?.writeText(window.location.href);
-                      toast.success('Link copiado para a área de transferência!');
-                    }}
-                    className="h-16 flex flex-col items-center justify-center p-1 bg-card text-foreground border-2 border-white/40 hover:bg-muted text-[10px] font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5"
-                    title="Compartilhar Link"
-                  >
-                    <ShareNetwork size={18} weight="bold" className="mb-0.5" />
-                    <span className="leading-tight text-center">Link</span>
-                  </button>
-                </div>
-
-                {/* Full-width "Adicionar a Listas" button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    requireAuth(() => {
-                      setShowAddToListModal(true);
-                    });
-                  }}
-                  className="w-full py-2.5 px-4 bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm text-xs font-black uppercase tracking-wider flex items-center justify-between shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition-all cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    <ListPlus size={16} weight="bold" />
-                    Adicionar a uma Lista
-                  </span>
-                  <CaretRight size={14} weight="bold" />
-                </button>
+              <div className="p-4">
+                <div className="mb-1 flex items-baseline justify-between gap-2"><span className="text-[10px] font-mono font-black uppercase tracking-wider text-white/60">Nota da comunidade</span><span className="font-display text-2xl font-black text-background">{movie.global_rating.toFixed(1)}</span></div>
+                <RatingDistribution variant="compact" averageRating={movie.global_rating} totalVotes={movie.global_votes || '20k'} distribution={movie.rating_distribution} />
               </div>
-            </div>
+            </aside>
           </div>
         </div>
       </section>
-
-      {/* ─── 2. SYNOPSIS, RATING DISTRIBUTION & TECHNICAL INFO ─── */}
-      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
-        {/* Synopsis + Rating Distribution (2 Columns) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left: Synopsis (7 cols) */}
-          <section className="lg:col-span-7 space-y-3">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground border-b-2 border-foreground/20 pb-2">
-              Sinopse
-            </h2>
-            <p className="font-sans text-sm sm:text-base text-foreground/80 leading-relaxed">
-              {movie.overview}
-            </p>
-
-            {/* Informações Técnicas Blocadas (Sem orçamento e sem bilheteria) */}
-            <div className="pt-4 space-y-3">
-              <h3 className="text-sm font-black uppercase tracking-wider text-muted-foreground font-mono">
-                Informações Técnicas
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <InfoBlock
-                  label="Direção"
-                  value={movie.directors && movie.directors.length > 0 && !movie.directors[0].includes('não informad') ? movie.directors.join(', ') : 'Não informada'}
-                />
-                <InfoBlock
-                  label="Roteiro"
-                  value={movie.writers && movie.writers.length > 0 && !movie.writers[0].includes('não informad') ? movie.writers.join(', ') : 'Não informado'}
-                />
-                <InfoBlock
-                  label="País de Origem"
-                  value={movie.origin_country || '🇺🇸 Estados Unidos'}
-                  icon={<GlobeHemisphereWest size={16} />}
-                />
-                <InfoBlock
-                  label="Idioma Original"
-                  value={movie.original_language || 'Inglês'}
-                  icon={<Translate size={16} />}
-                />
-                <InfoBlock
-                  label="Produtora / Estúdio"
-                  value={movie.production_company || 'Village Roadshow / Warner'}
-                  icon={<Buildings size={16} />}
-                />
-                <InfoBlock
-                  label="Classificação"
-                  value={`${movie.age_rating} Anos`}
-                />
-                <InfoBlock
-                  label="Duração"
-                  value={movie.duration_display}
-                />
-                <InfoBlock
-                  label="Lançamento"
-                  value={movie.release_year.toString()}
-                />
-              </div>
-            </div>
+      <main className="mx-auto max-w-4xl space-y-8 px-4 pb-4 pt-10 md:max-w-5xl lg:max-w-6xl sm:px-6 lg:px-8">
+        <div className="grid items-start gap-8 lg:grid-cols-5">
+          <section className="space-y-3 lg:col-span-3">
+            <SectionHeading title="Sinopse" />
+            <p className="font-sans text-sm leading-relaxed text-foreground/80 sm:text-base">{movie.overview}</p>
           </section>
 
-          {/* Right: Distribuição de Avaliações (5 cols) */}
-          <div className="lg:col-span-5">
-            <RatingDistribution
-              distribution={movie.rating_distribution}
-              averageRating={movie.global_rating}
-              totalVotes={movie.global_votes || '28.4k'}
-            />
-          </div>
+          <section className="space-y-3 lg:col-span-2">
+            <SectionHeading title="Ficha técnica" />
+            <dl className="divide-y divide-foreground/15 border-y border-foreground/20">
+              {[
+                ['Direção', movie.directors?.join(', ') || 'Não informada'],
+                ['Roteiro', movie.writers?.join(', ') || 'Não informado'],
+                ['Produtora', movie.production_company || 'Não informada'],
+                ['Classificação', `${movie.age_rating} anos`],
+                ['Idioma original', movie.original_language || 'Não informado'],
+                ['País', movie.origin_country || 'Não informado'],
+                ['Duração', movie.duration_display],
+                ['Lançamento', String(movie.release_year)],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-start justify-between gap-4 py-2.5">
+                  <dt className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground/55">{label}</dt>
+                  <dd className="text-right text-xs font-bold text-foreground">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
         </div>
 
-        {/* Cast */}
-        {movie.credits && movie.credits.length > 0 && (
+        {castCards.length > 0 && (
           <section className="space-y-4">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground border-b-2 border-foreground/20 pb-2">
-              Elenco Principal
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-              {movie.credits.map((actor) => (
-                <div
-                  key={actor.id}
-                  className="p-3 bg-background border-2 border-foreground/30 flex flex-col justify-between space-y-1"
-                >
-                  <div className="w-10 h-10 bg-primary/20 text-primary font-black text-xs flex items-center justify-center border border-primary/40 mb-2">
-                    {actor.person.initials || actor.person.name.substring(0, 2).toUpperCase()}
-                  </div>
-                  <span className="text-xs font-extrabold text-foreground line-clamp-1">
-                    {actor.person.name}
-                  </span>
-                  <span className="font-sans text-[10px] text-foreground/60 line-clamp-1">
-                    {actor.character}
-                  </span>
+            <SectionHeading
+              title="Elenco"
+              actions={(
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Button type="button" variant="ghost" size="icon" onClick={() => scrollCast('left')} aria-label="Rolar elenco para a esquerda" className="h-8 w-8 border-2 border-foreground bg-foreground/80 text-background hover:bg-primary hover:text-background sm:h-10 sm:w-10">
+                    <CaretLeft size={16} weight="bold" />
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon" onClick={() => scrollCast('right')} aria-label="Rolar elenco para a direita" className="h-8 w-8 border-2 border-foreground bg-foreground/80 text-background hover:bg-primary hover:text-background sm:h-10 sm:w-10">
+                    <CaretRight size={16} weight="bold" />
+                  </Button>
                 </div>
+              )}
+            />
+            <div ref={castContainerRef} className="flex items-stretch gap-4 overflow-x-auto scroll-smooth px-1 py-2 scrollbar-hide">
+              {castCards.map((credit) => (
+                <PersonCard
+                  key={credit.key}
+                  person={credit.person}
+                  subtitle={credit.subtitle}
+                  layout="carousel"
+                  href={credit.href}
+                />
               ))}
             </div>
           </section>
         )}
 
-        {/* Similar Movies */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between border-b-2 border-foreground/20 pb-2">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground">
-              Filmes Semelhantes &amp; Recomendações
-            </h2>
-            <Link
-              to="/movies"
-              className="text-xs font-black uppercase text-primary hover:underline flex items-center gap-1"
-            >
-              <span>Ver Catálogo</span>
-              <CaretRight size={14} weight="bold" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {similarMovies.map((sim) => (
-              <MovieCard
-                key={sim.id}
-                id={sim.id}
-                title={sim.title}
-                posterUrl={sim.poster_url}
-                rating={sim.global_rating}
-                genre={sim.genres[0] || 'DRAMA'}
-                duration={sim.duration_display}
-                ageRating={sim.age_rating}
-                linkTo={`/movies/${sim.id}`}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* Reviews Community Feed */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between border-b-2 border-foreground/20 pb-2">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground">
-              Reviews da Comunidade screeK
-            </h2>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowReviewModal(true)}
-              className="rounded-none border-2 border-foreground/40 text-xs font-black uppercase"
-            >
-              Adicionar Review
-            </Button>
-          </div>
-
+          <SectionHeading
+            title="Reviews da comunidade"
+            titleAction={(
+              <Button asChild variant="link" size="sm" className="h-auto px-0 text-[10px] sm:text-xs">
+                <Link to="/feed">Ver todos <CaretRight size={14} weight="bold" /></Link>
+              </Button>
+            )}
+          />
           <div className="space-y-3">
             <ReviewRow
               name="Beatriz Lima"
@@ -688,6 +485,32 @@ export function MovieDetail() {
               likesCount={19}
               commentsCount={2}
             />
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <SectionHeading
+            title="Filmes semelhantes"
+            titleAction={(
+              <Link to="/movies" className="inline-flex items-center gap-1 text-xs font-black uppercase text-primary hover:text-primary/80">
+                Ver catálogo <CaretRight size={14} weight="bold" />
+              </Link>
+            )}
+          />
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+            {similarMovies.map((similarMovie) => (
+              <MovieCard
+                key={similarMovie.id}
+                id={similarMovie.id}
+                title={similarMovie.title}
+                posterUrl={similarMovie.poster_url}
+                rating={similarMovie.global_rating}
+                genre={similarMovie.genres[0] || 'DRAMA'}
+                duration={similarMovie.duration_display}
+                ageRating={similarMovie.age_rating}
+                linkTo={`/movies/${similarMovie.id}`}
+              />
+            ))}
           </div>
         </section>
       </main>

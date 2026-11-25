@@ -7,7 +7,6 @@ import {
   Trash,
   CheckCircle,
   MapPin,
-  FilmStrip,
   FloppyDisk,
   Armchair,
   Sparkle,
@@ -16,11 +15,17 @@ import {
   Clock,
   Warning,
   Tag,
-  Percent
+  Percent,
+  CaretDown,
+  Calendar as CalendarIcon,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MOCK_CINEMAS } from '../mocks/cinemas';
 import type { Cinema, Room, RoomType, CinemaPricingItem } from '../types/cinema';
+import { CinemaFormSectionHeading } from '../components/custom/cinema-form-section-heading';
+import { CinemaRoomEditor } from '../components/custom/cinema-room-editor';
+import { Calendar } from '../components/ui/calendar';
+import { format } from 'date-fns';
 
 const AVAILABLE_AMENITIES = [
   'IMAX LASER',
@@ -39,6 +44,30 @@ const AVAILABLE_AMENITIES = [
 ];
 
 const ROOM_TYPES: RoomType[] = ['STANDARD', 'IMAX', 'VIP', '4DX', 'D-BOX', 'CINEPIC'];
+const STATE_OPTIONS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
+const CITIES_BY_STATE: Record<string, string[]> = {
+  AC: ['Rio Branco'], AL: ['Maceió', 'Arapiraca'], AP: ['Macapá'], AM: ['Manaus'], BA: ['Salvador', 'Feira de Santana'],
+  CE: ['Fortaleza'], DF: ['Brasília'], ES: ['Vitória'], GO: ['Goiânia'], MA: ['São Luís'], MT: ['Cuiabá'],
+  MS: ['Campo Grande'], MG: ['Belo Horizonte', 'Uberlândia', 'Juiz de Fora'], PA: ['Belém'], PB: ['João Pessoa'],
+  PR: ['Curitiba', 'Londrina', 'Maringá'], PE: ['Recife'], PI: ['Teresina'], RJ: ['Rio de Janeiro', 'Niterói', 'Petrópolis'],
+  RN: ['Natal'], RS: ['Porto Alegre', 'Caxias do Sul', 'Pelotas'], RO: ['Porto Velho'], RR: ['Boa Vista'],
+  SC: ['Florianópolis', 'Joinville'], SP: ['São Paulo', 'Araraquara', 'Campinas', 'Santos', 'Ribeirão Preto'],
+  SE: ['Aracaju'], TO: ['Palmas'],
+};
+const PROJECTION_AUDIO_OPTIONS = [
+  'Digital 2K · Dolby 7.1',
+  'Laser 4K · Dolby Atmos',
+  'IMAX Laser · IMAX 12-Channel',
+  '4DX · Dolby Atmos',
+  'VIP Laser · Dolby Atmos',
+  'Cinepic Laser · Dolby Atmos',
+  'D-BOX · Dolby Atmos',
+  'Digital 2K · Dolby 5.1',
+  'Laser 4K · DTS:X',
+  'Standard Digital · Stereo',
+  'RealD 3D · Dolby Atmos',
+  'ScreenX · Dolby Atmos',
+];
 
 export interface DaySchedule {
   day: string;
@@ -62,8 +91,8 @@ export interface CinemaPromotion {
   name: string;
   type: 'half_price' | 'fixed_price' | 'percentage_off' | 'value_off';
   discountValue?: number;
-  days: string;
-  roomTypes: string;
+  days: string[];
+  roomTypes: string[];
   description: string;
   isActive: boolean;
 }
@@ -81,6 +110,7 @@ const DEFAULT_DAYS_SCHEDULE: DaySchedule[] = [
 export function ManagementCinemaForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState<'dados' | 'salas' | 'precos'>('dados');
 
   const isEditing = Boolean(id);
   const existingCinema = useMemo(() => {
@@ -88,7 +118,6 @@ export function ManagementCinemaForm() {
   }, [id, isEditing]);
 
   // Operating Hours Config States
-  const [daysPreset, setDaysPreset] = useState<'ALL_DAYS' | 'WEEKDAYS' | 'WEEKENDS' | 'CUSTOM'>('ALL_DAYS');
   const [hoursMode, setHoursMode] = useState<'UNIFIED' | 'BY_DAY'>('UNIFIED');
   const [unifiedOpenTime, setUnifiedOpenTime] = useState('13:00');
   const [unifiedCloseTime, setUnifiedCloseTime] = useState('23:30');
@@ -98,13 +127,14 @@ export function ManagementCinemaForm() {
   const [scheduleNotices, setScheduleNotices] = useState<ScheduleNotice[]>([
     {
       id: 'notice-1',
-      date: '25/12 - Feriado de Natal',
+      date: '2026-12-25',
       type: 'special_hours',
       openTime: '15:00',
       closeTime: '23:00',
       message: 'Abertura especial após as celebrações de Natal.',
     },
   ]);
+  const [calendarOpenForNotice, setCalendarOpenForNotice] = useState<string | null>(null);
 
   // Promotions / Discounts state
   const [promotions, setPromotions] = useState<CinemaPromotion[]>([
@@ -112,8 +142,8 @@ export function ManagementCinemaForm() {
       id: 'promo-1',
       name: 'Quarta do Cinema (Todo Mundo Paga Meia)',
       type: 'half_price',
-      days: 'Todas as Quartas-feiras',
-      roomTypes: 'Todas as Salas (Standard, IMAX, VIP)',
+      days: ['QUA'],
+      roomTypes: ['STANDARD', 'IMAX', 'VIP'],
       description: 'Ingressos pela metade do preço em todas as sessões e formatos.',
       isActive: true,
     },
@@ -122,8 +152,8 @@ export function ManagementCinemaForm() {
       name: 'Segunda Irresistível',
       type: 'fixed_price',
       discountValue: 15.0,
-      days: 'Todas as Segundas-feiras',
-      roomTypes: 'Salas Standard (2D/3D)',
+      days: ['SEG'],
+      roomTypes: ['STANDARD'],
       description: 'Preço único promocional de R$ 15,00 nas salas Standard.',
       isActive: true,
     },
@@ -135,8 +165,8 @@ export function ManagementCinemaForm() {
       name: 'Nova Promoção',
       type: 'percentage_off',
       discountValue: 50,
-      days: 'Terça e Quinta',
-      roomTypes: 'Salas Standard',
+      days: ['TER', 'QUI'],
+      roomTypes: ['STANDARD'],
       description: 'Desconto especial nas sessões selecionadas.',
       isActive: true,
     };
@@ -160,6 +190,7 @@ export function ManagementCinemaForm() {
     neighborhood: '',
     city: 'São Paulo',
     state: 'SP',
+    zip_code: '',
     phone: '',
     email: '',
     hours: 'Aberto hoje das 13:00 às 23:30',
@@ -179,21 +210,15 @@ export function ManagementCinemaForm() {
 
   // Calculate formatted public hours string
   const formattedHoursSummary = useMemo(() => {
-    if (daysPreset === 'ALL_DAYS') {
-      if (hoursMode === 'UNIFIED') {
-        return `Todos os dias das ${unifiedOpenTime} às ${unifiedCloseTime}`;
-      } else {
-        return `Todos os dias (horários variáveis por dia)`;
-      }
-    } else if (daysPreset === 'WEEKDAYS') {
-      return `Segunda a Sexta das ${unifiedOpenTime} às ${unifiedCloseTime}`;
-    } else if (daysPreset === 'WEEKENDS') {
-      return `Sábado, Domingo e Feriados das ${unifiedOpenTime} às ${unifiedCloseTime}`;
-    } else {
-      const openCount = weeklySchedule.filter((d) => d.isOpen).length;
-      return `Funcionamento em ${openCount} dias da semana (${unifiedOpenTime} - ${unifiedCloseTime})`;
-    }
-  }, [daysPreset, hoursMode, unifiedOpenTime, unifiedCloseTime, weeklySchedule]);
+    const activeDays = weeklySchedule.filter((day) => day.isOpen);
+    const dayLabel = activeDays.length === weeklySchedule.length
+      ? 'Todos os dias'
+      : activeDays.map((day) => day.day.replace('-feira', '')).join(', ') || 'Sem dias ativos';
+    const hoursLabel = hoursMode === 'UNIFIED'
+      ? `das ${unifiedOpenTime} às ${unifiedCloseTime}`
+      : 'com horários por dia';
+    return `${dayLabel} ${hoursLabel}`;
+  }, [hoursMode, unifiedOpenTime, unifiedCloseTime, weeklySchedule]);
 
   // Sync formatted hours to form data
   useEffect(() => {
@@ -213,6 +238,7 @@ export function ManagementCinemaForm() {
         neighborhood: existingCinema.neighborhood,
         city: existingCinema.city,
         state: existingCinema.state,
+        zip_code: existingCinema.zip_code || '',
         phone: existingCinema.phone,
         email: existingCinema.email || '',
         hours: existingCinema.hours || 'Aberto hoje das 13:00 às 23:30',
@@ -228,28 +254,6 @@ export function ManagementCinemaForm() {
     }
   }, [isEditing, existingCinema]);
 
-  // Handle Preset Change
-  const handleApplyDaysPreset = (preset: 'ALL_DAYS' | 'WEEKDAYS' | 'WEEKENDS' | 'CUSTOM') => {
-    setDaysPreset(preset);
-    if (preset === 'ALL_DAYS') {
-      setWeeklySchedule((prev) => prev.map((d) => ({ ...d, isOpen: true })));
-    } else if (preset === 'WEEKDAYS') {
-      setWeeklySchedule((prev) =>
-        prev.map((d) => ({
-          ...d,
-          isOpen: !['Sábado', 'Domingo'].includes(d.day),
-        }))
-      );
-    } else if (preset === 'WEEKENDS') {
-      setWeeklySchedule((prev) =>
-        prev.map((d) => ({
-          ...d,
-          isOpen: ['Sábado', 'Domingo'].includes(d.day),
-        }))
-      );
-    }
-  };
-
   // Toggle specific day open
   const handleToggleDay = (index: number) => {
     setWeeklySchedule((prev) => {
@@ -257,7 +261,6 @@ export function ManagementCinemaForm() {
       updated[index] = { ...updated[index], isOpen: !updated[index].isOpen };
       return updated;
     });
-    setDaysPreset('CUSTOM');
   };
 
   // Update specific day time
@@ -285,7 +288,7 @@ export function ManagementCinemaForm() {
   const handleAddNotice = () => {
     const newNotice: ScheduleNotice = {
       id: `notice-${Date.now()}`,
-      date: 'Data / Feriado',
+      date: new Date().toISOString().slice(0, 10),
       type: 'special_hours',
       openTime: '14:00',
       closeTime: '22:00',
@@ -435,37 +438,9 @@ export function ManagementCinemaForm() {
             <span className="text-foreground">{isEditing ? 'Editar Cinema' : 'Novo Cinema'}</span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Buildings size={22} weight="bold" className="text-secondary" />
-                <span className="text-xs font-black uppercase text-foreground/60 tracking-wider">
-                  Configuração de Unidade • screeK B2B
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-foreground">
-                {isEditing ? `Editar: ${existingCinema?.name || formData.name}` : 'Cadastrar Novo Cinema'}
-              </h1>
-            </div>
-
-            {/* Quick Action Buttons */}
-            <div className="flex items-center gap-3">
-              <Link
-                to="/management/cinemas"
-                className="px-4 py-2 bg-background hover:bg-muted border-2 border-foreground/40 text-xs font-black uppercase transition-all cursor-pointer"
-              >
-                Cancelar
-              </Link>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                className="px-5 py-2 bg-primary text-primary-foreground font-black text-xs uppercase flex items-center gap-2 border-2 border-primary shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5 hover:bg-primary/90 transition-all cursor-pointer"
-              >
-                <FloppyDisk size={16} weight="bold" />
-                <span>{isEditing ? 'Salvar Alterações' : 'Cadastrar Cinema'}</span>
-              </button>
-            </div>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-foreground">
+            {isEditing ? `Editar: ${existingCinema?.name || formData.name}` : 'Cadastrar Novo Cinema'}
+          </h1>
 
         </div>
       </section>
@@ -476,15 +451,35 @@ export function ManagementCinemaForm() {
           
           {/* LEFT & CENTER: FORM SECTIONS (2 COLS) */}
           <div className="lg:col-span-2 space-y-8">
+
+            <div role="tablist" aria-label="Seções da configuração do cinema" className="flex flex-wrap gap-2 border-b-2 border-foreground/20">
+              {[
+                { id: 'dados', label: 'Dados' },
+                { id: 'salas', label: 'Salas' },
+                { id: 'precos', label: 'Preços' },
+              ].map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeSection === section.id}
+                  onClick={() => setActiveSection(section.id as typeof activeSection)}
+                  className={`border-b-4 px-5 py-3 text-xs font-black uppercase tracking-wide transition-colors ${
+                    activeSection === section.id
+                      ? 'border-secondary bg-secondary text-secondary-foreground'
+                      : 'border-transparent text-foreground/60 hover:bg-muted/40 hover:text-foreground'
+                  }`}
+                >
+                  {section.label}
+                </button>
+              ))}
+            </div>
+
+            {activeSection === 'dados' && <>
             
             {/* Section 1: Dados Gerais & Rede */}
             <div className="border-4 border-foreground/40 bg-background shadow-[6px_6px_0px_0px_var(--border)] p-6 space-y-5">
-              <div className="border-b-2 border-foreground/20 pb-3 flex items-center gap-2">
-                <Buildings size={20} weight="bold" className="text-primary" />
-                <h3 className="text-base font-black uppercase text-foreground">
-                  1. Identificação da Unidade &amp; Franquia
-                </h3>
-              </div>
+              <CinemaFormSectionHeading icon={<Buildings size={20} weight="bold" className="text-primary" />} title={<>1. Identificação da Unidade &amp; Franquia</>} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -566,27 +561,22 @@ export function ManagementCinemaForm() {
 
                 {/* 1. SELETOR DE DIAS DA SEMANA */}
                 <div className="space-y-2">
-                  <span className="text-[11px] font-black uppercase text-foreground/60 block">
-                    Padrão de Dias Abertos
-                  </span>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[
-                      { id: 'ALL_DAYS', label: 'Todos os Dias (Seg a Dom)' },
-                      { id: 'WEEKDAYS', label: 'Dias Úteis (Seg a Sex)' },
-                      { id: 'WEEKENDS', label: 'Finais de Semana & Feriados' },
-                      { id: 'CUSTOM', label: 'Personalizado por Dia' },
-                    ].map((opt) => (
+                  <span className="text-[11px] font-black uppercase text-foreground/60 block">Dias ativos</span>
+                  <div className="flex flex-wrap gap-2">
+                    {weeklySchedule.map((day, index) => (
                       <button
-                        key={opt.id}
+                        key={day.day}
                         type="button"
-                        onClick={() => handleApplyDaysPreset(opt.id as any)}
-                        className={`p-2 border-2 text-center text-xs font-bold uppercase transition-all shadow-[2px_2px_0px_0px_var(--border)] cursor-pointer ${
-                          daysPreset === opt.id
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-muted/10 border-foreground/20 text-foreground/70 hover:bg-muted/30'
+                        aria-pressed={day.isOpen}
+                        onClick={() => handleToggleDay(index)}
+                        className={`h-10 min-w-12 border-2 px-2.5 text-[10px] font-black transition-colors ${
+                          day.isOpen
+                            ? 'border-secondary bg-secondary text-secondary-foreground'
+                            : 'border-foreground/25 bg-background text-foreground/60 hover:border-secondary/60'
                         }`}
                       >
-                        {opt.label}
+                        {day.shortDay}
+                        <span className="sr-only">{day.day}</span>
                       </button>
                     ))}
                   </div>
@@ -734,14 +724,32 @@ export function ManagementCinemaForm() {
                           className="p-3.5 bg-background border-2 border-foreground/30 space-y-3 shadow-[2px_2px_0px_0px_var(--border)]"
                         >
                           <div className="flex flex-wrap items-center gap-2.5">
-                            {/* Date / Occasion */}
-                            <input
-                              type="text"
-                              value={notice.date}
-                              onChange={(e) => handleUpdateNotice(notice.id, 'date', e.target.value)}
-                              placeholder="Data (ex: 25/12 - Natal ou 01/01)"
-                              className="flex-1 min-w-[140px] px-2.5 py-1.5 bg-background border border-foreground/30 text-xs font-bold focus:outline-none focus:border-primary"
-                            />
+                            {/* Date / Occasion - Calendar Picker */}
+                            <div className="flex-1 min-w-[140px] relative">
+                              <button
+                                type="button"
+                                onClick={() => setCalendarOpenForNotice(calendarOpenForNotice === notice.id ? null : notice.id)}
+                                className="w-full px-2.5 py-1.5 bg-background border-2 border-foreground/30 text-xs font-bold text-left focus:outline-none focus:border-primary flex items-center justify-between gap-2 cursor-pointer hover:border-primary transition-colors"
+                              >
+                                <span>{notice.date ? format(new Date(notice.date), 'dd/MM/yyyy') : 'Selecione a data'}</span>
+                                <CalendarIcon size={14} weight="bold" />
+                              </button>
+                              {calendarOpenForNotice === notice.id && (
+                                <div className="absolute top-full left-0 mt-1 z-50 bg-background border-4 border-foreground/40 shadow-[6px_6px_0px_0px_var(--border)] p-2">
+                                  <Calendar
+                                    mode="single"
+                                    selected={notice.date ? new Date(notice.date) : undefined}
+                                    onSelect={(date) => {
+                                      if (date) {
+                                        handleUpdateNotice(notice.id, 'date', format(date, 'yyyy-MM-dd'));
+                                        setCalendarOpenForNotice(null);
+                                      }
+                                    }}
+                                    className="rounded-none"
+                                  />
+                                </div>
+                              )}
+                            </div>
 
                             {/* Type */}
                             <select
@@ -804,12 +812,7 @@ export function ManagementCinemaForm() {
 
             {/* Section 2: Localização */}
             <div className="border-4 border-foreground/40 bg-background shadow-[6px_6px_0px_0px_var(--border)] p-6 space-y-5">
-              <div className="border-b-2 border-foreground/20 pb-3 flex items-center gap-2">
-                <MapPin size={20} weight="bold" className="text-secondary" />
-                <h3 className="text-base font-black uppercase text-foreground">
-                  2. Localização &amp; Endereço
-                </h3>
-              </div>
+              <CinemaFormSectionHeading icon={<MapPin size={20} weight="bold" className="text-secondary" />} title={<>2. Localização &amp; Endereço</>} />
 
               <div className="space-y-1.5">
                 <label className="text-xs font-black uppercase text-foreground/80">
@@ -825,7 +828,7 @@ export function ManagementCinemaForm() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-black uppercase text-foreground/80">Bairro</label>
                   <input
@@ -839,24 +842,45 @@ export function ManagementCinemaForm() {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-black uppercase text-foreground/80">Cidade</label>
-                  <input
-                    type="text"
+                  <select
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="São Paulo"
-                    className="w-full px-3.5 py-2.5 bg-background border-2 border-foreground/30 text-xs font-sans text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary"
-                  />
+                    className="w-full px-3.5 py-2.5 bg-background border-2 border-foreground/30 text-xs font-sans text-foreground focus:outline-none focus:border-primary"
+                  >
+                    {Array.from(new Set([formData.city, ...(CITIES_BY_STATE[formData.state] || [])])).map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-black uppercase text-foreground/80">Estado (UF)</label>
+                  <select
+                    value={formData.state}
+                    onChange={(e) => {
+                      const state = e.target.value;
+                      setFormData((prev) => ({ ...prev, state, city: CITIES_BY_STATE[state]?.[0] || prev.city }));
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-background border-2 border-foreground/30 text-xs font-sans text-foreground focus:outline-none focus:border-primary uppercase"
+                  >
+                    {STATE_OPTIONS.map((state) => <option key={state} value={state}>{state}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black uppercase text-foreground/80">CEP</label>
                   <input
                     type="text"
-                    maxLength={2}
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
-                    placeholder="SP"
-                    className="w-full px-3.5 py-2.5 bg-background border-2 border-foreground/30 text-xs font-sans text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary uppercase"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    maxLength={9}
+                    value={formData.zip_code}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+                      setFormData({ ...formData, zip_code: digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits });
+                    }}
+                    placeholder="00000-000"
+                    className="w-full px-3.5 py-2.5 bg-background border-2 border-foreground/30 text-xs font-sans text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
@@ -864,17 +888,9 @@ export function ManagementCinemaForm() {
 
             {/* Section 3: Comodidades & Tecnologias */}
             <div className="border-4 border-foreground/40 bg-background shadow-[6px_6px_0px_0px_var(--border)] p-6 space-y-5">
-              <div className="border-b-2 border-foreground/20 pb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkle size={20} weight="bold" className="text-primary" />
-                  <h3 className="text-base font-black uppercase text-foreground">
-                    3. Comodidades &amp; Tecnologias do Complexo
-                  </h3>
-                </div>
-                <span className="text-xs font-bold text-foreground/50">
+              <CinemaFormSectionHeading icon={<Sparkle size={20} weight="bold" className="text-primary" />} title={<>3. Comodidades &amp; Tecnologias do Complexo</>} actions={<span className="text-xs font-bold text-foreground/50">
                   {formData.amenities.length} selecionadas
-                </span>
-              </div>
+                </span>} />
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {AVAILABLE_AMENITIES.map((amenity) => {
@@ -903,116 +919,23 @@ export function ManagementCinemaForm() {
               </div>
             </div>
 
-            {/* Section 4: Gerenciador de Salas */}
-            <div className="border-4 border-foreground/40 bg-background shadow-[6px_6px_0px_0px_var(--border)] p-6 space-y-5">
-              <div className="border-b-2 border-foreground/20 pb-3 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <FilmStrip size={20} weight="bold" className="text-secondary" />
-                  <h3 className="text-base font-black uppercase text-foreground">
-                    4. Salas do Complexo ({formData.rooms.length})
-                  </h3>
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={handleAddRoom}
-                  className="px-3 py-1.5 bg-secondary text-secondary-foreground font-black text-xs uppercase flex items-center gap-1.5 border-2 border-secondary shadow-[2px_2px_0px_0px_var(--border)] hover:bg-secondary/90 transition-all cursor-pointer"
-                >
-                  <Plus size={15} weight="bold" />
-                  <span>Adicionar Nova Sala</span>
-                </button>
-              </div>
+            </>}
 
-              <div className="space-y-3">
-                {formData.rooms.map((room, idx) => (
-                  <div
-                    key={room.id || idx}
-                    className="p-4 bg-muted/20 border-2 border-foreground/30 flex flex-wrap lg:flex-nowrap items-center gap-3"
-                  >
-                    <div className="w-6 text-xs font-black text-foreground/40 font-mono">
-                      #{idx + 1}
-                    </div>
-
-                    {/* Room Name */}
-                    <div className="space-y-1 w-32">
-                      <label className="text-[10px] font-black uppercase text-foreground/60 block">Nome da Sala</label>
-                      <input
-                        type="text"
-                        value={room.name}
-                        onChange={(e) => handleUpdateRoom(idx, 'name', e.target.value)}
-                        placeholder="Sala 1"
-                        className="w-full px-2.5 py-1.5 bg-background border border-foreground/30 text-xs font-bold focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    {/* Room Type */}
-                    <div className="space-y-1 w-36">
-                      <label className="text-[10px] font-black uppercase text-foreground/60 block">Tipo / Categoria</label>
-                      <select
-                        value={room.type}
-                        onChange={(e) => handleUpdateRoom(idx, 'type', e.target.value as RoomType)}
-                        className="w-full px-2.5 py-1.5 bg-background border border-foreground/30 text-xs font-bold uppercase focus:outline-none focus:border-primary cursor-pointer"
-                      >
-                        {ROOM_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Capacity */}
-                    <div className="space-y-1 w-28">
-                      <label className="text-[10px] font-black uppercase text-foreground/60 block">Poltronas</label>
-                      <input
-                        type="number"
-                        min={10}
-                        max={800}
-                        value={room.capacity}
-                        onChange={(e) => handleUpdateRoom(idx, 'capacity', parseInt(e.target.value) || 0)}
-                        className="w-full px-2.5 py-1.5 bg-background border border-foreground/30 text-xs font-bold text-center focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    {/* Screen Spec */}
-                    <div className="space-y-1 flex-1 min-w-[140px]">
-                      <label className="text-[10px] font-black uppercase text-foreground/60 block">Especificação de Projeção &amp; Áudio</label>
-                      <input
-                        type="text"
-                        value={room.screen_name || ''}
-                        onChange={(e) => handleUpdateRoom(idx, 'screen_name', e.target.value)}
-                        placeholder="Laser 4K • Dolby Atmos 128ch"
-                        className="w-full px-2.5 py-1.5 bg-background border border-foreground/30 text-xs focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    {/* Delete Room */}
-                    <div className="pt-4 lg:pt-0">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRoom(idx)}
-                        className="p-2 border border-foreground/30 text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                        title="Remover Sala"
-                      >
-                        <Trash size={16} weight="bold" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
+            {activeSection === 'salas' && <CinemaRoomEditor
+              rooms={formData.rooms}
+              roomTypes={ROOM_TYPES}
+              projectionAudioOptions={PROJECTION_AUDIO_OPTIONS}
+              onAddRoom={handleAddRoom}
+              onUpdateRoom={handleUpdateRoom}
+              onRemoveRoom={handleRemoveRoom}
+            />}
             {/* Section 5: Tabela de Preços & Promoções */}
+            {activeSection === 'precos' && <>
             <div className="border-4 border-foreground/40 bg-background shadow-[6px_6px_0px_0px_var(--border)] p-6 space-y-6">
               
               {/* 5.1 Tabela Base */}
               <div className="space-y-4">
-                <div className="border-b-2 border-foreground/20 pb-3 flex items-center gap-2">
-                  <Armchair size={20} weight="bold" className="text-primary" />
-                  <h3 className="text-base font-black uppercase text-foreground">
-                    5. Tabela Base de Ingressos &amp; Promoções
-                  </h3>
-                </div>
+                <CinemaFormSectionHeading icon={<Armchair size={20} weight="bold" className="text-primary" />} title={<>5. Tabela Base de Ingressos &amp; Promoções</>} />
 
                 <div className="space-y-2">
                   <span className="text-xs font-black uppercase tracking-wider text-primary block">
@@ -1095,14 +1018,25 @@ export function ManagementCinemaForm() {
                 ) : (
                   <div className="space-y-3">
                     {promotions.map((promo) => (
-                      <div
+                      <details
                         key={promo.id}
-                        className={`p-4 border-2 space-y-3 transition-all ${
+                        className={`promotion-accordion border-2 transition-all ${
                           promo.isActive
                             ? 'bg-muted/20 border-foreground/30'
                             : 'bg-muted/10 border-foreground/15 opacity-60'
                         }`}
                       >
+                        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 p-3 marker:hidden [&::-webkit-details-marker]:hidden">
+                          <span className="text-xs font-black uppercase text-foreground">
+                            {promo.type === 'half_price' ? 'MEIA-ENTRADA' : promo.type === 'fixed_price' ? 'PREÇO FIXO' : promo.type === 'percentage_off' ? 'DESCONTO PERCENTUAL' : 'DESCONTO EM REAIS'}
+                            {' · '}{promo.days.length ? promo.days.join(' · ') : 'Sem dias'}
+                          </span>
+                          <span className={`ml-auto text-[10px] font-black uppercase ${promo.isActive ? 'text-[#34A853]' : 'text-foreground/40'}`}>
+                            {promo.isActive ? 'Ativa' : 'Pausada'}
+                          </span>
+                          <CaretDown className="promotion-accordion-caret text-secondary transition-transform [[details[open]>summary>&]]:rotate-180" size={16} weight="bold" aria-hidden="true" />
+                        </summary>
+                        <div className="space-y-3 border-t border-foreground/10 p-4">
                         <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 border-b border-foreground/10 pb-2">
                           <div className="flex items-center gap-2 flex-1 min-w-[200px]">
                             <span className="px-1.5 py-0.5 bg-secondary text-secondary-foreground text-[10px] font-black uppercase">
@@ -1177,27 +1111,49 @@ export function ManagementCinemaForm() {
                           )}
 
                           {/* Days */}
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase text-foreground/60 block">Dias Válidos</label>
-                            <input
-                              type="text"
-                              value={promo.days}
-                              onChange={(e) => handleUpdatePromotion(promo.id, 'days', e.target.value)}
-                              placeholder="ex: Todas as Quartas, Seg e Ter"
-                              className="w-full px-2 py-1 bg-background border border-foreground/30 text-xs focus:outline-none focus:border-primary"
-                            />
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-foreground/60 block">Dias válidos</label>
+                            <div className="grid grid-cols-7 gap-1">
+                              {[
+                                { id: 'DOM', label: 'D' }, { id: 'SEG', label: 'S' }, { id: 'TER', label: 'T' },
+                                { id: 'QUA', label: 'Q' }, { id: 'QUI', label: 'Q' }, { id: 'SEX', label: 'S' }, { id: 'SAB', label: 'S' },
+                              ].map((day) => {
+                                const isSelected = promo.days.includes(day.id);
+                                return (
+                                  <button
+                                    key={day.id}
+                                    type="button"
+                                    aria-label={day.id}
+                                    aria-pressed={isSelected}
+                                    onClick={() => handleUpdatePromotion(promo.id, 'days', isSelected ? promo.days.filter((item) => item !== day.id) : [...promo.days, day.id])}
+                                    className={`h-8 w-full aspect-square flex items-center justify-center border text-[10px] font-black ${isSelected ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-foreground/25 bg-background text-foreground/60 hover:border-secondary/60'}`}
+                                  >
+                                    {day.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
 
                           {/* Rooms / Screens Applicable */}
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase text-foreground/60 block">Salas / Formatos</label>
-                            <input
-                              type="text"
-                              value={promo.roomTypes}
-                              onChange={(e) => handleUpdatePromotion(promo.id, 'roomTypes', e.target.value)}
-                              placeholder="ex: Todas as Salas ou Apenas Standard"
-                              className="w-full px-2 py-1 bg-background border border-foreground/30 text-xs focus:outline-none focus:border-primary"
-                            />
+                          <div className="space-y-2 sm:col-span-2">
+                            <label className="text-[10px] font-black uppercase text-foreground/60 block">Salas / formatos</label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {ROOM_TYPES.map((roomType) => {
+                                const isSelected = promo.roomTypes.includes(roomType);
+                                return (
+                                  <button
+                                    key={roomType}
+                                    type="button"
+                                    aria-pressed={isSelected}
+                                    onClick={() => handleUpdatePromotion(promo.id, 'roomTypes', isSelected ? promo.roomTypes.filter((item) => item !== roomType) : [...promo.roomTypes, roomType])}
+                                    className={`border px-2.5 py-1.5 text-[10px] font-black uppercase transition-colors ${isSelected ? 'border-secondary bg-secondary/10 text-secondary' : 'border-foreground/25 bg-background text-foreground/60 hover:border-secondary/60'}`}
+                                  >
+                                    {isSelected && '✓ '}{roomType}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
 
@@ -1213,7 +1169,8 @@ export function ManagementCinemaForm() {
                           />
                         </div>
 
-                      </div>
+                        </div>
+                      </details>
                     ))}
                   </div>
                 )}
@@ -1222,6 +1179,7 @@ export function ManagementCinemaForm() {
 
             </div>
 
+            </>}
           </div>
 
           {/* RIGHT COLUMN: STICKY LIVE SUMMARY & ACTIONS (1 COL) */}

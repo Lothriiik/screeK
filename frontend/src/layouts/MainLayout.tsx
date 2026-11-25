@@ -12,12 +12,10 @@ import {
   Sun,
   Moon,
   Ticket,
-  FilmReel,
   Heart,
   CaretUp,
   CaretDown,
   Gear,
-  BookmarksSimple,
   Buildings,
   List as MenuIcon,
   X as XIcon
@@ -131,6 +129,7 @@ export const MainLayout = () => {
 
           <nav ref={dropdownRef} className="hidden md:flex items-center justify-center gap-8 relative">
             
+            {/* Menu Cinema (o que ver e onde) */}
             <div className="relative">
               <button
                 onClick={() => toggleDropdown('cinema')}
@@ -150,7 +149,7 @@ export const MainLayout = () => {
                     onClick={() => setOpenDropdown(null)}
                     className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
-                    Filmes em Cartaz
+                    Em Cartaz
                   </Link>
                   <Link
                     to="/movies?status=upcoming"
@@ -171,35 +170,22 @@ export const MainLayout = () => {
                     onClick={() => setOpenDropdown(null)}
                     className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
-                    Cinemas &amp; Salas
+                    Cinemas
                   </Link>
+                  <div className="h-px bg-foreground/10 my-1" />
                   <Link
                     to="/intelligence"
                     onClick={() => setOpenDropdown(null)}
-                    className="flex items-center justify-between px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-primary hover:text-primary transition-colors border-t border-foreground/10"
+                    className="flex items-center justify-between px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-primary hover:text-primary transition-colors"
                   >
-                    <span>screeK Intelligence</span>
+                    <span>Para Você</span>
                     <span className="text-[9px] px-1.5 py-0.2 bg-primary/20 text-primary font-black">IA</span>
-                  </Link>
-                  <Link
-                    to="/tickets"
-                    onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors border-t border-foreground/10"
-                  >
-                    Meus Ingressos
-                  </Link>
-                  <Link
-                    to="/management"
-                    onClick={() => setOpenDropdown(null)}
-                    className="flex items-center justify-between px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-muted text-secondary hover:text-secondary transition-colors border-t border-foreground/10"
-                  >
-                    <span>Painel do Exibidor</span>
-                    <span className="text-[9px] px-1.5 py-0.2 bg-secondary/20 text-secondary font-black">B2B</span>
                   </Link>
                 </div>
               )}
             </div>
 
+            {/* Menu Social (o que a comunidade está fazendo) */}
             <div className="relative">
               <button
                 onClick={() => toggleDropdown('social')}
@@ -219,35 +205,21 @@ export const MainLayout = () => {
                     onClick={() => setOpenDropdown(null)}
                     className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
-                    Feed da Comunidade
+                    Feed
                   </Link>
                   <Link
                     to="/lists"
                     onClick={() => setOpenDropdown(null)}
                     className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
-                    Listas de Filmes
+                    Listas
                   </Link>
                   <Link
-                    to="/lists/new"
+                    to="/collections"
                     onClick={() => setOpenDropdown(null)}
                     className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors"
                   >
-                    + Criar Nova Lista
-                  </Link>
-                  <Link
-                    to="/import/letterboxd"
-                    onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors border-t border-foreground/10"
-                  >
-                    Importar do Letterboxd
-                  </Link>
-                  <Link
-                    to="/profile"
-                    onClick={() => setOpenDropdown(null)}
-                    className="block px-4 py-2 text-xs font-bold font-display uppercase tracking-wide hover:bg-primary/10 text-foreground/70 hover:text-primary transition-colors border-t border-foreground/10"
-                  >
-                    Meu Perfil Cinéfilo
+                    Coleções
                   </Link>
                 </div>
               )}
@@ -299,7 +271,7 @@ export const MainLayout = () => {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-background border-2 border-foreground/40 shadow-[4px_4px_0px_0px_var(--border)] z-50 overflow-hidden font-display divide-y divide-foreground/10 text-foreground">
+                  <div className="absolute right-0 top-full mt-2 w-60 bg-background border-2 border-foreground/40 shadow-[4px_4px_0px_0px_var(--border)] z-50 overflow-hidden font-display divide-y divide-foreground/10 text-foreground">
                     {/* Header */}
                     <div className="p-3 flex items-center gap-3 bg-muted/20">
                       <div className="w-9 h-9 border-2 border-foreground/40 overflow-hidden shrink-0 bg-muted">
@@ -319,7 +291,7 @@ export const MainLayout = () => {
                       </div>
                     </div>
 
-                    {/* Navigation items */}
+                    {/* Navigation items - O que é meu */}
                     <div className="py-1">
                       <Link
                         to="/profile"
@@ -327,7 +299,7 @@ export const MainLayout = () => {
                         className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
                       >
                         <User size={16} weight="bold" className="text-foreground/60" />
-                        <span>Meu Perfil</span>
+                        <span>Meu Perfil Cinéfilo</span>
                       </Link>
 
                       <Link
@@ -337,24 +309,7 @@ export const MainLayout = () => {
                       >
                         <Ticket size={16} weight="bold" className="text-foreground/60" />
                         <span>Meus Ingressos</span>
-                      </Link>
-
-                      <Link
-                        to="/lists"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
-                      >
-                        <BookmarksSimple size={16} weight="bold" className="text-foreground/60" />
-                        <span>Minhas Listas</span>
-                      </Link>
-
-                      <Link
-                        to="/intelligence"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
-                      >
-                        <FilmReel size={16} weight="bold" className="text-primary" />
-                        <span>screeK Intelligence</span>
+                        {/* TODO: Add ticket count badge here */}
                       </Link>
 
                       <Link
@@ -369,21 +324,29 @@ export const MainLayout = () => {
                       <Link
                         to="/settings"
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors border-t border-foreground/10"
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
                       >
                         <Gear size={16} weight="bold" className="text-foreground/60" />
                         <span>Configurações</span>
                       </Link>
-
-                      <Link
-                        to="/management"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/10 transition-colors"
-                      >
-                        <Ticket size={16} weight="bold" className="text-primary" />
-                        <span>Gestão B2B (Admin)</span>
-                      </Link>
                     </div>
+
+                    {/* Painel B2B (apenas para MANAGER e ADMIN) */}
+                    {(user.role === 'MANAGER' || user.role === 'ADMIN') && (
+                      <div className="py-1">
+                        <Link
+                          to="/management"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center justify-between px-4 py-2 text-xs font-bold text-secondary hover:bg-secondary/10 transition-colors"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Buildings size={16} weight="bold" className="text-secondary" />
+                            <span>Painel do Exibidor</span>
+                          </div>
+                          <span className="text-[9px] px-1.5 py-0.2 bg-secondary/20 text-secondary font-black">B2B</span>
+                        </Link>
+                      </div>
+                    )}
 
                     {/* Logout */}
                     <div className="py-1">
@@ -479,7 +442,7 @@ export const MainLayout = () => {
                 </button>
               </div>
 
-              {/* Links de Navegação */}
+              {/* Links de Navegação - Cinema */}
               <div className="space-y-3 pt-2 border-t-2 border-foreground/10">
                 <label className="text-xs font-display font-black uppercase text-foreground/50">Cinema</label>
                 <div className="space-y-1">
@@ -488,7 +451,7 @@ export const MainLayout = () => {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
                   >
-                    Filmes em Cartaz
+                    Em Cartaz
                   </Link>
                   <Link
                     to="/movies?status=upcoming"
@@ -509,99 +472,130 @@ export const MainLayout = () => {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
                   >
-                    Cinemas &amp; Salas
+                    Cinemas
                   </Link>
+                  <div className="h-px bg-foreground/10 my-1" />
                   <Link
                     to="/intelligence"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block px-3 py-1.5 text-xs font-bold font-display uppercase text-primary hover:bg-primary/10 transition-colors"
                   >
-                    ⚡ screeK Intelligence (IA)
-                  </Link>
-                  <Link
-                    to="/tickets"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
-                  >
-                    Meus Ingressos
+                    ⚡ Para Você (IA)
                   </Link>
                 </div>
               </div>
 
               {/* Social Navigation */}
               <div className="space-y-3 pt-2 border-t-2 border-foreground/10">
-                <label className="text-xs font-display font-black uppercase text-foreground/50">Comunidade &amp; Social</label>
+                <label className="text-xs font-display font-black uppercase text-foreground/50">Social</label>
                 <div className="space-y-1">
                   <Link
                     to="/feed"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
                   >
-                    Feed da Comunidade
+                    Feed
                   </Link>
                   <Link
                     to="/lists"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
                   >
-                    Listas de Filmes
+                    Listas
                   </Link>
                   <Link
-                    to="/lists/new"
+                    to="/collections"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
                   >
-                    + Criar Nova Lista
+                    Coleções
                   </Link>
-                  <Link
-                    to="/import/letterboxd"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
-                  >
-                    Importar do Letterboxd
-                  </Link>
-                  {user && (
-                    <Link
-                      to="/profile"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block px-3 py-1.5 text-xs font-bold font-display uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
-                    >
-                      Meu Perfil Cinéfilo
-                    </Link>
-                  )}
                 </div>
               </div>
 
-              {/* Painel do Exibidor (B2B) */}
-              <div className="space-y-2 pt-2 border-t-2 border-foreground/10">
-                <label className="text-xs font-display font-black uppercase text-secondary">Exibidores / B2B</label>
-                <Link
-                  to="/management/cinemas"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-between p-2.5 bg-muted/20 border-2 border-foreground/30 text-xs font-bold font-display uppercase hover:border-primary text-foreground hover:text-primary transition-all shadow-[2px_2px_0px_0px_var(--border)]"
-                >
-                  <div className="flex items-center gap-2">
-                    <Buildings size={16} weight="bold" className="text-secondary" />
-                    <span>Painel do Cinema</span>
-                  </div>
-                  <span className="text-[9px] px-1.5 py-0.2 bg-secondary text-secondary-foreground font-black">B2B</span>
-                </Link>
-              </div>
+              {/* Painel do Exibidor (B2B) - apenas para MANAGER e ADMIN */}
+              {user && (user.role === 'MANAGER' || user.role === 'ADMIN') && (
+                <div className="space-y-2 pt-2 border-t-2 border-foreground/10">
+                  <label className="text-xs font-display font-black uppercase text-secondary">Exibidores / B2B</label>
+                  <Link
+                    to="/management/cinemas"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-2.5 bg-muted/20 border-2 border-foreground/30 text-xs font-bold font-display uppercase hover:border-secondary text-foreground hover:text-secondary transition-all shadow-[2px_2px_0px_0px_var(--border)]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Buildings size={16} weight="bold" className="text-secondary" />
+                      <span>Painel do Exibidor</span>
+                    </div>
+                    <span className="text-[9px] px-1.5 py-0.2 bg-secondary/20 text-secondary font-black">B2B</span>
+                  </Link>
+                </div>
+              )}
             </div>
 
-            {/* Bottom Login / Register Buttons in Mobile Drawer */}
+            {/* Bottom User Section in Mobile Drawer */}
             <div className="pt-6 border-t-2 border-foreground/20 space-y-2">
               {user ? (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 p-2 border-2 border-primary bg-primary/10">
-                    <User size={20} weight="bold" className="text-secondary" />
-                    <span className="font-bold text-xs uppercase">{user.username}</span>
+                  <div className="flex items-center gap-3 p-3 border-2 border-primary/30 bg-primary/5">
+                    <div className="w-10 h-10 border-2 border-foreground/40 overflow-hidden shrink-0 bg-muted">
+                      <img
+                        src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
+                        alt={user.username}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-black uppercase text-foreground">
+                        {user.username === 'lothrik' ? 'Lothrik Junior' : user.username}
+                      </h4>
+                      <span className="text-[10px] text-foreground/50 font-bold block">
+                        @{user.username}
+                      </span>
+                    </div>
                   </div>
+                  
+                  {/* Quick links for logged user */}
+                  <div className="space-y-1">
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                    >
+                      <User size={16} weight="bold" className="text-foreground/60" />
+                      <span>Meu Perfil</span>
+                    </Link>
+                    <Link
+                      to="/tickets"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                    >
+                      <Ticket size={16} weight="bold" className="text-foreground/60" />
+                      <span>Meus Ingressos</span>
+                    </Link>
+                    <Link
+                      to="/notifications"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                    >
+                      <Heart size={16} weight="bold" className="text-foreground/60" />
+                      <span>Notificações</span>
+                    </Link>
+                    <Link
+                      to="/settings"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
+                    >
+                      <Gear size={16} weight="bold" className="text-foreground/60" />
+                      <span>Configurações</span>
+                    </Link>
+                  </div>
+                  
                   <Button
                     variant="destructive"
                     className="w-full justify-center text-xs"
                     onClick={() => { logout(); setIsMobileMenuOpen(false); }}
                   >
+                    <SignOut size={16} weight="bold" className="mr-2" />
                     SAIR DA CONTA
                   </Button>
                 </div>
@@ -645,7 +639,7 @@ export const MainLayout = () => {
                       className="h-12 w-auto" 
                     />
                   </Link>
-                  <p className="text-xs text-foreground/60 font-display font-extrabold tracking-wide max-w-[210px]">
+                  <p className="text-xs text-foreground/60 font-extrabold tracking-wide max-w-[210px]">
                     © 2026 screeK Inc. Todos os direitos reservados.
                   </p>
                 </div>
@@ -655,11 +649,11 @@ export const MainLayout = () => {
                   <div className="space-y-3">
                     <h3 className="text-primary font-display font-black text-base uppercase tracking-wider">Cinema</h3>
                     <ul className="space-y-1.5 text-xs font-bold text-foreground/70">
-                      <li><Link to="/movies?status=now_playing" className="hover:text-primary underline transition-colors">Filmes em Cartaz</Link></li>
+                      <li><Link to="/movies?status=now_playing" className="hover:text-primary underline transition-colors">Em Cartaz</Link></li>
                       <li><Link to="/movies?status=upcoming" className="hover:text-primary underline transition-colors">Em Breve</Link></li>
-                      <li><Link to="/movies" className="hover:text-primary underline transition-colors">Catálogo</Link></li>
+                      <li><Link to="/movies" className="hover:text-primary underline transition-colors">Catálogo Geral</Link></li>
                       <li><Link to="/cinemas" className="hover:text-primary underline transition-colors">Cinemas</Link></li>
-                      <li><Link to="/management" className="text-secondary hover:underline transition-colors">Painel do Exibidor (B2B)</Link></li>
+                      <li><Link to="/intelligence" className="hover:text-primary underline transition-colors">Para Você (IA)</Link></li>
                     </ul>
                   </div>
 
@@ -667,9 +661,8 @@ export const MainLayout = () => {
                     <h3 className="text-primary font-display font-black text-base uppercase tracking-wider">Social</h3>
                     <ul className="space-y-1.5 text-xs font-bold text-foreground/70">
                       <li><Link to="/feed" className="hover:text-primary underline transition-colors">Feed</Link></li>
-                      <li><Link to="/lists" className="hover:text-primary underline transition-colors">Minhas Listas</Link></li>
-                      <li><Link to="/reviews" className="hover:text-primary underline transition-colors">Reviews</Link></li>
-                      <li><Link to="/users" className="hover:text-primary underline transition-colors">Usuários</Link></li>
+                      <li><Link to="/lists" className="hover:text-primary underline transition-colors">Listas</Link></li>
+                      <li><Link to="/collections" className="hover:text-primary underline transition-colors">Coleções</Link></li>
                     </ul>
                   </div>
 
@@ -793,7 +786,7 @@ export const MainLayout = () => {
                       className="h-12 w-auto" 
                     />
                   </Link>
-                  <p className="text-xs text-foreground/60 font-display font-extrabold tracking-wide">
+                  <p className="text-xs text-foreground/60 font-extrabold tracking-wide">
                     © 2026 screeK Inc. Todos os direitos reservados.
                   </p>
                 </div>
@@ -818,7 +811,7 @@ export const MainLayout = () => {
                 isCinemaActive ? 'text-secondary font-black' : 'text-foreground/60 hover:text-primary'
               }`}
             >
-              <FilmReel size={22} weight="bold" />
+              <MapPin size={22} weight="bold" />
               <span className="text-[9px] font-display font-black uppercase tracking-wider">CINEMA</span>
             </Link>
 

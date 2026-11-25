@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   CaretLeft,
   CaretRight,
@@ -6,8 +7,6 @@ import {
   Plus,
   WarningCircle,
   X,
-  Buildings,
-  CaretDown,
   Eye,
   PencilSimple,
   Trash,
@@ -15,34 +14,17 @@ import {
   Lightning,
   CalendarCheck,
   Clock,
-  Sparkle
+  Sparkle,
+  Buildings,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-import { MOCK_MOVIES } from '../mocks';
+import { MOCK_CINEMAS, MOCK_MOVIES } from '../mocks';
 import { StatusModal } from '../components/custom/status-modal';
+import { ManagementScheduleTimeline } from '../components/custom/management-schedule-timeline';
+import type { GanttSession, ScheduleRoom } from '../types/management-schedule';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../components/ui/select';
 
-interface GanttSession {
-  id: string;
-  dateNum: string; // e.g. "22", "23", "24", "25", "26", "27", "28"
-  movieId: string;
-  movieTitle: string;
-  roomId: string;
-  roomName: string;
-  startTime: string; // e.g. "16:30"
-  endTime: string; // e.g. "19:16"
-  startMinutes: number; // offset from 13:00 (13:00 = 0, 14:00 = 60, etc.)
-  durationMinutes: number;
-  format: string; // "IMAX" | "4DX" | "VIP" | "Standard"
-  audio: string; // "LEG" | "DUB"
-  occupancy: number; // e.g. 142
-  capacity: number; // e.g. 200
-  price: number; // e.g. 52
-  hasConflict?: boolean;
-  color: string;
-  conflictDetails?: string;
-}
-
-const ROOMS_CONFIG = [
+const ROOMS_CONFIG: ScheduleRoom[] = [
   { id: 'sala-4', name: 'Sala 4', type: 'IMAX', seats: 200, status: 'Ativa', occupancyRate: 88, currentSeats: 176 },
   { id: 'sala-2', name: 'Sala 2', type: '4DX', seats: 80, status: 'Ativa', occupancyRate: 100, currentSeats: 80 },
   { id: 'sala-3', name: 'Sala 3', type: 'VIP', seats: 60, status: 'Ativa', occupancyRate: 78, currentSeats: 47 },
@@ -248,9 +230,10 @@ const INITIAL_GANTT_SESSIONS: GanttSession[] = [
   },
 ];
 
-const TIME_RULER = ['13h', '14h', '15h', '16h', '17h', '18h', '19h', '20h', '21h', '22h'];
-
 export function ManagementSchedule() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCinemaId = searchParams.get('cinemaId') || MOCK_CINEMAS[0]?.id || '';
+  const selectedCinema = MOCK_CINEMAS.find((cinema) => cinema.id === selectedCinemaId);
   const [sessions, setSessions] = useState<GanttSession[]>(INITIAL_GANTT_SESSIONS);
   const [selectedSession, setSelectedSession] = useState<GanttSession | null>(null);
   const [selectedRoomFilter, setSelectedRoomFilter] = useState('ALL');
@@ -518,17 +501,24 @@ export function ManagementSchedule() {
       {/* ─── 1. TOP CONTROL BAR ─── */}
       <header className="bg-background px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
         
-        {/* Left: Cinema selector + Date Strip */}
+        {/* Left: Date Strip */}
         <div className="flex flex-wrap items-center gap-3">
-          
-          {/* Cinema Dropdown */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)] font-black uppercase text-foreground cursor-pointer">
-            <Buildings size={16} weight="bold" className="text-primary" />
-            <span>Cinemark Bourbon</span>
-            <CaretDown size={14} weight="bold" />
-          </div>
-
-          <div className="h-5 w-px bg-foreground/20 hidden sm:block" />
+          <Select
+            value={selectedCinemaId}
+            onValueChange={(value) => {
+              const nextParams = new URLSearchParams(searchParams);
+              nextParams.set('cinemaId', value);
+              setSearchParams(nextParams);
+            }}
+          >
+            <SelectTrigger aria-label="Selecionar cinema" className="h-9 w-[190px] min-w-[190px] border-2 border-foreground/30 px-2 text-[10px] font-black uppercase">
+              <Buildings size={15} weight="bold" className="mr-1 shrink-0 text-secondary" />
+              <SelectValue>{selectedCinema?.name || 'Selecionar cinema'}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {MOCK_CINEMAS.map((cinema) => <SelectItem key={cinema.id} value={cinema.id}>{cinema.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
 
           {/* Mini Date Strip */}
           <div className="flex items-center gap-1">
@@ -692,126 +682,12 @@ export function ManagementSchedule() {
 
       {/* ─── 3A. VISÃO GANTT ─── */}
       {viewMode === 'gantt' && (
-        <main className="flex-1 bg-background overflow-x-auto overflow-y-auto p-4 sm:p-6 flex flex-col">
-          
-          <div className="min-w-[920px] space-y-4">
-            
-            {/* Header Timeline Ruler */}
-            <div className="flex border-b-2 border-foreground/20 pb-2 text-xs font-mono font-bold text-foreground/50">
-              <div className="w-56 shrink-0 font-display uppercase font-black text-[11px] text-foreground/60">
-                SALA / HORÁRIO →
-              </div>
-              <div className="flex-1 grid grid-cols-10 text-center relative">
-                {TIME_RULER.map((t) => (
-                  <span key={t}>{t}</span>
-                ))}
-              </div>
-            </div>
-
-            {/* Room Timeline Tracks */}
-            <div className="space-y-3">
-              {ROOMS_CONFIG.map((room) => {
-                const roomSessions = filteredSessions.filter((s) => s.roomId === room.id);
-
-                return (
-                  <div key={room.id} className="flex items-center">
-                    
-                    {/* Room Info Label */}
-                    <div className="w-56 shrink-0 pr-4 flex items-center justify-between">
-                      <div className="space-y-0.5 min-w-0">
-                        <h4 className="text-xs font-black uppercase text-foreground leading-tight truncate">
-                          {room.name}
-                        </h4>
-                        <span className="text-[10px] text-foreground/50 font-sans block truncate">
-                          {room.type} · {room.seats} lug.
-                        </span>
-                        <span className={`text-[9px] font-bold uppercase ${room.isMaintenance ? 'text-amber-600' : 'text-[#34A853]'}`}>
-                          ● {room.status}
-                        </span>
-                      </div>
-
-                      {/* Occupancy Stats badge */}
-                      <div className="text-right shrink-0 pl-2">
-                        {!room.isMaintenance ? (
-                          <>
-                            <span className="font-mono font-black text-xs text-foreground block">
-                              {room.occupancyRate}%
-                            </span>
-                            <span className="text-[9px] text-foreground/50 font-mono block">
-                              {room.currentSeats}/{room.seats}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-[11px] font-mono text-foreground/40">—</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Timeline Track Canvas */}
-                    <div className="flex-1 h-16 bg-muted/20 border border-foreground/20 relative overflow-hidden">
-                      
-                      {/* Vertical Hour Guide Lines */}
-                      <div className="absolute inset-0 grid grid-cols-10 pointer-events-none divide-x divide-foreground/10" />
-
-                      {/* Maintenance Track */}
-                      {room.isMaintenance ? (
-                        <div className="absolute inset-1 bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.05),rgba(0,0,0,0.05)_10px,transparent_10px,transparent_20px)] border border-dashed border-foreground/30 flex items-center justify-center text-xs font-bold text-foreground/50 font-sans">
-                          Manutenção preventiva — Dia inteiro
-                        </div>
-                      ) : roomSessions.length === 0 ? (
-                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-sans text-foreground/40 italic">
-                          Nenhuma sessão programada para esta sala na data
-                        </div>
-                      ) : (
-                        roomSessions.map((session) => {
-                          const leftPct = (session.startMinutes / 540) * 100;
-                          const widthPct = (session.durationMinutes / 540) * 100;
-                          const isSelected = selectedSession?.id === session.id;
-
-                          return (
-                            <div
-                              key={session.id}
-                              style={{
-                                left: `${Math.max(0, leftPct)}%`,
-                                width: `${Math.min(100, widthPct)}%`,
-                              }}
-                              onClick={() => setSelectedSession(session)}
-                              className={`absolute top-1 bottom-1 p-2 border-2 text-xs flex flex-col justify-between overflow-hidden cursor-pointer transition-all ${
-                                isSelected
-                                  ? 'border-foreground shadow-[3px_3px_0px_0px_var(--border)] z-10'
-                                  : session.color
-                              }`}
-                            >
-                              <div className="flex items-center justify-between gap-1 leading-none">
-                                <span className="font-black uppercase text-[11px] truncate">
-                                  {session.movieTitle}
-                                </span>
-                                {session.hasConflict && (
-                                  <WarningCircle size={14} weight="fill" className="text-secondary shrink-0" />
-                                )}
-                              </div>
-
-                              <div className="flex items-center justify-between text-[9px] font-mono opacity-80 leading-none">
-                                <span>{session.startTime} → {session.endTime}</span>
-                                <div className="flex items-center gap-1">
-                                  <span className="px-1 bg-foreground/10 font-bold">{session.format}</span>
-                                  <span>{session.audio}</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-          </div>
-
-        </main>
+        <ManagementScheduleTimeline
+          rooms={ROOMS_CONFIG}
+          sessions={filteredSessions}
+          selectedSessionId={selectedSession?.id}
+          onSelectSession={setSelectedSession}
+        />
       )}
 
       {/* ─── 3B. VISÃO TABELA ─── */}

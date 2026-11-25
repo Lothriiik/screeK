@@ -67,7 +67,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
       : 'bg-[#DC3545]';
 
   return (
-    <div className="w-full rounded-none border-4 border-foreground/40 bg-card font-display shadow-[6px_6px_0px_0px_var(--border)] overflow-hidden text-foreground">
+    <div className="w-full rounded-none border-4 border-foreground/40 bg-background font-display shadow-[6px_6px_0px_0px_var(--border)] overflow-hidden text-foreground">
       
       {/* Top Banner Header when showTimer is true (Exact matching Image) */}
       {showTimer ? (
@@ -102,7 +102,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
           </div>
         </div>
       ) : (
-        <div className="p-4 border-b-4 border-foreground/40 bg-card">
+        <div className="p-4 border-b-4 border-foreground/40 bg-background">
           <h3 className="text-base sm:text-lg font-black uppercase text-foreground">Resumo do Pedido</h3>
         </div>
       )}
@@ -127,7 +127,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
                 {ratingBadge}
               </span>
               {formatBadges.map((b, i) => (
-                <span key={i} className="border border-foreground/40 text-foreground px-1.5 py-0.5 text-[9px] font-extrabold uppercase bg-card">
+                <span key={i} className="border border-foreground/40 text-foreground px-1.5 py-0.5 text-[9px] font-extrabold uppercase bg-background">
                   {b}
                 </span>
               ))}
@@ -196,7 +196,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
 
       {/* Confirm CTA Button */}
       {onConfirm && (
-        <div className="p-4 bg-card">
+        <div className="p-4 bg-background">
           <button
             type="button"
             onClick={onConfirm}

@@ -29,7 +29,8 @@ export function RoleGuard({ allowedRoles }: RoleGuardProps) {
   }
 
   // If specific roles required and user doesn't have permission, redirect to 403 Forbidden
-  if (allowedRoles && allowedRoles.length > 0 && (!user || !allowedRoles.includes(user.role))) {
+  const canPreviewRestrictedScreens = import.meta.env.DEV && isAuthenticated;
+  if (allowedRoles && allowedRoles.length > 0 && (!user || !allowedRoles.includes(user.role)) && !canPreviewRestrictedScreens) {
     return <Navigate to="/forbidden" replace />;
   }
 

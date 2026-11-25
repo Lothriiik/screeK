@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { MOCK_PEOPLE } from '../mocks/people';
 import { PersonCard } from '../components/custom/person-card';
 import { CommunitySection } from '../components/custom/community-section';
+import { SectionHeading } from '../components/custom/section-heading';
 
 // Hero Carousel Slides derived from Central Mock Store
 const MOCK_HERO_SLIDES: CarouselSlide[] = MOCK_MOVIES.slice(0, 3).map((m) => ({
@@ -97,22 +98,19 @@ const MovieSection: React.FC<MovieSectionProps> = ({ title, linkTo, movies, reco
 
   return (
     <section className="relative w-full space-y-4 font-display">
-      <div className="flex items-center justify-between border-b-2 border-foreground/30 pb-2">
-        <div className="flex items-baseline gap-2 sm:gap-3">
-          <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-primary">
-            {title}
-          </h2>
+      <SectionHeading
+        title={title}
+        titleAction={(
           <Link
             to={linkTo}
-            className="text-xs sm:text-sm font-black uppercase text-foreground/80 hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
+            className="flex cursor-pointer items-center gap-1 text-xs font-black uppercase text-foreground/80 transition-colors hover:text-primary sm:text-sm"
           >
             <span>Ver Todos</span>
             <CaretRight size={12} weight="bold" className="self-center" />
           </Link>
-        </div>
-
-        {/* Top Right Fixed Navigation Arrows */}
-        <div className="flex items-center gap-1.5">
+        )}
+        actions={(
+          <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => scroll('left')}
@@ -129,8 +127,9 @@ const MovieSection: React.FC<MovieSectionProps> = ({ title, linkTo, movies, reco
           >
             <CaretRight size={16} weight="bold" />
           </button>
-        </div>
-      </div>
+          </div>
+        )}
+      />
 
       <div className="relative">
         <div

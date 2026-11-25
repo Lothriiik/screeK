@@ -16,12 +16,16 @@ import {
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MovieCard } from '../components/custom/movie-card';
-import { ReviewRow } from '../components/custom/review-row';
+import { ProfileReviewCard } from '../components/custom/profile-review-card';
 import { FeedCard } from '../components/custom/feed-card';
 import { MOCK_USERS, MOCK_MOVIES } from '../mocks';
 import { MOCK_FEED_ACTIVITIES } from '../mocks/feed';
 import { MOCK_CINEMA_PASSPORT } from '../mocks/cinema-passport';
+import { MOCK_MOVIE_LISTS } from '../mocks/lists';
 import { CinemaPassportCard } from '../components/custom/cinema-passport-card';
+import { MovieListCard } from '../components/custom/movie-list-card';
+import { ProfileSessionDiary } from '../components/custom/profile-session-diary';
+import { SectionHeading } from '../components/custom/section-heading';
 
 type ProfileTab = 'diary' | 'posts' | 'watched' | 'passport' | 'reviews' | 'lists';
 
@@ -43,6 +47,9 @@ export function Profile() {
 
   // Watched movies
   const watchedMovies = MOCK_MOVIES.slice(0, 8);
+  const userMovieLists = MOCK_MOVIE_LISTS.filter(
+    (list) => list.author_username.toLowerCase() === user.username.toLowerCase()
+  );
 
   // Feed posts for this user
   const userPosts = useMemo(() => {
@@ -99,13 +106,10 @@ export function Profile() {
     <div className="bg-background text-foreground font-display">
       
       {/* ─── 1. USER PROFILE HEADER ─── */}
-      <section className="bg-background border-b-4 border-foreground/40 px-4 sm:px-0 py-8 shadow-sm">
+      <section className="bg-background px-4 sm:px-0 py-8">
         <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto space-y-8">
-          
-          {/* Main User Card Row */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            
-            {/* Left: Avatar & Identity */}
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <div className="w-24 h-24 sm:w-28 sm:h-28 border-4 border-foreground shadow-[4px_4px_0px_0px_var(--border)] overflow-hidden shrink-0 bg-muted">
                 <img
@@ -117,7 +121,7 @@ export function Profile() {
 
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-foreground">
+                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
                     {user.name}
                   </h1>
                   <span className="bg-primary/10 text-primary text-[10px] font-black uppercase px-2 py-0.5 border border-primary/30">
@@ -200,7 +204,7 @@ export function Profile() {
           )}
 
           {/* Stats Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t-2 border-foreground/10">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 ">
             {[
               { label: 'Filmes Assistidos', value: user.watched_count || 142 },
               { label: 'Reviews Postadas', value: user.reviews_count || 34 },
@@ -209,7 +213,7 @@ export function Profile() {
               { label: 'Seguindo', value: user.following_count || 180 },
             ].map((st) => (
               <div key={st.label} className="p-3 bg-muted/20 border border-foreground/20 text-center space-y-0.5">
-                <span className="font-mono text-xl font-black text-foreground block">
+                <span className="font-display text-xl font-black text-foreground block">
                   {st.value}
                 </span>
                 <span className="text-[10px] font-black uppercase text-foreground/60 tracking-wider block">
@@ -223,39 +227,24 @@ export function Profile() {
       </section>
 
       {/* ─── 2. FAVORITE 4 MOVIES (LETTERBOXD ROW) ─── */}
-      <section className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 pt-8 space-y-4">
-        <div className="flex items-center justify-between border-b-2 border-foreground/20 pb-2">
-          <div className="flex items-center gap-2">
-            <Star size={20} weight="fill" className="text-secondary" />
-            <h2 className="text-sm sm:text-base font-black uppercase tracking-tight text-foreground">
-              Top 4 Filmes Favoritos
-            </h2>
-          </div>
-          <span className="text-[11px] font-bold text-foreground/50 font-sans">
-            Letterboxd Style
-          </span>
-        </div>
+      <section className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-0 pt-4 space-y-4">
+        <SectionHeading title="Filmes Favoritos" />
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {favoriteMovies.map((movie) => {
-            if (!movie) return null;
-            return (
-              <Link
-                key={movie.id}
-                to={`/movies/${movie.id}`}
-                className="group relative border-4 border-foreground/40 shadow-[4px_4px_0px_0px_var(--border)] overflow-hidden transition-all hover:border-primary hover:-translate-y-1 block aspect-[2/3] bg-muted"
-              >
-                <img
-                  src={movie.poster_url}
-                  alt={movie.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2.5 text-white">
-                  <span className="text-xs font-black uppercase line-clamp-1">{movie.title}</span>
-                </div>
-              </Link>
-            );
-          })}
+          {favoriteMovies.map((movie) => movie && (
+            <MovieCard
+              key={movie.id}
+              id={movie.id}
+              title={movie.title}
+              posterUrl={movie.poster_url}
+              rating={movie.global_rating}
+              duration={movie.duration_display}
+              genre={movie.genres[0] || 'DRAMA'}
+              ageRating={movie.age_rating}
+              tagType="none"
+              linkTo={`/movies/${movie.id}`}
+            />
+          ))}
         </div>
       </section>
 
@@ -275,7 +264,7 @@ export function Profile() {
             }`}
           >
             <CalendarBlank size={16} weight="bold" />
-            <span>Diário de Sessões</span>
+            <span>Diário</span>
           </button>
 
           <button
@@ -327,7 +316,7 @@ export function Profile() {
             }`}
           >
             <Ticket size={16} weight="bold" />
-            <span>Passaporte</span>
+            <span>Passaporte ({MOCK_CINEMA_PASSPORT.length})</span>
           </button>
 
           <button
@@ -340,107 +329,21 @@ export function Profile() {
             }`}
           >
             <BookmarksSimple size={16} weight="bold" />
-            <span>Listas</span>
+            <span>Listas ({userMovieLists.length})</span>
           </button>
         </div>
 
         {/* ─── TAB CONTENT 1: DIARY / LOGS ─── */}
         {activeTab === 'diary' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b-2 border-foreground/10 pb-2">
-              <span className="text-xs font-black uppercase text-foreground/60">
-                Sessões e Filmes Registrados
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {[
-                {
-                  movie: MOCK_MOVIES[0],
-                  date: 'Hoje, 20 AGO',
-                  rating: 5.0,
-                  reviewText: 'Speed Racer continua a maior aula de cinema pop maximalista do século.',
-                  cinema: 'Cinemark Bourbon Shopping',
-                },
-                {
-                  movie: MOCK_MOVIES[1],
-                  date: '15 AGO',
-                  rating: 4.8,
-                  reviewText: 'Arco da Reze adaptado com perfeição estética e ritmo espetacular.',
-                  cinema: 'Cinépolis JK',
-                },
-                {
-                  movie: MOCK_MOVIES[4],
-                  date: '02 AGO',
-                  rating: 4.5,
-                  reviewText: 'A metáfora do canibalismo e o amadurecimento universitário.',
-                  cinema: 'UCI NYCC',
-                },
-              ].map((log, idx) => (
-                <article
-                  key={idx}
-                  className="bg-background border-2 border-foreground/30 shadow-[3px_3px_0px_0px_var(--border)] p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
-                >
-                  <div className="flex items-center gap-4 min-w-0">
-                    <Link
-                      to={`/movies/${log.movie.id}`}
-                      className="w-14 aspect-[2/3] border-2 border-foreground/40 overflow-hidden shrink-0 block hover:border-primary transition-colors"
-                    >
-                      <img
-                        src={log.movie.poster_url}
-                        alt={log.movie.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </Link>
-
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          to={`/movies/${log.movie.id}`}
-                          className="text-base font-black uppercase text-foreground hover:text-primary transition-colors truncate"
-                        >
-                          {log.movie.title}
-                        </Link>
-                        <span className="text-xs font-bold text-foreground/40 font-mono">
-                          ({log.movie.release_year})
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="text-secondary font-black text-sm">
-                          {'★'.repeat(Math.floor(log.rating))} {log.rating.toFixed(1)}
-                        </span>
-                        <span className="text-foreground/30">•</span>
-                        <span className="text-[11px] font-sans text-foreground/60">{log.cinema}</span>
-                      </div>
-
-                      <p className="font-sans text-xs text-foreground/80 line-clamp-1">
-                        "{log.reviewText}"
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="text-xs font-mono font-bold text-foreground/50 shrink-0 self-end sm:self-center">
-                    {log.date}
-                  </span>
-                </article>
-              ))}
-            </div>
-          </div>
+          <ProfileSessionDiary entries={[
+            { movie: MOCK_MOVIES[0], watchedAt: '2026-08-20', rating: 5.0, liked: true, rewatch: false, hasReview: true },
+            { movie: MOCK_MOVIES[1], watchedAt: '2026-08-15', rating: 4.8, liked: true, rewatch: false, hasReview: true },
+            { movie: MOCK_MOVIES[4], watchedAt: '2026-08-02', rating: 4.5, liked: false, rewatch: true, hasReview: false },
+          ]} />
         )}
-
         {/* ─── TAB CONTENT 2: POSTS & FEED (CONECTADO COM O FEED SOCIAL) ─── */}
         {activeTab === 'posts' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b-2 border-foreground/10 pb-2">
-              <span className="text-xs font-black uppercase text-foreground/60">
-                Publicações e Ingressos Compartilhados no Feed Social
-              </span>
-              <Link to="/feed" className="text-xs font-black uppercase text-primary hover:underline">
-                Ver Feed Global →
-              </Link>
-            </div>
-
             <div className="space-y-5">
               {userPosts.map((post) => (
                 <FeedCard key={post.id} {...post} />
@@ -472,22 +375,6 @@ export function Profile() {
         {/* ─── TAB CONTENT 4: REVIEWS ─── */}
         {activeTab === 'passport' && (
           <section className="space-y-6">
-            <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-foreground/20 pb-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
-                  Visto no cinema
-                </p>
-                <h2 className="mt-1 text-xl font-black uppercase sm:text-2xl">
-                  Passaporte de Cinema
-                </h2>
-              </div>
-              <span className="font-mono text-xs font-bold text-foreground/55">
-                {MOCK_CINEMA_PASSPORT.length} {MOCK_CINEMA_PASSPORT.length === 1 ? 'INGRESSO' : 'INGRESSOS'}
-              </span>
-            </div>
-            <p className="text-xs font-semibold text-foreground/60">
-              Clique para ver o verso; duplo clique para ampliar. Passe o cursor para revelar o brilho.
-            </p>
             <div className="grid grid-cols-2 items-start gap-4 md:grid-cols-3 xl:grid-cols-4">
               {MOCK_CINEMA_PASSPORT.map((ticket) => (
                 <CinemaPassportCard
@@ -502,24 +389,20 @@ export function Profile() {
 
         {activeTab === 'reviews' && (
           <div className="space-y-4">
-            <ReviewRow
-              name={user.name}
-              handle={`@${user.username}`}
+            <ProfileReviewCard
               dateLabel="Hoje"
-              avatarUrl={user.avatar_url}
+              movie={MOCK_MOVIES[0]}
               rating={5}
               reviewText="Uma das maiores experiências audiovisuais da história do cinema! A trilha sonora e o ritmo de corrida na Casa Cristo 5000 não deixam você respirar por um segundo."
               likesCount={64}
               commentsCount={12}
             />
-            <ReviewRow
-              name={user.name}
-              handle={`@${user.username}`}
+            <ProfileReviewCard
               dateLabel="15 AGO"
-              avatarUrl={user.avatar_url}
+              movie={MOCK_MOVIES[1]}
               rating={4}
               hasSpoiler={true}
-              reviewText="[CONTÉM SPOILER] A cena do confronto no porto e a revelação do passado da Reze trazem uma carga emocional devastadora que supera até o mangá original."
+              reviewText="A cena do confronto no porto e a revelação do passado da Reze trazem uma carga emocional devastadora que supera até o mangá original."
               likesCount={42}
               commentsCount={7}
             />
@@ -528,42 +411,14 @@ export function Profile() {
 
         {/* ─── TAB CONTENT 5: LISTS ─── */}
         {activeTab === 'lists' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link
-              to="/lists"
-              className="bg-background border-4 border-foreground/40 shadow-[4px_4px_0px_0px_var(--border)] p-4 space-y-3 hover:border-primary transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <h4 className="font-black uppercase text-sm group-hover:text-primary transition-colors">
-                  Top Sci-Fi Maximalista do Século
-                </h4>
-                <span className="text-[10px] font-mono font-bold text-foreground/50">8 filmes</span>
+          <div className="space-y-4">
+            {userMovieLists.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {userMovieLists.map((list) => <MovieListCard key={list.id} list={list} showAuthor={false} />)}
               </div>
-              <p className="font-sans text-xs text-foreground/70 line-clamp-2">
-                Filmes com estética visual saturada, montagem acelerada e direções ousadas.
-              </p>
-              <div className="flex items-center gap-1 text-[10px] font-black uppercase text-primary">
-                <span>Ver Lista Completa →</span>
-              </div>
-            </Link>
-
-            <Link
-              to="/lists"
-              className="bg-background border-4 border-foreground/40 shadow-[4px_4px_0px_0px_var(--border)] p-4 space-y-3 hover:border-primary transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <h4 className="font-black uppercase text-sm group-hover:text-primary transition-colors">
-                  Clássicos Essenciais do Terror Autoral
-                </h4>
-                <span className="text-[10px] font-mono font-bold text-foreground/50">12 filmes</span>
-              </div>
-              <p className="font-sans text-xs text-foreground/70 line-clamp-2">
-                Obras do terror contemporâneo e clássicos dos anos 70 que definiram o gênero.
-              </p>
-              <div className="flex items-center gap-1 text-[10px] font-black uppercase text-primary">
-                <span>Ver Lista Completa →</span>
-              </div>
-            </Link>
+            ) : (
+              <p className="py-8 text-center text-sm text-foreground/60">Este perfil ainda não publicou listas.</p>
+            )}
           </div>
         )}
 

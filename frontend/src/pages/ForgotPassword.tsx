@@ -63,7 +63,7 @@ export const ForgotPassword = () => {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="p-5 sm:p-8 space-y-4">
-        <p className="text-foreground/60 text-xs sm:text-sm mb-3 sm:mb-4 font-display font-bold leading-relaxed">
+        <p className="text-foreground/60 text-xs sm:text-sm mb-3 sm:mb-4 font-bold leading-relaxed">
           Insira seu e-mail abaixo e enviaremos uma mensagem com seu nome de usuário e um link para redefinir sua senha.
         </p>
 

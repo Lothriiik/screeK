@@ -7,30 +7,32 @@ import (
 )
 
 type MovieRecord struct {
-	ID               int    `gorm:"primaryKey;autoIncrement"`
-	TMDBID           int    `gorm:"not null;uniqueIndex"`
-	Title            string `gorm:"not null"`
-	OriginalTitle    string
-	Overview         string `gorm:"not null"`
-	PosterURL        string `gorm:"not null"`
-	BackdropURL      string
-	UpdatedAt        time.Time
-	ReleaseDate      time.Time `gorm:"not null"`
-	Status           string    `gorm:"not null;default:'Released'"`
-	Runtime          int       `gorm:"not null"`
-	OriginalLanguage string
-	SpokenLanguages  string
-	VoteAverage      float64
-	VoteCount        int
-	Popularity       float64
-	Budget           int64
-	Revenue          int64
-	Countries        string
-	Keywords         string
-	Studios          string
-	Certification    string
-	Genres           []GenreRecord       `gorm:"many2many:movie_genres;foreignKey:ID;joinForeignKey:movie_id;references:ID;joinReferences:genre_id;"`
-	Credits          []MovieCreditRecord `gorm:"foreignKey:MovieID;references:ID"`
+	ID                     int    `gorm:"primaryKey;autoIncrement"`
+	TMDBID                 int    `gorm:"not null;uniqueIndex"`
+	Title                  string `gorm:"not null"`
+	OriginalTitle          string
+	Overview               string `gorm:"not null"`
+	PosterURL              string `gorm:"not null"`
+	PosterPaletteJSON      string `gorm:"type:text"`
+	PosterPalettePosterURL string `gorm:"type:text"`
+	BackdropURL            string
+	UpdatedAt              time.Time
+	ReleaseDate            time.Time `gorm:"not null"`
+	Status                 string    `gorm:"not null;default:'Released'"`
+	Runtime                int       `gorm:"not null"`
+	OriginalLanguage       string
+	SpokenLanguages        string
+	VoteAverage            float64
+	VoteCount              int
+	Popularity             float64
+	Budget                 int64
+	Revenue                int64
+	Countries              string
+	Keywords               string
+	Studios                string
+	Certification          string
+	Genres                 []GenreRecord       `gorm:"many2many:movie_genres;foreignKey:ID;joinForeignKey:movie_id;references:ID;joinReferences:genre_id;"`
+	Credits                []MovieCreditRecord `gorm:"foreignKey:MovieID;references:ID"`
 }
 
 type GenreRecord struct {

@@ -1,12 +1,16 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Flame,
   Lightbulb,
   WarningCircle,
   DownloadSimple,
-  CaretDown
+  CaretDown,
+  Buildings,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { MOCK_CINEMAS } from '../mocks/cinemas';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../components/ui/select';
 import {
   LineChartPlaceholder,
   BarChartPlaceholder,
@@ -43,6 +47,9 @@ const TOP_MOVIES = [
 ];
 
 export function ManagementStatistics() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCinemaId = searchParams.get('cinemaId') || MOCK_CINEMAS[0]?.id || '';
+  const selectedCinema = MOCK_CINEMAS.find((cinema) => cinema.id === selectedCinemaId);
   const [period, setPeriod] = useState<'Hoje' | 'Semana' | 'Mês' | 'Ano' | 'Custom'>('Semana');
 
   const getHeatmapBg = (val: string | null) => {
@@ -62,8 +69,8 @@ export function ManagementStatistics() {
   return (
     <div className="flex-1 bg-background text-foreground font-display">
       {/* ─── CONTROLS BAR ─── */}
-      <div className="bg-background page-divider px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4 text-xs">
-        
+      <div className="bg-background page-divider px-4 py-3 text-xs sm:px-0">
+        <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-4 md:max-w-5xl lg:max-w-6xl">
         <div className="flex flex-wrap items-center gap-3">
           {/* Period buttons */}
           <div className="flex items-center border-2 border-foreground/30 bg-background overflow-hidden shadow-[2px_2px_0px_0px_var(--border)]">
@@ -83,11 +90,22 @@ export function ManagementStatistics() {
             ))}
           </div>
 
-          {/* Cinema dropdown */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)] font-bold uppercase cursor-pointer">
-            <span>Cinemark Bourbon</span>
-            <CaretDown size={14} weight="bold" />
-          </div>
+          <Select
+            value={selectedCinemaId}
+            onValueChange={(value) => {
+              const nextParams = new URLSearchParams(searchParams);
+              nextParams.set('cinemaId', value);
+              setSearchParams(nextParams);
+            }}
+          >
+            <SelectTrigger aria-label="Selecionar cinema" className="h-9 w-[190px] min-w-[190px] border-2 border-foreground/30 px-2 text-[10px] font-black uppercase">
+              <Buildings size={15} weight="bold" className="mr-1 shrink-0 text-secondary" />
+              <SelectValue>{selectedCinema?.name || 'Selecionar cinema'}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {MOCK_CINEMAS.map((cinema) => <SelectItem key={cinema.id} value={cinema.id}>{cinema.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
 
           {/* Rooms dropdown */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background border-2 border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)] font-bold uppercase cursor-pointer">
@@ -112,10 +130,11 @@ export function ManagementStatistics() {
           </button>
         </div>
 
+        </div>
       </div>
 
       {/* ─── 3. MAIN DASHBOARD CONTENT ─── */}
-      <main className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+      <main className="mx-auto max-w-4xl space-y-8 px-4 py-6 md:max-w-5xl lg:max-w-6xl sm:px-0">
         
         {/* ── SECTION 1: KPIS DA SEMANA ── */}
         <section className="space-y-4">

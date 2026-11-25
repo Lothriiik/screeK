@@ -15,6 +15,8 @@ import {
 import { MovieCard } from '../components/custom/movie-card';
 import { UserCard } from '../components/custom/user-card';
 import { TagChip } from '../components/custom/tag-chip';
+import { EmptyState } from '../components/custom/empty-state';
+import { SearchResultCount } from '../components/custom/search-result-count';
 import { MOCK_MOVIES, MOCK_PEOPLE, MOCK_USERS } from '../mocks';
 import { MOCK_MOVIE_LISTS } from '../mocks/lists';
 import { MOCK_CINEMAS } from '../mocks/cinemas';
@@ -327,13 +329,7 @@ export function Search() {
             </div>
 
             {filteredMovies.length === 0 ? (
-              <div className="p-12 bg-background border-4 border-foreground/40 text-center space-y-3 shadow-[6px_6px_0px_0px_var(--border)] max-w-lg mx-auto">
-                <FilmStrip size={44} className="text-foreground/40 mx-auto" weight="bold" />
-                <h3 className="text-xl font-black uppercase text-foreground">Nenhum filme encontrado</h3>
-                <p className="font-sans text-xs text-foreground/70">
-                  Não encontramos filmes correspondentes à sua pesquisa. Tente buscar por outros termos ou gêneros.
-                </p>
-              </div>
+              <EmptyState icon={<FilmStrip size={44} weight="bold" />} title="Nenhum filme encontrado" description="Não encontramos filmes correspondentes à sua pesquisa. Tente buscar por outros termos ou gêneros." className="mx-auto max-w-lg space-y-3 border-solid border-foreground/40 bg-background p-12 shadow-[6px_6px_0px_0px_var(--border)]" iconContainerClassName="mb-0 border-0 bg-transparent p-0 text-foreground/40" titleClassName="text-xl" descriptionClassName="mt-0 text-xs font-normal text-foreground/70" />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {filteredMovies.map((movie) => (
@@ -377,20 +373,10 @@ export function Search() {
         {/* ─── TAB 2: PESSOAS (ATORES & DIRETORES) ─── */}
         {activeTab === 'people' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b-2 border-foreground/10 pb-2">
-              <span className="text-xs font-bold text-foreground/60">
-                {filteredPeople.length} {filteredPeople.length === 1 ? 'pessoa encontrada' : 'pessoas encontradas'}
-              </span>
-            </div>
+            <SearchResultCount count={filteredPeople.length} singular="pessoa encontrada" plural="pessoas encontradas" />
 
             {filteredPeople.length === 0 ? (
-              <div className="p-12 bg-background border-4 border-foreground/40 text-center space-y-3 shadow-[6px_6px_0px_0px_var(--border)] max-w-lg mx-auto">
-                <User size={44} className="text-foreground/40 mx-auto" weight="bold" />
-                <h3 className="text-xl font-black uppercase text-foreground">Nenhuma pessoa encontrada</h3>
-                <p className="font-sans text-xs text-foreground/70">
-                  Tente buscar pelo nome completo ou sobrenome do diretor ou ator.
-                </p>
-              </div>
+              <EmptyState icon={<User size={44} weight="bold" />} title="Nenhuma pessoa encontrada" description="Tente buscar pelo nome completo ou sobrenome do diretor ou ator." className="mx-auto max-w-lg space-y-3 border-solid border-foreground/40 bg-background p-12 shadow-[6px_6px_0px_0px_var(--border)]" iconContainerClassName="mb-0 border-0 bg-transparent p-0 text-foreground/40" titleClassName="text-xl" descriptionClassName="mt-0 text-xs font-normal text-foreground/70" />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {filteredPeople.map((person) => (
@@ -427,20 +413,10 @@ export function Search() {
         {/* ─── TAB 3: USUÁRIOS (COMUNIDADE) ─── */}
         {activeTab === 'users' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b-2 border-foreground/10 pb-2">
-              <span className="text-xs font-bold text-foreground/60">
-                {filteredUsers.length} {filteredUsers.length === 1 ? 'usuário encontrado' : 'usuários encontrados'}
-              </span>
-            </div>
+            <SearchResultCount count={filteredUsers.length} singular="usuário encontrado" plural="usuários encontrados" />
 
             {filteredUsers.length === 0 ? (
-              <div className="p-12 bg-background border-4 border-foreground/40 text-center space-y-3 shadow-[6px_6px_0px_0px_var(--border)] max-w-lg mx-auto">
-                <Users size={44} className="text-foreground/40 mx-auto" weight="bold" />
-                <h3 className="text-xl font-black uppercase text-foreground">Nenhum usuário encontrado</h3>
-                <p className="font-sans text-xs text-foreground/70">
-                  Não encontramos nenhum perfil com esse nome de usuário ou bio.
-                </p>
-              </div>
+              <EmptyState icon={<Users size={44} weight="bold" />} title="Nenhum usuário encontrado" description="Não encontramos nenhum perfil com esse nome de usuário ou bio." className="mx-auto max-w-lg space-y-3 border-solid border-foreground/40 bg-background p-12 shadow-[6px_6px_0px_0px_var(--border)]" iconContainerClassName="mb-0 border-0 bg-transparent p-0 text-foreground/40" titleClassName="text-xl" descriptionClassName="mt-0 text-xs font-normal text-foreground/70" />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 justify-items-center sm:justify-items-start">
                 {filteredUsers.map((user) => (
@@ -464,20 +440,10 @@ export function Search() {
         {/* ─── TAB 4: LISTAS ─── */}
         {activeTab === 'lists' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b-2 border-foreground/10 pb-2">
-              <span className="text-xs font-bold text-foreground/60">
-                {filteredLists.length} {filteredLists.length === 1 ? 'lista encontrada' : 'listas encontradas'}
-              </span>
-            </div>
+            <SearchResultCount count={filteredLists.length} singular="lista encontrada" plural="listas encontradas" />
 
             {filteredLists.length === 0 ? (
-              <div className="p-12 bg-background border-4 border-foreground/40 text-center space-y-3 shadow-[6px_6px_0px_0px_var(--border)] max-w-lg mx-auto">
-                <BookmarksSimple size={44} className="text-foreground/40 mx-auto" weight="bold" />
-                <h3 className="text-xl font-black uppercase text-foreground">Nenhuma lista encontrada</h3>
-                <p className="font-sans text-xs text-foreground/70">
-                  Tente buscar por outro termo ou por tags como #sci-fi, #horror, #cult.
-                </p>
-              </div>
+              <EmptyState icon={<BookmarksSimple size={44} weight="bold" />} title="Nenhuma lista encontrada" description="Tente buscar por outro termo ou por tags como #sci-fi, #horror, #cult." className="mx-auto max-w-lg space-y-3 border-solid border-foreground/40 bg-background p-12 shadow-[6px_6px_0px_0px_var(--border)]" iconContainerClassName="mb-0 border-0 bg-transparent p-0 text-foreground/40" titleClassName="text-xl" descriptionClassName="mt-0 text-xs font-normal text-foreground/70" />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredLists.map((list) => (
@@ -532,20 +498,10 @@ export function Search() {
         {/* ─── TAB 5: CINEMAS ─── */}
         {activeTab === 'cinemas' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b-2 border-foreground/10 pb-2">
-              <span className="text-xs font-bold text-foreground/60">
-                {filteredCinemas.length} {filteredCinemas.length === 1 ? 'cinema encontrado' : 'cinemas encontrados'}
-              </span>
-            </div>
+            <SearchResultCount count={filteredCinemas.length} singular="cinema encontrado" plural="cinemas encontrados" />
 
             {filteredCinemas.length === 0 ? (
-              <div className="p-12 bg-background border-4 border-foreground/40 text-center space-y-3 shadow-[6px_6px_0px_0px_var(--border)] max-w-lg mx-auto">
-                <MapPin size={44} className="text-foreground/40 mx-auto" weight="bold" />
-                <h3 className="text-xl font-black uppercase text-foreground">Nenhum cinema encontrado</h3>
-                <p className="font-sans text-xs text-foreground/70">
-                  Tente buscar pelo nome da rede (Cinemark, Cinépolis), bairro ou cidade.
-                </p>
-              </div>
+              <EmptyState icon={<MapPin size={44} weight="bold" />} title="Nenhum cinema encontrado" description="Tente buscar pelo nome da rede (Cinemark, Cinépolis), bairro ou cidade." className="mx-auto max-w-lg space-y-3 border-solid border-foreground/40 bg-background p-12 shadow-[6px_6px_0px_0px_var(--border)]" iconContainerClassName="mb-0 border-0 bg-transparent p-0 text-foreground/40" titleClassName="text-xl" descriptionClassName="mt-0 text-xs font-normal text-foreground/70" />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCinemas.map((cinema) => (

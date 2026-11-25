@@ -9,6 +9,7 @@ export interface SessionChipProps {
   audioFormat?: string; // e.g. "LEG", "DUB"
   screenFormat?: string; // e.g. "IMAX", "4DX", "VIP", "2D"
   state?: 'available' | 'selected' | 'disabled';
+  compact?: boolean;
   onClick?: () => void;
 }
 
@@ -18,6 +19,7 @@ export const SessionChip: React.FC<SessionChipProps> = ({
   audioFormat,
   screenFormat,
   state = 'available',
+  compact = false,
   onClick,
 }) => {
   const isSelected = state === 'selected';
@@ -28,17 +30,17 @@ export const SessionChip: React.FC<SessionChipProps> = ({
       type="button"
       onClick={onClick}
       disabled={isDisabled}
-      className={`w-28 h-28 flex flex-col items-center justify-between p-2.5 font-display rounded-none border-4 transition-all cursor-pointer text-center shrink-0 ${
+      className={`${compact ? 'h-[86px] w-[106px] p-2' : 'h-28 w-28 p-2.5'} flex shrink-0 flex-col items-center justify-between rounded-none border-4 text-center font-display transition-all cursor-pointer ${
         isDisabled
           ? 'opacity-40 border-foreground/30 bg-background/50 cursor-not-allowed text-foreground/50'
           : isSelected
-          ? 'border-primary bg-primary text-primary-foreground shadow-[4px_4px_0px_0px_var(--border)] scale-[1.02]'
-          : 'border-primary bg-background text-foreground hover:bg-primary/5 shadow-[4px_4px_0px_0px_var(--border)] hover:-translate-y-1'
+          ? `border-primary bg-primary text-primary-foreground ${compact ? '' : 'shadow-[4px_4px_0px_0px_var(--border)] scale-[1.02]'}`
+          : `border-primary bg-background text-foreground hover:bg-primary/5 ${compact ? '' : 'shadow-[4px_4px_0px_0px_var(--border)] hover:-translate-y-1'}`
       }`}
     >
       {/* Time Text */}
       <span
-        className={`text-2xl font-black tracking-tight ${
+        className={`${compact ? 'text-xl' : 'text-2xl'} font-black tracking-tight ${
           isSelected ? 'text-primary-foreground' : isDisabled ? 'text-foreground/50' : 'text-primary'
         }`}
       >
@@ -47,7 +49,7 @@ export const SessionChip: React.FC<SessionChipProps> = ({
 
       {/* Room Name */}
       <span
-        className={`text-xs font-bold truncate max-w-full ${
+        className={`${compact ? 'text-[10px]' : 'text-xs'} max-w-full truncate font-bold ${
           isSelected ? 'text-primary-foreground/90' : 'text-foreground/70'
         }`}
       >
@@ -56,7 +58,7 @@ export const SessionChip: React.FC<SessionChipProps> = ({
 
       {/* Clean text line for Audio · Format */}
       <span
-        className={`text-[11px] font-black uppercase tracking-wider ${
+        className={`${compact ? 'text-[9px]' : 'text-[11px]'} font-black uppercase tracking-wider ${
           isSelected ? 'text-primary-foreground/90' : 'text-primary'
         }`}
       >

@@ -45,6 +45,7 @@ export interface Cinema {
   neighborhood: string;
   city: string;
   state: string;
+  zip_code?: string;
   phone: string;
   email?: string;
   distance?: string;

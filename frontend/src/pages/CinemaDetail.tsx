@@ -110,83 +110,73 @@ export function CinemaDetail() {
   return (
     <div className="bg-background text-foreground font-display">
       
-      {/* ─── 1. HERO WITH CINEMA PICTURE & AMBIENT BACKDROP ─── */}
-      <section className="relative w-full bg-background overflow-hidden">
-        {/* Ambient Cinema Backdrop */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src={cinema.backdrop_url}
-            alt={cinema.name}
-            className="w-full h-full object-cover filter brightness-[0.25] blur-sm scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
-        </div>
-
-        <div className="relative z-10 mx-auto max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 py-8 sm:py-12 space-y-6">
+      {/* ─── 1. HERO WITH CINEMA PICTURE ─── */}
+      <section className="relative w-full bg-background py-8 sm:py-12">
+        <div className="mx-auto max-w-4xl md:max-w-5xl lg:max-w-6xl px-4 sm:px-0 space-y-6">
           
           {/* Back Navigation Button */}
           <Link
             to="/cinemas"
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-background/90 hover:bg-background border-2 border-foreground/40 text-foreground font-black text-xs uppercase transition-all shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5"
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-background hover:bg-muted border-2 border-foreground/40 text-foreground font-black text-xs uppercase transition-all shadow-[2px_2px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5"
           >
             <ArrowLeft size={16} weight="bold" />
             <span>Voltar para Cinemas</span>
           </Link>
 
-          {/* Hero Content: Photo on Left + Clean Info on Right */}
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-6 sm:gap-8">
+          {/* Hero Content: Photo on Left + Clean Info + Navigation Button on Right */}
+          <div className="flex flex-col md:flex-row items-start gap-6 sm:gap-8">
             
-            {/* Cinema Facade Photo Frame */}
-            <div className="relative w-36 sm:w-48 aspect-[4/3] shrink-0 border-4 border-foreground/40 bg-background shadow-[6px_6px_0px_0px_var(--border)] overflow-hidden">
+            {/* Cinema Facade Photo */}
+            <div className="relative w-44 sm:w-56 md:w-64 aspect-[4/3] shrink-0 bg-muted overflow-hidden">
               <img
                 src={cinema.image_url}
                 alt={cinema.name}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[9px] font-black uppercase px-1.5 py-0.5 border border-foreground/40">
+              <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] sm:text-xs font-black uppercase px-2 py-1">
                 {cinema.chain}
               </div>
             </div>
 
-            {/* Cinema Titles & Details */}
+            {/* Cinema Info */}
             <div className="flex-1 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-primary text-primary-foreground font-black text-xs px-2.5 py-0.5 uppercase tracking-wider border border-foreground/30 shadow-[2px_2px_0px_0px_var(--border)]">
+                <span className="bg-primary text-primary-foreground font-black text-[10px] sm:text-xs px-2 py-1 uppercase tracking-wider">
                   COMPLEXO PARCEIRO
                 </span>
-                <span className="font-sans text-xs font-bold text-foreground/70">
+                <span className="font-sans text-xs sm:text-sm font-bold text-foreground/70">
                   • {cinema.rooms_count} Salas de Exibição
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-foreground">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tight text-foreground leading-tight">
                 {cinema.name}
               </h1>
 
-              {/* Single clean Address Line */}
-              <div className="flex items-center gap-2 text-xs sm:text-sm font-sans text-foreground/80">
-                <MapPin size={18} weight="bold" className="text-primary shrink-0" />
+              {/* Address Line */}
+              <div className="flex items-start gap-2 text-xs sm:text-sm font-sans text-foreground/80">
+                <MapPin size={18} weight="bold" className="text-primary shrink-0 mt-0.5" />
                 <span>{cinema.address}</span>
               </div>
 
-              {/* Status and Phone */}
-              <div className="flex flex-wrap items-center gap-4 text-xs font-sans text-foreground/70">
+              {/* Hours and Phone */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm font-sans text-foreground/70">
                 <div className="flex items-center gap-1.5">
-                  <Clock size={15} weight="bold" className="text-foreground/60" />
+                  <Clock size={16} weight="bold" className="text-foreground/60" />
                   <span>{cinema.hours}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Phone size={15} weight="bold" className="text-foreground/60" />
+                  <Phone size={16} weight="bold" className="text-foreground/60" />
                   <span>{cinema.phone}</span>
                 </div>
               </div>
 
-              {/* Minimal Keyword Tags for Amenities */}
+              {/* Amenity Tags */}
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {cinema.amenities.map((amenity) => (
                   <span
                     key={amenity}
-                    className="text-[10px] font-black uppercase border border-foreground/30 px-2 py-0.5 text-foreground/80 bg-background shadow-[1px_1px_0px_0px_var(--border)]"
+                    className="text-[9px] sm:text-[10px] font-black uppercase border border-foreground/30 px-2 py-0.5 text-foreground/80 bg-background"
                   >
                     {amenity}
                   </span>
@@ -194,8 +184,8 @@ export function CinemaDetail() {
               </div>
             </div>
 
-            {/* GPS Route Icon Button */}
-            <div className="self-start md:self-center shrink-0">
+            {/* GPS Navigation Button */}
+            <div className="self-start shrink-0">
               <button
                 type="button"
                 onClick={() =>
@@ -206,10 +196,10 @@ export function CinemaDetail() {
                     '_blank'
                   )
                 }
-                className="w-12 h-12 border-2 border-foreground/40 bg-background hover:bg-muted text-foreground flex items-center justify-center cursor-pointer transition-all shadow-[4px_4px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5"
+                className="w-11 h-11 sm:w-12 sm:h-12 border-2 border-foreground/40 bg-background hover:bg-muted text-foreground flex items-center justify-center cursor-pointer transition-all shadow-[3px_3px_0px_0px_var(--border)] active:translate-x-0.5 active:translate-y-0.5"
                 title="Abrir Rota no Google Maps"
               >
-                <NavigationArrow size={22} weight="bold" />
+                <NavigationArrow size={20} weight="bold" />
               </button>
             </div>
           </div>

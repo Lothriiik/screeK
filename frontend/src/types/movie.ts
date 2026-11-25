@@ -40,6 +40,18 @@ export interface RatingDistributionItem {
   count: number;
 }
 
+export interface PosterPaletteColors {
+  frame: string;
+  accent: string;
+  on_accent: string;
+  title: string;
+  on_title: string;
+  panel: string;
+  on_panel: string;
+  rating: string;
+  on_rating: string;
+}
+
 export interface Movie {
   id: string;
   numeric_id: number;
@@ -48,6 +60,7 @@ export interface Movie {
   original_title: string;
   overview: string;
   poster_url: string;
+  poster_palette?: PosterPaletteColors;
   backdrop_url: string;
   logo_url?: string;
   release_date: string; // ISO or YYYY-MM-DD
